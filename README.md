@@ -61,8 +61,8 @@ Open-source **[Django Template](https://www.creative-tim.com/templates/django)**
 > UNZIP the sources or clone the repository. After getting the code, open a terminal and navigate to the working directory, with product source code.
 
 ```bash
-$ git clone https://github.com/creativetimofficial/black-dashboard-django.git
-$ cd black-dashboard-django
+git clone https://github.com/creativetimofficial/black-dashboard-django.git
+d black-dashboard-django
 ```
 
 <br />
@@ -72,9 +72,9 @@ $ cd black-dashboard-django
 > Install modules via `VENV`  
 
 ```bash
-$ virtualenv env
-$ source env/bin/activate
-$ pip3 install -r requirements.txt
+virtualenv env
+source env/bin/activate
+pip3 install -r requirements.txt
 ```
 
 <br />
@@ -82,8 +82,8 @@ $ pip3 install -r requirements.txt
 > Set Up Database
 
 ```bash
-$ python manage.py makemigrations
-$ python manage.py migrate
+python manage.py makemigrations
+python manage.py migrate
 ```
 
 <br />
@@ -91,7 +91,7 @@ $ python manage.py migrate
 > Start the app
 
 ```bash
-$ python manage.py runserver
+python manage.py runserver
 ```
 
 At this point, the app runs at `http://127.0.0.1:8000/`. 
