@@ -12,8 +12,9 @@ from django.views import View
 from django.db import models
 from pprint import pp 
 
-from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter
+from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Caja, MovimientoCaja, Turno, Concepto
 from apps.dyn_dt.utils import user_filter
+from apps.dyn_dt.forms import MovimientoCajaForm
 
 from cli import *
 
@@ -313,3 +314,110 @@ class ExportCSVView(View):
             writer.writerow(row_data)
 
         return response
+
+
+@login_required
+def registro(request):
+    """Vista para el registro de movimientos de caja"""
+    
+    # Handle AJAX requests
+    if request.method == 'GET' and request.GET.get('ajax') == 'true':
+        caja_id = request.GET.get('caja_id')
+        if not caja_id:
+            return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
+        
+        try:
+            caja = get_object_or_404(Caja, id=caja_id)
+            movimientos = MovimientoCaja.objects.filter(caja=caja).order_by('-fecha')
+            
+            # Prepare movements data for JSON response
+            movimientos_data = []
+            for mov in movimientos:
+                movimientos_data.append({
+                    'id': mov.id,
+                    'fecha': mov.fecha.strftime('%Y-%m-%d'),
+                    'turno': str(mov.turno),
+                    'concepto': str(mov.concepto),
+                    'cantidad': float(mov.cantidad),
+                    'es_gasto': mov.es_gasto(),
+                    'justificante': mov.justificante or '',
+                    'observaciones': mov.observaciones or ''
+                })
+            
+            # Calculate summary
+            total_ingresos = sum(mov.cantidad for mov in movimientos if not mov.es_gasto())
+            total_gastos = sum(mov.cantidad for mov in movimientos if mov.es_gasto())
+            
+            resumen = {
+                'total_ingresos': float(total_ingresos),
+                'total_gastos': float(total_gastos),
+                'saldo_actual': float(caja.saldo)
+            }
+            
+            return JsonResponse({
+                'success': True,
+                'movimientos': movimientos_data,
+                'resumen': resumen
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    # Handle POST requests (add/delete movements)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add':
+            try:
+                # Create new movement
+                caja_id = request.POST.get('caja_id')
+                caja = get_object_or_404(Caja, id=caja_id)
+                
+                # Check if caja is active
+                if not caja.activa:
+                    return JsonResponse({'success': False, 'error': 'No se pueden añadir movimientos a una caja inactiva'})
+                
+                # Create movement
+                movimiento = MovimientoCaja(
+                    caja=caja,
+                    turno_id=request.POST.get('turno'),
+                    concepto_id=request.POST.get('concepto'),
+                    cantidad=float(request.POST.get('cantidad')),
+                    fecha=request.POST.get('fecha'),
+                    justificante=request.POST.get('justificante') or None,
+                    observaciones=request.POST.get('observaciones') or None
+                )
+                
+                # Validate and save
+                movimiento.full_clean()
+                movimiento.save()
+                
+                return JsonResponse({'success': True, 'message': 'Movimiento añadido correctamente'})
+                
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+        
+        elif action == 'delete':
+            try:
+                movimiento_id = request.POST.get('movimiento_id')
+                movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
+                movimiento.delete()
+                
+                return JsonResponse({'success': True, 'message': 'Movimiento eliminado correctamente'})
+                
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+    
+    # GET request - render the template
+    cajas = Caja.objects.all().order_by('-año', 'nombre')
+    turnos = Turno.objects.all()
+    conceptos = Concepto.objects.all()
+    
+    context = {
+        'cajas': cajas,
+        'turnos': turnos,
+        'conceptos': conceptos,
+        'segment': 'registro'
+    }
+    
+    return render(request, 'pages/registro.html', context)

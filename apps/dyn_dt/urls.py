@@ -3,6 +3,7 @@ from apps.dyn_dt import views
 
 urlpatterns = [
     path('dynamic-dt/', views.index, name="dynamic_dt"),
+    path('registro/', views.registro, name="registro"),
 
     path('create-filter/<str:model_name>/', views.create_filter, name="create_filter"),
     path('create-page-items/<str:model_name>/', views.create_page_items, name="create_page_items"),

@@ -1,0 +1,528 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Registro de Movimientos {% endblock title %}
+
+{% block extrastyle %}
+<style>
+    /* Estilos para el tema oscuro del modal */
+    .modal-content {
+        background-color: #1e1e2f !important;
+        border: 1px solid #344675 !important;
+        color: #fff !important;
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid #344675 !important;
+        background-color: #1e1e2f !important;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid #344675 !important;
+        background-color: #1e1e2f !important;
+    }
+    
+    .modal-title {
+        color: #fff !important;
+    }
+    
+    /* Estilos para los campos de formulario */
+    .form-control {
+        background-color: #27293d !important;
+        border: 1px solid #344675 !important;
+        color: #fff !important;
+    }
+    
+    .form-control:focus {
+        background-color: #27293d !important;
+        border-color: #51cbce !important;
+        color: #fff !important;
+        box-shadow: 0 0 0 0.2rem rgba(81, 203, 206, 0.25) !important;
+    }
+    
+    .form-control::placeholder {
+        color: #9ca3af !important;
+        opacity: 0.8;
+    }
+    
+    /* Estilos específicos para select */
+    .form-control option {
+        background-color: #27293d !important;
+        color: #fff !important;
+    }
+    
+    /* Estilos para labels */
+    .form-label {
+        color: #fff !important;
+        font-weight: 500;
+    }
+    
+    /* Estilos para el input-group */
+    .input-group-text {
+        background-color: #344675 !important;
+        border-color: #344675 !important;
+        color: #fff !important;
+    }
+    
+    /* Estilos para campos de fecha */
+    input[type="date"].form-control::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        cursor: pointer;
+    }
+    
+    /* Estilos para campos numéricos */
+    input[type="number"].form-control::-webkit-outer-spin-button,
+    input[type="number"].form-control::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    /* Mejorar visibilidad del botón close */
+    .close {
+        color: #fff !important;
+        opacity: 0.8;
+    }
+    
+    .close:hover {
+        color: #fff !important;
+        opacity: 1;
+    }
+</style>
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="content">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="tim-icons icon-wallet-43"></i>
+                        Registro de Movimientos de Caja
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Selector de Caja -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
+                                <select class="form-control" id="cajaSelect" onchange="loadMovimientos()">
+                                    <option value="">-- Selecciona una caja --</option>
+                                    {% for caja in cajas %}
+                                        <option value="{{ caja.id }}" 
+                                                data-saldo="{{ caja.saldo }}"
+                                                data-nombre="{{ caja.nombre }}"
+                                                {% if caja.id == selected_caja_id %}selected{% endif %}>
+                                            {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Saldo Actual:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input type="text" class="form-control" id="saldoActual" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón para añadir movimiento -->
+                    <div class="row mb-3" id="addMovementSection">
+                        <div class="col-md-12">
+                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
+                                <i class="tim-icons icon-simple-add"></i>
+                                Añadir Movimiento
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Movimientos -->
+                    <div id="movimientosContainer" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="movimientosTable">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Turno</th>
+                                        <th>Concepto</th>
+                                        <th>Cantidad</th>
+                                        <th>Justificante</th>
+                                        <th>Observaciones</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movimientosTableBody">
+                                    <!-- Los movimientos se cargarán aquí dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Resumen -->
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <div class="card bg-success">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title text-white">Total Ingresos</h5>
+                                        <h3 class="text-white" id="totalIngresos">0.00€</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-danger">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title text-white">Total Gastos</h5>
+                                        <h3 class="text-white" id="totalGastos">0.00€</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-info">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title text-white">Saldo Actual</h5>
+                                        <h3 class="text-white" id="saldoResumen">0.00€</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje cuando no hay caja seleccionada -->
+                    <div id="noCajaMessage" class="text-center py-5">
+                        <i class="tim-icons icon-wallet-43" style="font-size: 4rem; color: #ccc;"></i>
+                        <h4 class="mt-3 text-muted">Selecciona una caja para ver sus movimientos</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para añadir movimiento -->
+<div class="modal fade" id="addMovementModal" tabindex="-1" aria-labelledby="addMovementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMovementModalLabel">
+                    <i class="tim-icons icon-simple-add"></i>
+                    Añadir Nuevo Movimiento
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="addMovementForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="caja_id" id="cajaIdInput">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="turno" class="form-label">Turno *</label>
+                                <select class="form-control" name="turno" id="turno" required>
+                                    <option value="">-- Selecciona un turno --</option>
+                                    {% for turno in turnos %}
+                                        <option value="{{ turno.id }}">{{ turno.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="concepto" class="form-label">Concepto *</label>
+                                <select class="form-control" name="concepto" id="concepto" required>
+                                    <option value="">-- Selecciona un concepto --</option>
+                                    {% for concepto in conceptos %}
+                                        <option value="{{ concepto.id }}" data-es-gasto="{{ concepto.es_gasto }}">
+                                            {{ concepto.nombre }} {% if concepto.es_gasto %}(Gasto){% else %}(Ingreso){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="cantidad" class="form-label">Cantidad (€) *</label>
+                                <input type="number" class="form-control" name="cantidad" id="cantidad" 
+                                       step="0.01" min="0.01" required placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="fecha" class="form-label">Fecha *</label>
+                                <input type="date" class="form-control" name="fecha" id="fecha" 
+                                       value="{% now 'Y-m-d' %}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="justificante" class="form-label">Nº Justificante</label>
+                                <input type="text" class="form-control" name="justificante" id="justificante" 
+                                       maxlength="5" placeholder="12345">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="observaciones" class="form-label">Observaciones</label>
+                        <textarea class="form-control" name="observaciones" id="observaciones" 
+                                  rows="3" placeholder="Observaciones adicionales (opcional)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="tim-icons icon-check-2"></i>
+                        Guardar Movimiento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+{% block extrajs %}
+<script>
+    $(document).ready(function () {
+        console.log('Página de registro cargada');
+        
+        // Initialize page
+        updateSaldoDisplay();
+        
+        // Load movements if a caja is already selected
+        if ($('#cajaSelect').val()) {
+            console.log('Caja ya seleccionada, cargando movimientos...');
+            loadMovimientos();
+        }
+    });
+
+    function updateSaldoDisplay() {
+        const selectedOption = $('#cajaSelect option:selected');
+        const saldo = selectedOption.data('saldo');
+        
+        console.log('Actualizando saldo display:', saldo);
+        
+        if (saldo !== undefined) {
+            $('#saldoActual').val(saldo.toFixed(2));
+        } else {
+            $('#saldoActual').val('');
+        }
+    }
+
+    function prepareModal() {
+        console.log('Preparando modal');
+        const cajaId = $('#cajaSelect').val();
+        
+        if (!cajaId) {
+            alert('Por favor selecciona una caja antes de añadir un movimiento');
+            return false;
+        }
+        
+        // Establecer el caja_id en el formulario
+        $('#cajaIdInput').val(cajaId);
+        console.log('Caja ID establecido en modal:', cajaId);
+        
+        return true;
+    }
+
+    function loadMovimientos() {
+        const cajaId = $('#cajaSelect').val();
+        
+        console.log('Cargando movimientos para caja ID:', cajaId);
+        
+        if (!cajaId) {
+            // No caja selected
+            console.log('No hay caja seleccionada, ocultando tabla');
+            $('#movimientosContainer').hide();
+            $('#noCajaMessage').show();
+            return;
+        }
+
+        // Update saldo display
+        updateSaldoDisplay();
+        
+        // Set caja ID in the form
+        $('#cajaIdInput').val(cajaId);
+        
+        // Hide no caja message
+        $('#noCajaMessage').hide();
+
+        // Load movements via AJAX
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'GET',
+            data: {
+                'caja_id': cajaId,
+                'ajax': 'true'
+            },
+            success: function(data) {
+                console.log('Respuesta AJAX recibida:', data);
+                if (data.success) {
+                    displayMovimientos(data.movimientos);
+                    updateResumen(data.resumen);
+                    $('#movimientosContainer').show();
+                } else {
+                    console.error('Error loading movements:', data.error);
+                    alert('Error: ' + data.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error:', error);
+                console.error('Status:', status);
+                console.error('Response:', xhr.responseText);
+                alert('Error al cargar los movimientos: ' + error);
+            }
+        });
+    }
+
+    function displayMovimientos(movimientos) {
+        console.log('Mostrando movimientos:', movimientos);
+        const tbody = $('#movimientosTableBody');
+        tbody.empty();
+
+        if (movimientos.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="7" class="text-center text-muted">
+                        No hay movimientos registrados para esta caja
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        movimientos.forEach(function(mov) {
+            const fechaFormatted = new Date(mov.fecha).toLocaleDateString('es-ES');
+            const cantidadClass = mov.es_gasto ? 'text-danger' : 'text-success';
+            const cantidadSign = mov.es_gasto ? '-' : '+';
+            
+            tbody.append(`
+                <tr>
+                    <td>${fechaFormatted}</td>
+                    <td>${mov.turno}</td>
+                    <td>
+                        ${mov.concepto}
+                        ${mov.es_gasto ? '<span class="badge badge-danger ml-1">Gasto</span>' : '<span class="badge badge-success ml-1">Ingreso</span>'}
+                    </td>
+                    <td class="${cantidadClass}">
+                        <strong>${cantidadSign}${mov.cantidad}€</strong>
+                    </td>
+                    <td>${mov.justificante || '-'}</td>
+                    <td>${mov.observaciones || '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMovimiento(${mov.id})">
+                            <i class="tim-icons icon-simple-remove"></i>
+                        </button>
+                    </td>
+                </tr>
+            `);
+        });
+    }
+
+    function updateResumen(resumen) {
+        console.log('Actualizando resumen:', resumen);
+        $('#totalIngresos').text(resumen.total_ingresos.toFixed(2) + '€');
+        $('#totalGastos').text(resumen.total_gastos.toFixed(2) + '€');
+        $('#saldoResumen').text(resumen.saldo_actual.toFixed(2) + '€');
+    }
+
+    function deleteMovimiento(movimientoId) {
+        if (!confirm('¿Estás seguro de que quieres eliminar este movimiento?')) {
+            return;
+        }
+
+        console.log('Eliminando movimiento ID:', movimientoId);
+
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'POST',
+            data: {
+                'action': 'delete',
+                'movimiento_id': movimientoId,
+                'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(data) {
+                console.log('Respuesta eliminar:', data);
+                if (data.success) {
+                    loadMovimientos(); // Reload the table
+                    alert('Movimiento eliminado correctamente');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al eliminar:', error);
+                alert('Error al eliminar el movimiento: ' + error);
+            }
+        });
+    }
+
+    // Handle form submission
+    $('#addMovementForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        console.log('Enviando formulario de movimiento');
+        
+        // Verificar que hay una caja seleccionada
+        const cajaId = $('#cajaSelect').val();
+        if (!cajaId) {
+            alert('Por favor selecciona una caja antes de añadir un movimiento');
+            return;
+        }
+        
+        // Asegurar que el caja_id esté establecido en el formulario
+        $('#cajaIdInput').val(cajaId);
+        
+        console.log('Caja ID:', cajaId);
+        console.log('Datos del formulario:', $(this).serialize());
+        
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'POST',
+            data: $(this).serialize() + '&action=add',
+            success: function(data) {
+                console.log('Respuesta guardar:', data);
+                if (data.success) {
+                    $('#addMovementModal').modal('hide');
+                    $('#addMovementForm')[0].reset();
+                    $('#fecha').val('{% now "Y-m-d" %}'); // Reset date to today
+                    loadMovimientos(); // Reload the table
+                    alert('Movimiento añadido correctamente');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al guardar:', error);
+                console.error('Response:', xhr.responseText);
+                alert('Error al guardar el movimiento: ' + error);
+            }
+        });
+    });
+
+    // Update concept color based on selection
+    $('#concepto').on('change', function() {
+        const selectedOption = $(this).find('option:selected');
+        const esGasto = selectedOption.data('es-gasto');
+        
+        if (esGasto) {
+            $(this).removeClass('border-success').addClass('border-danger');
+        } else if (selectedOption.val()) {
+            $(this).removeClass('border-danger').addClass('border-success');
+        } else {
+            $(this).removeClass('border-success border-danger');
+        }
+    });
+</script>
+{% endblock extrajs %}

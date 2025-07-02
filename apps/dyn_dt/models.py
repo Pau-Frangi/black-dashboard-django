@@ -3,6 +3,8 @@ from decimal import Decimal
 from django.utils.translation import gettext_lazy as _
 from datetime import date
 from django.core.exceptions import ValidationError
+from django.db.models.signals import post_save, pre_delete, post_delete
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -106,7 +108,8 @@ class Caja(models.Model):
         max_digits=10,
         decimal_places=2,
         default=0,
-        verbose_name="Saldo actual"
+        verbose_name="Saldo inicial/actual",
+        help_text="Solo se puede modificar al crear la caja. Después se actualiza automáticamente con los movimientos."
     )
 
     observaciones = models.TextField(
@@ -115,8 +118,42 @@ class Caja(models.Model):
         verbose_name="Observaciones"
     )
 
+    def clean(self):
+        """Validación que evita modificar el saldo de una caja existente"""
+        if self.pk:  # La caja ya existe
+            # Obtener el saldo original de la base de datos
+            try:
+                original = Caja.objects.get(pk=self.pk)
+                if self.saldo != original.saldo:
+                    raise ValidationError({
+                        'saldo': 'No se puede modificar el saldo de una caja existente. '
+                                'El saldo se actualiza automáticamente con los movimientos.'
+                    })
+            except Caja.DoesNotExist:
+                pass
+
+    def save(self, *args, **kwargs):
+        """Guarda la caja con validaciones"""
+        # Solo ejecutar validaciones si no es una operación de recálculo automático
+        if not kwargs.pop('skip_validation', False):
+            self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.nombre} ({self.año}) - Saldo: {self.saldo:.2f}€"
+
+    def recalcular_saldo(self):
+        """
+        Recalcula el saldo de la caja basándose en todos sus movimientos.
+        Útil para corregir inconsistencias en el saldo.
+        """
+        total = Decimal('0.00')
+        for movimiento in self.movimientos.all():
+            total += movimiento.cantidad_real()
+        
+        self.saldo = total
+        self.save(skip_validation=True)  # Saltamos la validación para el recálculo automático
+        return self.saldo
 
     class Meta:
         verbose_name = "Caja"
@@ -180,21 +217,12 @@ class MovimientoCaja(models.Model):
             raise ValidationError("No se pueden añadir movimientos a una caja inactiva")
 
     def save(self, *args, **kwargs):
-        """Actualiza el saldo de la caja al guardar"""
-        if not self.pk:  # Solo para nuevos movimientos
-            self.full_clean()  # Ejecuta las validaciones
-            
-            # Actualizar el saldo de la caja
-            self.caja.saldo += self.cantidad_real()
-            self.caja.save()
-        
+        """Valida los datos antes de guardar"""
+        self.full_clean()  # Ejecuta las validaciones
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """Actualiza el saldo de la caja al eliminar"""
-        # Restar el movimiento del saldo antes de eliminar
-        self.caja.saldo -= self.cantidad_real()
-        self.caja.save()
+        """Elimina el movimiento"""
         super().delete(*args, **kwargs)
 
     def es_gasto(self):
@@ -213,3 +241,27 @@ class MovimientoCaja(models.Model):
         verbose_name = "Movimiento de caja"
         verbose_name_plural = "Movimientos de caja"
         ordering = ['-fecha']
+
+
+# Señales Django para actualizar el saldo de la caja automáticamente
+@receiver(post_save, sender=MovimientoCaja)
+def actualizar_saldo_on_save(sender, instance, created, **kwargs):
+    """
+    Actualiza el saldo de la caja cuando se guarda un MovimientoCaja.
+    Solo se ejecuta para nuevos movimientos (created=True).
+    """
+    if created:
+        # Actualizar el saldo de la caja
+        instance.caja.saldo += instance.cantidad_real()
+        instance.caja.save(skip_validation=True)
+
+
+@receiver(pre_delete, sender=MovimientoCaja)
+def actualizar_saldo_on_delete(sender, instance, **kwargs):
+    """
+    Actualiza el saldo de la caja cuando se elimina un MovimientoCaja.
+    Se ejecuta antes de eliminar para que el objeto aún exista.
+    """
+    # Restar el movimiento del saldo antes de eliminar
+    instance.caja.saldo -= instance.cantidad_real()
+    instance.caja.save(skip_validation=True)

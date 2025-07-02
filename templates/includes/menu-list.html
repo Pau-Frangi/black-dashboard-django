@@ -12,6 +12,12 @@
       <p>Dynamic Tables</p>
     </a>
   </li>   
+  <li class="{% if 'registro' in segment %} active {% endif %}">
+    <a href="{% url "registro" %}">
+      <i class="tim-icons icon-wallet-43"></i>
+      <p>Registro de Caja</p>
+    </a>
+  </li>
   <li class="{% if 'dynamic_api' in segment %} active {% endif %}">
     <a href="{% url "dynamic_api" %}">
       <i class="tim-icons icon-send"></i>
