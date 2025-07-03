@@ -155,37 +155,33 @@
                         </div>
                     </div>
 
-                    <!-- Botón para añadir movimiento -->
+                    <!-- Botón para añadir movimiento y controles de ordenamiento -->
                     <div class="row mb-3" id="addMovementSection">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
                                 <i class="tim-icons icon-simple-add"></i>
                                 Añadir Movimiento
                             </button>
                         </div>
+                        <div class="col-md-6 d-flex justify-content-end align-items-center" id="sortControls" style="display: none !important;">
+                            <label class="form-label mb-0 mr-3">Ordenar por:</label>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortMovimientos('fecha')" id="sortByDate">
+                                    <i class="tim-icons icon-calendar-60"></i>
+                                    Fecha
+                                    <span id="sortDateIcon" class="ml-1"></span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortMovimientos('cantidad')" id="sortByAmount">
+                                    <i class="tim-icons icon-coins"></i>
+                                    Cantidad
+                                    <span id="sortAmountIcon" class="ml-1"></span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Tabla de Movimientos -->
                     <div id="movimientosContainer">
-                        <!-- Controles de ordenamiento -->
-                        <div class="row mb-3" id="sortControls" style="display: none;">
-                            <div class="col-md-6">
-                                <label class="form-label">Ordenar por:</label>
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortMovimientos('fecha')" id="sortByDate">
-                                        <i class="tim-icons icon-calendar-60"></i>
-                                        Fecha
-                                        <span id="sortDateIcon" class="ml-1"></span>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortMovimientos('cantidad')" id="sortByAmount">
-                                        <i class="tim-icons icon-coins"></i>
-                                        Cantidad
-                                        <span id="sortAmountIcon" class="ml-1"></span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <div class="table-responsive">
                             <table class="table table-striped" id="movimientosTable">
                                 <thead>
@@ -745,3 +741,4 @@
     }
 </script>
 {% endblock extrajs %}
+
