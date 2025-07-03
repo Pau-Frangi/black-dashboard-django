@@ -9,15 +9,23 @@
 
 {% block content %}
 <div class="content">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="page-header">
+                <h2 class="page-title">
+                    <i class="tim-icons icon-wallet-43 mr-3"></i>
+                    Registro de Movimientos de Caja
+                </h2>
+                <p class="page-subtitle">Gestiona los movimientos financieros de tu organización de forma eficiente</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">
-                        <i class="tim-icons icon-wallet-43"></i>
-                        Registro de Movimientos de Caja
-                    </h4>
-                </div>
                 <div class="card-body">
                     <!-- Selector de Caja -->
                     <div class="row mb-4">
@@ -93,7 +101,7 @@
                                     <input type="text" 
                                         class="form-control search-input" 
                                         id="movementsSearch" 
-                                        placeholder="Buscar por concepto, cantidad, justificante u observaciones..."
+                                        placeholder="Buscar por concepto, cantidad, justificante o descripción..."
                                         autocomplete="off">
                                     <div class="input-group-append">
                                         <button class="btn btn-clear" type="button" id="clearSearch" style="display: none;">
@@ -120,9 +128,9 @@
                                         <th>Fecha y Hora</th>
                                         <th>Turno</th>
                                         <th>Concepto</th>
+                                        <th>Descripción</th>
                                         <th>Cantidad</th>
                                         <th>Justificante</th>
-                                        <th>Observaciones</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -158,7 +166,7 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="addMovementForm" method="post">
+            <form id="addMovementForm" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body">
                     <input type="hidden" name="caja_id" id="cajaIdInput">
@@ -215,19 +223,40 @@
                                        value="{% now 'H:i' %}" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="justificante" class="form-label">Nº Justificante</label>
-                                <input type="text" class="form-control" name="justificante" id="justificante" 
-                                       maxlength="5" placeholder="12345">
+                    </div>
+                    
+                    <!-- Campos de justificante condicionales - Solo para gastos -->
+                    <div class="justificante-fields" id="justificanteFields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="justificante" class="form-label">Nº Justificante</label>
+                                    <input type="text" class="form-control" name="justificante" id="justificante" 
+                                           maxlength="5" placeholder="12345">
+                                    <small class="form-text text-muted">
+                                        <i class="tim-icons icon-paper"></i>
+                                        Número de justificante para el gasto
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="archivo_justificante" class="form-label">Archivo Justificante</label>
+                                    <input type="file" class="form-control" name="archivo_justificante" id="archivo_justificante" 
+                                           accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp">
+                                    <small class="form-text text-muted">
+                                        <i class="tim-icons icon-cloud-upload-94"></i>
+                                        PDF, JPG, PNG, GIF, BMP (máx. 10MB)
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="observaciones" class="form-label">Observaciones</label>
-                        <textarea class="form-control" name="observaciones" id="observaciones" 
-                                  rows="3" placeholder="Observaciones adicionales (opcional)"></textarea>
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" name="descripcion" id="descripcion" 
+                                  rows="3" placeholder="Descripción detallada del movimiento" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -283,7 +312,7 @@
                     return mov.concepto.toLowerCase().includes(searchTerm) ||
                            mov.cantidad.toString().includes(searchTerm) ||
                            (mov.justificante && mov.justificante.toLowerCase().includes(searchTerm)) ||
-                           (mov.observaciones && mov.observaciones.toLowerCase().includes(searchTerm)) ||
+                           (mov.descripcion && mov.descripcion.toLowerCase().includes(searchTerm)) ||
                            mov.turno.toLowerCase().includes(searchTerm);
                 });
                 
@@ -357,7 +386,33 @@
         $('#cajaIdInput').val(cajaId);
         console.log('Caja ID establecido en modal:', cajaId);
         
+        // Resetear el formulario y estilos
+        resetModalForm();
+        
         return true;
+    }
+
+    function resetModalForm() {
+        console.log('Reseteando formulario del modal');
+        
+        // Reset form fields
+        $('#addMovementForm')[0].reset();
+        
+        // Reset date and time to current values
+        $('#fecha').val('{% now "Y-m-d" %}');
+        $('#hora').val('{% now "H:i" %}');
+        
+        // Reset concept field styles
+        $('#concepto').removeClass('border-success border-warning');
+        
+        // Hide justificante fields
+        $('#justificanteFields').hide();
+        
+        // Clear justificante values
+        $('#justificante').val('');
+        $('#archivo_justificante').val('');
+        
+        console.log('Formulario reseteado completamente');
     }
 
     function loadMovimientos() {
@@ -511,11 +566,11 @@
                         ${mov.concepto}
                         ${mov.es_gasto ? '<span class="badge badge-danger ml-1">Gasto</span>' : '<span class="badge badge-success ml-1">Ingreso</span>'}
                     </td>
+                    <td>${mov.descripcion || '-'}</td>
                     <td class="${cantidadClass}">
                         <strong>${cantidadSign}${mov.cantidad}€</strong>
                     </td>
                     <td>${mov.justificante || '-'}</td>
-                    <td>${mov.observaciones || '-'}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteMovimiento(${mov.id})">
                             <i class="tim-icons icon-simple-remove"></i>
@@ -593,12 +648,17 @@
         $('#cajaIdInput').val(cajaId);
         
         console.log('Caja ID:', cajaId);
-        console.log('Datos del formulario:', $(this).serialize());
+        
+        // Create FormData object to handle file upload
+        const formData = new FormData(this);
+        formData.append('action', 'add');
         
         $.ajax({
             url: '{% url "registro" %}',
             method: 'POST',
-            data: $(this).serialize() + '&action=add',
+            data: formData,
+            processData: false,
+            contentType: false,
             success: function(data) {
                 console.log('Respuesta guardar:', data);
                 if (data.success) {
@@ -606,6 +666,10 @@
                     $('#addMovementForm')[0].reset();
                     $('#fecha').val('{% now "Y-m-d" %}'); // Reset date to today
                     $('#hora').val('{% now "H:i" %}'); // Reset time to current time
+                    
+                    // Hide justificante fields after reset
+                    $('#justificanteGroup').hide();
+                    $('#justificanteFields').hide();
                     
                     // Recargar los movimientos para obtener el saldo actualizado
                     loadMovimientos(); // Esto actualizará tanto la tabla como los campos del header
@@ -623,64 +687,79 @@
         });
     });
 
-    // Update concept color based on selection
+    // Update concept color based on selection and show/hide justificante fields
     $('#concepto').on('change', function() {
         const selectedOption = $(this).find('option:selected');
-        const esGasto = selectedOption.data('es-gasto');
+        const esGasto = selectedOption.data('es-gasto') === "True";
+        
+        console.log('Concepto seleccionado:', selectedOption.text(), 'Es gasto:', esGasto);
         
         if (esGasto) {
-            $(this).removeClass('border-success').addClass('border-danger');
+            // Es un gasto - mostrar campos de justificante
+            $(this).removeClass('border-success').addClass('border-warning');
+            $('#justificanteFields').removeClass('d-none').addClass('show').show();
+            console.log('Mostrando campos de justificante para gasto');
         } else if (selectedOption.val()) {
-            $(this).removeClass('border-danger').addClass('border-success');
+            // Es un ingreso - ocultar campos de justificante
+            $(this).removeClass('border-warning').addClass('border-success');
+            $('#justificanteFields').removeClass('show');
+            setTimeout(() => {
+                $('#justificanteFields').hide();
+            }, 400); // Esperar a que termine la animación
+            // Limpiar valores de justificante
+            $('#justificante').val('');
+            $('#archivo_justificante').val('');
+            console.log('Ocultando campos de justificante para ingreso');
         } else {
-            $(this).removeClass('border-success border-danger');
+            // No hay selección - ocultar campos y resetear estilos
+            $(this).removeClass('border-success border-warning');
+            $('#justificanteFields').removeClass('show');
+            setTimeout(() => {
+                $('#justificanteFields').hide();
+            }, 400); // Esperar a que termine la animación
+            $('#justificante').val('');
+            $('#archivo_justificante').val('');
+            console.log('Sin selección - ocultando campos');
         }
     });
 
-    // Funciones de ordenamiento
     function sortMovimientos(field) {
         console.log('Ordenando por:', field);
         
-        // Si es el mismo campo, alternar orden
+        // Si es el mismo campo, cambiar orden, sino usar descendente por defecto
         if (currentSortField === field) {
             currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
         } else {
-            // Nuevo campo, empezar con descendente
             currentSortField = field;
             currentSortOrder = 'desc';
         }
         
-        // Ordenar los movimientos filtrados
-        const sortedMovimientos = [...filteredMovimientos].sort((a, b) => {
+        // Ordenar los movimientos
+        filteredMovimientos.sort(function(a, b) {
             let valueA, valueB;
             
-            switch (field) {
-                case 'fecha':
-                    // Usar datetime_iso para ordenamiento preciso
-                    valueA = new Date(a.datetime_iso || a.fecha_completa);
-                    valueB = new Date(b.datetime_iso || b.fecha_completa);
-                    break;
-                case 'cantidad':
-                    // Calcular el valor real considerando si es gasto o ingreso
-                    valueA = a.es_gasto ? -parseFloat(a.cantidad) : parseFloat(a.cantidad);
-                    valueB = b.es_gasto ? -parseFloat(b.cantidad) : parseFloat(b.cantidad);
-                    break;
-                default:
-                    return 0;
+            if (field === 'fecha') {
+                valueA = new Date(a.datetime_iso);
+                valueB = new Date(b.datetime_iso);
+            } else if (field === 'cantidad') {
+                valueA = parseFloat(a.cantidad);
+                valueB = parseFloat(b.cantidad);
             }
             
             if (currentSortOrder === 'asc') {
-                return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+                return valueA > valueB ? 1 : -1;
             } else {
-                return valueA > valueB ? -1 : valueA < valueB ? 1 : 0;
+                return valueA < valueB ? 1 : -1;
             }
         });
         
-        // Actualizar display
-        displayMovimientos(sortedMovimientos);
+        // Mostrar los movimientos ordenados
+        displayMovimientos(filteredMovimientos);
+        
+        // Actualizar los botones
         updateSortButtons();
     }
-    
+
     function updateSortButtons() {
         // Resetear todos los botones
         $('#sortByDate, #sortByAmount').removeClass('btn-primary').addClass('btn-outline-secondary');
@@ -705,6 +784,7 @@
             $(activeIcon).html(icon);
         }
     }
+    
 
     function updateSearchResults(count, isSearching) {
         $('#resultsCount').text(count);

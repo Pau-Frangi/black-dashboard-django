@@ -72,9 +72,9 @@ class CajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoCaja)
 class MovimientoCajaAdmin(admin.ModelAdmin):
-    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante')
+    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante_display', 'tiene_archivo')
     list_filter = ('fecha', 'caja', 'turno', 'concepto__es_gasto')
-    search_fields = ('observaciones', 'justificante')
+    search_fields = ('descripcion', 'justificante')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
     
@@ -86,6 +86,19 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
         signo = "-" if obj.es_gasto() else "+"
         return f"{signo}{obj.cantidad:.2f}€"
     cantidad_display.short_description = 'Cantidad'
+    
+    def justificante_display(self, obj):
+        if obj.es_gasto():
+            return obj.justificante or "Sin justificante"
+        return "N/A (Ingreso)"
+    justificante_display.short_description = 'Justificante'
+    
+    def tiene_archivo(self, obj):
+        if obj.es_gasto():
+            return "Sí" if obj.archivo_justificante else "No"
+        return "N/A"
+    tiene_archivo.short_description = 'Archivo'
+    tiene_archivo.boolean = False
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('caja', 'turno', 'concepto')

@@ -576,51 +576,287 @@ input[type="number"].form-control::-webkit-inner-spin-button {
     font-size: 0.9rem;
 }
 
-/* Responsive para pantallas pequeñas */
+/* Estilos para el header de página */
+.page-header {
+    background: linear-gradient(135deg, #1e1e2f 0%, #27293d 100%);
+    border: 1px solid rgba(52, 70, 117, 0.3);
+    border-radius: 15px;
+    padding: 30px 35px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #51cbce 0%, #fd5d93 50%, #51cbce 100%);
+}
+
+.page-title {
+    color: #fff;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.page-title i {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, #51cbce 0%, #3eb8bb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(81, 203, 206, 0.3));
+}
+
+.page-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    margin: 8px 0 0 0;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+}
+
+/* Ajustar el espaciado del card principal */
+.card {
+    border-radius: 15px;
+    border: 1px solid rgba(52, 70, 117, 0.3);
+    background: linear-gradient(135deg, #1e1e2f 0%, #27293d 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 35px;
+}
+
+/* Responsive para el header */
 @media (max-width: 768px) {
-    .totals-section {
-        margin-top: 15px;
+    .page-header {
+        padding: 20px 25px;
+        text-align: center;
+    }
+    
+    .page-title {
+        font-size: 1.6rem;
         flex-direction: column;
         gap: 10px;
     }
     
-    .total-item {
-        padding: 8px 0;
+    .page-title i {
+        font-size: 1.5rem;
     }
     
-    .total-item:not(:last-child) {
-        border-right: none;
-        border-bottom: 1px solid #344675;
+    .page-subtitle {
+        font-size: 0.9rem;
+        margin-top: 12px;
     }
+    
+    .card-body {
+        padding: 25px 20px;
+    }
+}
 
-    .movements-search-bar .search-input {
+@media (max-width: 576px) {
+    .page-header {
+        padding: 18px 20px;
+    }
+    
+    .page-title {
+        font-size: 1.4rem;
+    }
+    
+    .page-subtitle {
         font-size: 0.85rem;
-        padding: 10px 12px;
-    }
-
-    .search-results-info {
-        margin-top: 10px;
-        justify-content: center;
     }
 }
 
-/* Animaciones para elementos que aparecen/desaparecen */
-#searchSection {
+/* Estilos para campos de archivo */
+.custom-file {
+    position: relative;
+}
+
+.file-info {
+    margin-top: 8px;
+}
+
+.file-info small {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(156, 163, 175, 0.8) !important;
+    font-size: 0.8rem;
+}
+
+.file-info i {
+    font-size: 0.9rem;
+    color: #51cbce;
+}
+
+/* Estilos para campos condicionales */
+.justificante-fields {
+    border-top: 2px solid rgba(253, 93, 147, 0.3);
+    padding-top: 25px;
+    margin-top: 20px;
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.05) 0%, rgba(253, 93, 147, 0.02) 100%);
+    border-radius: 12px;
+    padding: 25px;
+    position: relative;
+    overflow: hidden;
+    
+    /* Transiciones suaves para altura y opacidad */
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition-property: max-height, opacity, transform, padding, margin;
+}
+
+/* Estado visible de los campos de justificante */
+.justificante-fields.show,
+.justificante-fields:not([style*="display: none"]) {
+    max-height: 500px;
+    opacity: 1;
+    transform: translateY(0);
+    padding: 25px;
+    margin-top: 20px;
+}
+
+/* Cuando está oculto */
+.justificante-fields[style*="display: none"] {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    border-top-width: 0;
+}
+
+.justificante-fields::before {
+    content: 'Campos para gastos';
+    position: absolute;
+    top: -4px;
+    left: 20px;
+    background: linear-gradient(135deg, #1e1e2f 0%, #27293d 100%);
+    color: #fd5d93;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 2px solid rgba(253, 93, 147, 0.3);
+    transition: opacity 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(253, 93, 147, 0.2);
+}
+
+/* Ocultar el label cuando el contenedor está oculto */
+.justificante-fields[style*="display: none"]::before {
+    opacity: 0;
+}
+
+.justificante-fields .form-group {
+    margin-bottom: 20px;
+    transition: opacity 0.3s ease 0.1s;
+}
+
+/* Animación para los elementos internos */
+.justificante-fields .form-group {
+    opacity: 0;
+    transform: translateY(10px);
     transition: all 0.3s ease;
 }
 
-#sortControls {
+.justificante-fields.show .form-group,
+.justificante-fields:not([style*="display: none"]) .form-group {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.justificante-fields .form-group:nth-child(1) {
+    transition-delay: 0.1s;
+}
+
+.justificante-fields .form-group:nth-child(2) {
+    transition-delay: 0.15s;
+}
+
+.justificante-fields .form-text {
+    color: rgba(253, 93, 147, 0.8) !important;
+    font-size: 0.8rem;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     transition: all 0.3s ease;
 }
 
-/* Mejoras en la tabla para búsquedas */
-#movimientosTable tbody tr {
-    transition: all 0.2s ease;
+.justificante-fields .form-text i {
+    color: #fd5d93;
+    font-size: 0.9rem;
 }
 
-#movimientosTable tbody tr:hover {
-    background-color: rgba(81, 203, 206, 0.1) !important;
-    transform: translateY(-1px);
+/* Estilos especiales para campos de concepto */
+.modal-body select.form-control.border-warning {
+    border-color: #ff9500 !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 149, 0, 0.25) !important;
+}
+
+.modal-body select.form-control.border-success {
+    border-color: #27c24c !important;
+    box-shadow: 0 0 0 0.25rem rgba(39, 194, 76, 0.25) !important;
+}
+
+/* Animación de entrada para campos de justificante */
+.justificante-fields.show {
+    animation: slideInFromTop 0.4s ease-out;
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments for justificante fields */
+@media (max-width: 768px) {
+    .justificante-fields {
+        padding: 20px 15px;
+        margin-top: 15px;
+    }
+    
+    .justificante-fields.show,
+    .justificante-fields:not([style*="display: none"]) {
+        padding: 20px 15px;
+        margin-top: 15px;
+        max-height: 400px;
+    }
+    
+    .justificante-fields::before {
+        font-size: 0.7rem;
+        padding: 5px 14px;
+        left: 15px;
+        top: -11px;
+    }
+    
+    .justificante-fields .form-text {
+        font-size: 0.75rem;
+    }
 }
 
 

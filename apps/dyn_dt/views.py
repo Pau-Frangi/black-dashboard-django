@@ -346,7 +346,9 @@ def registro(request):
                     'cantidad': float(mov.cantidad),
                     'es_gasto': mov.es_gasto(),
                     'justificante': mov.justificante or '',
-                    'observaciones': mov.observaciones or ''
+                    'tiene_archivo': bool(mov.archivo_justificante),
+                    'archivo_url': mov.archivo_justificante.url if mov.archivo_justificante else None,
+                    'descripcion': mov.descripcion or ''
                 })
             
             # Calculate summary
@@ -391,15 +393,28 @@ def registro(request):
                 fecha_datetime = datetime.strptime(f"{fecha_str} {hora_str}", '%Y-%m-%d %H:%M')
                 fecha_datetime = timezone.make_aware(fecha_datetime)
                 
+                # Get the concepto to check if it's a gasto
+                concepto = get_object_or_404(Concepto, id=request.POST.get('concepto'))
+                
                 movimiento = MovimientoCaja(
                     caja=caja,
                     turno_id=request.POST.get('turno'),
-                    concepto_id=request.POST.get('concepto'),
+                    concepto=concepto,
                     cantidad=float(request.POST.get('cantidad')),
                     fecha=fecha_datetime,
-                    justificante=request.POST.get('justificante') or None,
-                    observaciones=request.POST.get('observaciones') or None
+                    descripcion=request.POST.get('descripcion') or None
                 )
+                
+                # Only set justificante fields if the concepto is a gasto
+                if concepto.es_gasto:
+                    movimiento.justificante = request.POST.get('justificante') or None
+                    # Handle file upload only for gastos
+                    if 'archivo_justificante' in request.FILES:
+                        movimiento.archivo_justificante = request.FILES['archivo_justificante']
+                else:
+                    # For ingresos, ensure justificante fields are None
+                    movimiento.justificante = None
+                    movimiento.archivo_justificante = None
                 
                 # Validate and save
                 movimiento.full_clean()

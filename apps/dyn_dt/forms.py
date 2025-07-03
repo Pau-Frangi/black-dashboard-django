@@ -114,7 +114,7 @@ class MovimientoCajaForm(forms.ModelForm):
     
     class Meta:
         model = MovimientoCaja
-        fields = ['caja', 'turno', 'concepto', 'cantidad', 'justificante', 'observaciones']
+        fields = ['caja', 'turno', 'concepto', 'cantidad', 'justificante', 'archivo_justificante', 'descripcion']
         widgets = {
             'caja': forms.Select(attrs={
                 'class': 'form-select'
@@ -136,10 +136,14 @@ class MovimientoCajaForm(forms.ModelForm):
                 'placeholder': 'Nº de justificante (opcional)',
                 'maxlength': 5
             }),
-            'observaciones': forms.Textarea(attrs={
+            'archivo_justificante': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.jpg,.jpeg,.png,.gif,.bmp'
+            }),
+            'descripcion': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Observaciones adicionales (opcional)'
+                'placeholder': 'Descripción detallada del movimiento'
             })
         }
         labels = {
@@ -148,7 +152,8 @@ class MovimientoCajaForm(forms.ModelForm):
             'concepto': 'Concepto',
             'cantidad': 'Cantidad (€)',
             'justificante': 'Nº Justificante',
-            'observaciones': 'Observaciones'
+            'archivo_justificante': 'Archivo Justificante',
+            'descripcion': 'Descripción'
         }
 
     def __init__(self, *args, **kwargs):
@@ -159,6 +164,7 @@ class MovimientoCajaForm(forms.ModelForm):
         
         # Set default values
         if not self.instance.pk:
+            from datetime import datetime
             now = datetime.now()
             self.fields['fecha_date'].initial = now.date()
             self.fields['fecha_time'].initial = now.time()
@@ -166,22 +172,41 @@ class MovimientoCajaForm(forms.ModelForm):
             self.fields['fecha_date'].initial = self.instance.fecha.date()
             self.fields['fecha_time'].initial = self.instance.fecha.time()
 
-    def save(self, commit=True):
-        instance = super().save(commit=False)
+    def clean_archivo_justificante(self):
+        """Validate uploaded file"""
+        archivo = self.cleaned_data.get('archivo_justificante')
         
-        # Combine date and time
-        from django.utils import timezone
+        if archivo:
+            import os
+            ext = os.path.splitext(archivo.name)[1].lower()
+            valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp']
+            
+            if ext not in valid_extensions:
+                raise forms.ValidationError(
+                    f"El archivo debe ser una imagen (JPG, PNG, GIF, BMP) o un PDF. "
+                    f"Extensión recibida: {ext}"
+                )
+            
+            # Limitar tamaño de archivo a 10MB
+            if archivo.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("El archivo no puede superar los 10MB")
         
-        fecha_date = self.cleaned_data['fecha_date']
-        fecha_time = self.cleaned_data['fecha_time']
+        return archivo
+
+    def clean(self):
+        """Validación adicional para campos de justificante"""
+        cleaned_data = super().clean()
+        concepto = cleaned_data.get('concepto')
+        justificante = cleaned_data.get('justificante')
+        archivo_justificante = cleaned_data.get('archivo_justificante')
         
-        fecha_datetime = datetime.combine(fecha_date, fecha_time)
-        instance.fecha = timezone.make_aware(fecha_datetime)
+        # Si el concepto es un gasto, limpiar campos de justificante si no son gastos
+        if concepto and not concepto.es_gasto:
+            # Para ingresos, limpiar campos de justificante
+            cleaned_data['justificante'] = None
+            cleaned_data['archivo_justificante'] = None
         
-        if commit:
-            instance.save()
-        
-        return instance
+        return cleaned_data
 
 class MovimientoCajaFilterForm(forms.Form):
     """Form for filtering MovimientoCaja instances."""

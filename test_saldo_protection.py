@@ -55,37 +55,55 @@ def test_saldo_protection():
         defaults={'es_gasto': False}
     )
     
-    # Añadir un movimiento (esto debe cambiar el saldo automáticamente)
-    print("\n3. Añadiendo movimiento de 50€ (debe actualizar saldo automáticamente)...")
+    concepto_gasto, created = Concepto.objects.get_or_create(
+        nombre="Gasto Protección", 
+        defaults={'es_gasto': True}
+    )
+    
+    # Añadir un movimiento de ingreso (sin justificante)
+    print("\n3. Añadiendo movimiento de ingreso de 50€ (sin justificante)...")
     MovimientoCaja.objects.create(
         caja=caja,
         turno=turno,
         concepto=concepto_ingreso,
         cantidad=Decimal('50.00'),
-        observaciones="Movimiento de prueba"
+        descripcion="Movimiento de ingreso de prueba"
+        # Nota: justificante y archivo_justificante deben ser None para ingresos
+    )
+    
+    # Añadir un movimiento de gasto (con justificante)
+    print("\n4. Añadiendo movimiento de gasto de 20€ (con justificante)...")
+    MovimientoCaja.objects.create(
+        caja=caja,
+        turno=turno,
+        concepto=concepto_gasto,
+        cantidad=Decimal('20.00'),
+        justificante="12345",
+        descripcion="Movimiento de gasto de prueba"
     )
     
     # Recargar y verificar que el saldo se actualizó automáticamente
     caja.refresh_from_db()
-    print(f"   ✅ Saldo actualizado automáticamente: {caja.saldo}€")
+    print(f"   ✅ Saldo actualizado automáticamente: {caja.saldo}€ (debería ser 130€)")
     
     # Probar el método recalcular_saldo() (debe funcionar)
-    print("\n4. Probando método recalcular_saldo()...")
+    print("\n5. Probando método recalcular_saldo()...")
     saldo_calculado = caja.recalcular_saldo()
     print(f"   ✅ Método recalcular_saldo() funcionó: {saldo_calculado}€")
     
     # Intentar usar save() con skip_validation=True (debe funcionar)
-    print("\n5. Probando save() con skip_validation=True...")
+    print("\n6. Probando save() con skip_validation=True...")
     caja.saldo = Decimal('999.99')
     caja.save(skip_validation=True)
     caja.refresh_from_db()
     print(f"   ✅ save() con skip_validation funcionó: {caja.saldo}€")
     
     # Limpiar datos de prueba
-    print("\n6. Limpiando datos de prueba...")
+    print("\n7. Limpiando datos de prueba...")
     caja.delete()
     turno.delete()
     concepto_ingreso.delete()
+    concepto_gasto.delete()
     
     print("\n✅ TODAS LAS PRUEBAS DE PROTECCIÓN PASARON")
     print("El saldo está correctamente protegido contra modificaciones manuales")

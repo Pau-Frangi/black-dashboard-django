@@ -203,10 +203,17 @@ class MovimientoCaja(models.Model):
         verbose_name="Nº Justificante"
     )
 
-    observaciones = models.TextField(
+    archivo_justificante = models.FileField(
+        upload_to='justificantes/',
         blank=True,
         null=True,
-        verbose_name="Observaciones"
+        verbose_name="Archivo justificante",
+        help_text="Sube un PDF o imagen del justificante (opcional)"
+    )
+
+    descripcion = models.TextField(
+        verbose_name="Descripción",
+        help_text="Descripción detallada del movimiento"
     )
 
     def clean(self):
@@ -216,6 +223,29 @@ class MovimientoCaja(models.Model):
         
         if not self.caja.activa:
             raise ValidationError("No se pueden añadir movimientos a una caja inactiva")
+        
+        # Validar que los campos de justificante solo se usen para gastos
+        if not self.concepto.es_gasto:
+            # Para ingresos, los campos de justificante deben estar vacíos
+            if self.justificante or self.archivo_justificante:
+                raise ValidationError(
+                    "Los campos de justificante solo pueden usarse para gastos, no para ingresos"
+                )
+        
+        # Validar archivo justificante si se proporciona
+        if self.archivo_justificante:
+            import os
+            ext = os.path.splitext(self.archivo_justificante.name)[1].lower()
+            valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp']
+            if ext not in valid_extensions:
+                raise ValidationError(
+                    f"El archivo debe ser una imagen (JPG, PNG, GIF, BMP) o un PDF. "
+                    f"Extensión recibida: {ext}"
+                )
+            
+            # Limitar tamaño de archivo a 10MB
+            if self.archivo_justificante.size > 10 * 1024 * 1024:
+                raise ValidationError("El archivo no puede superar los 10MB")
 
     def save(self, *args, **kwargs):
         """Valida los datos antes de guardar"""

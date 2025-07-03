@@ -61,7 +61,7 @@ def test_bulk_delete():
             turno=turno,
             concepto=concepto_ingreso,
             cantidad=Decimal('50.00'),
-            observaciones=f"Ingreso bulk {i+1}"
+            descripcion=f"Ingreso bulk {i+1}"
         )
         movimientos_ingreso.append(mov)
     
@@ -72,7 +72,7 @@ def test_bulk_delete():
             turno=turno,
             concepto=concepto_gasto,
             cantidad=Decimal('25.00'),
-            observaciones=f"Gasto bulk {i+1}"
+            descripcion=f"Gasto bulk {i+1}"
         )
         movimientos_gasto.append(mov)
     

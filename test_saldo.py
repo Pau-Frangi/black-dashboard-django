@@ -58,7 +58,7 @@ def test_saldo_updates():
         concepto=concepto_ingreso,
         cantidad=Decimal('100.00'),
         fecha=timezone.now(),
-        observaciones="Ingreso de prueba"
+        descripcion="Ingreso de prueba"
     )
     
     # Recargar la caja para ver el saldo actualizado
@@ -73,7 +73,7 @@ def test_saldo_updates():
         concepto=concepto_gasto,
         cantidad=Decimal('30.00'),
         fecha=timezone.now(),
-        observaciones="Gasto de prueba"
+        descripcion="Gasto de prueba"
     )
     
     # Recargar la caja para ver el saldo actualizado
