@@ -295,6 +295,11 @@
             loadMovimientos();
         }
 
+        // File upload handler
+        $('#archivo_justificante').on('change', function() {
+            handleFileUpload(this);
+        });
+
         // Search functionality
         $('#movementsSearch').on('input', function() {
             const searchTerm = $(this).val().toLowerCase().trim();
@@ -330,6 +335,130 @@
             updateSearchResults(filteredMovimientos.length, false);
         });
     });
+
+    // Function to handle file upload display
+    function handleFileUpload(input) {
+        const file = input.files[0];
+        const $fileGroup = $(input).closest('.form-group');
+        
+        // Remove any existing file display
+        $fileGroup.find('.file-display').remove();
+        
+        if (file) {
+            // Validate file size (10MB max)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                alert('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
+                $(input).val('');
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Tipo de archivo no permitido. Solo se permiten archivos PDF, JPG, PNG, GIF y BMP.');
+                $(input).val('');
+                return;
+            }
+            
+            // Create file display element
+            const fileDisplay = $(`
+                <div class="file-display mt-3">
+                    <div class="file-container d-flex align-items-center justify-content-between p-3" style="
+                        background: linear-gradient(135deg, rgba(81, 203, 206, 0.1) 0%, rgba(81, 203, 206, 0.05) 100%);
+                        border: 2px solid rgba(81, 203, 206, 0.3);
+                        border-radius: 12px;
+                        transition: all 0.3s ease;
+                    ">
+                        <div class="file-info d-flex align-items-center">
+                            <i class="tim-icons icon-attach-87 mr-3" style="
+                                color: #51cbce;
+                                font-size: 1.2rem;
+                            "></i>
+                            <div>
+                                <div class="file-name" style="
+                                    color: #fff;
+                                    font-weight: 600;
+                                    font-size: 0.9rem;
+                                    margin-bottom: 2px;
+                                ">${file.name}</div>
+                                <div class="file-size" style="
+                                    color: rgba(156, 163, 175, 0.8);
+                                    font-size: 0.8rem;
+                                ">${formatFileSize(file.size)}</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-file" style="
+                            border-radius: 8px;
+                            padding: 6px 12px;
+                            font-size: 0.8rem;
+                            transition: all 0.3s ease;
+                        ">
+                            <i class="tim-icons icon-simple-remove"></i>
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            `);
+            
+            // Add hover effects
+            fileDisplay.find('.file-container').hover(
+                function() {
+                    $(this).css({
+                        'background': 'linear-gradient(135deg, rgba(81, 203, 206, 0.15) 0%, rgba(81, 203, 206, 0.08) 100%)',
+                        'border-color': 'rgba(81, 203, 206, 0.5)'
+                    });
+                },
+                function() {
+                    $(this).css({
+                        'background': 'linear-gradient(135deg, rgba(81, 203, 206, 0.1) 0%, rgba(81, 203, 206, 0.05) 100%)',
+                        'border-color': 'rgba(81, 203, 206, 0.3)'
+                    });
+                }
+            );
+            
+            // Add remove functionality with proper event handling
+            fileDisplay.find('.remove-file').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                // Clear the file input
+                $(input).val('');
+                
+                // Remove the display with animation
+                fileDisplay.fadeOut(300, function() {
+                    $(this).remove();
+                });
+                
+                return false;
+            });
+            
+            // Prevent the file container from triggering file input
+            fileDisplay.find('.file-container').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            });
+            
+            // Insert after the small text
+            $fileGroup.find('small.form-text').after(fileDisplay);
+            
+            // Add entrance animation
+            fileDisplay.hide().fadeIn(300);
+        }
+    }
+
+    // Function to format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
 
     function updateSaldoDisplay() {
         const selectedOption = $('#cajaSelect option:selected');
@@ -411,6 +540,9 @@
         // Clear justificante values
         $('#justificante').val('');
         $('#archivo_justificante').val('');
+        
+        // Remove file display if exists
+        $('.file-display').remove();
         
         console.log('Formulario reseteado completamente');
     }
@@ -709,6 +841,7 @@
             // Limpiar valores de justificante
             $('#justificante').val('');
             $('#archivo_justificante').val('');
+            $('.file-display').remove(); // Remove file display
             console.log('Ocultando campos de justificante para ingreso');
         } else {
             // No hay selección - ocultar campos y resetear estilos
@@ -719,6 +852,7 @@
             }, 400); // Esperar a que termine la animación
             $('#justificante').val('');
             $('#archivo_justificante').val('');
+            $('.file-display').remove(); // Remove file display
             console.log('Sin selección - ocultando campos');
         }
     });

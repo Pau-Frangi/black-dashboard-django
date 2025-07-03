@@ -742,7 +742,6 @@ input[type="number"].form-control::-webkit-inner-spin-button {
 }
 
 .justificante-fields::before {
-    content: 'Campos para gastos';
     position: absolute;
     top: -4px;
     left: 20px;
@@ -833,29 +832,71 @@ input[type="number"].form-control::-webkit-inner-spin-button {
     }
 }
 
-/* Responsive adjustments for justificante fields */
+/* Estilos para la visualización de archivos subidos */
+.file-display {
+    animation: slideInUp 0.3s ease-out;
+}
+
+.file-display .file-name {
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-display .remove-file:hover {
+    background-color: #fd5d93 !important;
+    border-color: #fd5d93 !important;
+    color: #fff !important;
+    transform: scale(1.05);
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mejorar el estilo del input de archivo */
+.modal-body input[type="file"].form-control {
+    padding: 12px 15px !important;
+    background: linear-gradient(135deg, #27293d 0%, #2a2d42 100%) !important;
+    border: 2px dashed rgba(81, 203, 206, 0.4) !important;
+    border-radius: 12px !important;
+    color: #fff !important;
+    transition: all 0.3s ease !important;
+    cursor: pointer !important;
+}
+
+.modal-body input[type="file"].form-control:hover {
+    border-color: rgba(81, 203, 206, 0.6) !important;
+    background: linear-gradient(135deg, #2a2d42 0%, #2f3349 100%) !important;
+}
+
+.modal-body input[type="file"].form-control:focus {
+    border-color: #51cbce !important;
+    box-shadow: 0 0 0 0.25rem rgba(81, 203, 206, 0.25) !important;
+}
+
+/* Responsive para la visualización de archivos */
 @media (max-width: 768px) {
-    .justificante-fields {
-        padding: 20px 15px;
-        margin-top: 15px;
+    .file-display .file-name {
+        max-width: 180px;
     }
     
-    .justificante-fields.show,
-    .justificante-fields:not([style*="display: none"]) {
-        padding: 20px 15px;
-        margin-top: 15px;
-        max-height: 400px;
+    .file-display .d-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 15px;
     }
     
-    .justificante-fields::before {
-        font-size: 0.7rem;
-        padding: 5px 14px;
-        left: 15px;
-        top: -11px;
-    }
-    
-    .justificante-fields .form-text {
-        font-size: 0.75rem;
+    .file-display .remove-file {
+        align-self: flex-end;
     }
 }
 
