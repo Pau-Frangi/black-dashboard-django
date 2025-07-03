@@ -72,11 +72,15 @@ class CajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoCaja)
 class MovimientoCajaAdmin(admin.ModelAdmin):
-    list_display = ('fecha', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante')
+    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante')
     list_filter = ('fecha', 'caja', 'turno', 'concepto__es_gasto')
     search_fields = ('observaciones', 'justificante')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
+    
+    def fecha_display(self, obj):
+        return obj.fecha.strftime('%d/%m/%Y %H:%M')
+    fecha_display.short_description = 'Fecha y Hora'
     
     def cantidad_display(self, obj):
         signo = "-" if obj.es_gasto() else "+"

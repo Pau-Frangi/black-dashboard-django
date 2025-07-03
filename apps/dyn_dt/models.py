@@ -5,6 +5,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save, pre_delete, post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 # Create your models here.
 
@@ -190,9 +191,9 @@ class MovimientoCaja(models.Model):
         verbose_name="Cantidad (€)"
     )
 
-    fecha = models.DateField(
-        default=date.today,
-        verbose_name="Fecha del movimiento"
+    fecha = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha y hora del movimiento"
     )
 
     justificante = models.CharField(
@@ -235,7 +236,7 @@ class MovimientoCaja(models.Model):
 
     def __str__(self):
         signo = "-" if self.es_gasto() else "+"
-        return f"{self.fecha} | {self.caja.nombre} | {self.turno} | {signo}{self.cantidad:.2f}€ | {self.concepto}"
+        return f"{self.fecha.strftime('%Y-%m-%d %H:%M')} | {self.caja.nombre} | {self.turno} | {signo}{self.cantidad:.2f}€ | {self.concepto}"
 
     class Meta:
         verbose_name = "Movimiento de caja"

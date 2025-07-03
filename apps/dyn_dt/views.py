@@ -323,12 +323,14 @@ def registro(request):
     # Handle AJAX requests
     if request.method == 'GET' and request.GET.get('ajax') == 'true':
         caja_id = request.GET.get('caja_id')
+        
         if not caja_id:
             return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
         
         try:
             caja = get_object_or_404(Caja, id=caja_id)
-            movimientos = MovimientoCaja.objects.filter(caja=caja).order_by('-fecha')
+            # Ordenar por ID descendente (más recientes primero) como orden por defecto
+            movimientos = MovimientoCaja.objects.filter(caja=caja).order_by('-id')
             
             # Prepare movements data for JSON response
             movimientos_data = []
@@ -336,6 +338,9 @@ def registro(request):
                 movimientos_data.append({
                     'id': mov.id,
                     'fecha': mov.fecha.strftime('%Y-%m-%d'),
+                    'fecha_completa': mov.fecha.strftime('%Y-%m-%d %H:%M:%S'),
+                    'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                    'datetime_iso': mov.fecha.isoformat(),
                     'turno': str(mov.turno),
                     'concepto': str(mov.concepto),
                     'cantidad': float(mov.cantidad),
@@ -378,12 +383,20 @@ def registro(request):
                     return JsonResponse({'success': False, 'error': 'No se pueden añadir movimientos a una caja inactiva'})
                 
                 # Create movement
+                fecha_str = request.POST.get('fecha')
+                hora_str = request.POST.get('hora', '12:00')
+                
+                # Combine date and time
+                from datetime import datetime
+                fecha_datetime = datetime.strptime(f"{fecha_str} {hora_str}", '%Y-%m-%d %H:%M')
+                fecha_datetime = timezone.make_aware(fecha_datetime)
+                
                 movimiento = MovimientoCaja(
                     caja=caja,
                     turno_id=request.POST.get('turno'),
                     concepto_id=request.POST.get('concepto'),
                     cantidad=float(request.POST.get('cantidad')),
-                    fecha=request.POST.get('fecha'),
+                    fecha=fecha_datetime,
                     justificante=request.POST.get('justificante') or None,
                     observaciones=request.POST.get('observaciones') or None
                 )

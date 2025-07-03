@@ -87,6 +87,30 @@
         color: #fff !important;
         opacity: 1;
     }
+    
+    /* Estilos para los controles de ordenamiento */
+    #sortControls .btn-group .btn {
+        border-color: #344675 !important;
+        color: #fff !important;
+    }
+    
+    #sortControls .btn-outline-secondary {
+        background-color: #27293d !important;
+        border-color: #344675 !important;
+        color: #fff !important;
+    }
+    
+    #sortControls .btn-outline-secondary:hover {
+        background-color: #344675 !important;
+        border-color: #51cbce !important;
+        color: #fff !important;
+    }
+    
+    #sortControls .btn-primary {
+        background-color: #51cbce !important;
+        border-color: #51cbce !important;
+        color: #1e1e2f !important;
+    }
 </style>
 {% endblock extrastyle %}
 
@@ -142,12 +166,31 @@
                     </div>
 
                     <!-- Tabla de Movimientos -->
-                    <div id="movimientosContainer" style="display: none;">
+                    <div id="movimientosContainer">
+                        <!-- Controles de ordenamiento -->
+                        <div class="row mb-3" id="sortControls" style="display: none;">
+                            <div class="col-md-6">
+                                <label class="form-label">Ordenar por:</label>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortMovimientos('fecha')" id="sortByDate">
+                                        <i class="tim-icons icon-calendar-60"></i>
+                                        Fecha
+                                        <span id="sortDateIcon" class="ml-1"></span>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortMovimientos('cantidad')" id="sortByAmount">
+                                        <i class="tim-icons icon-coins"></i>
+                                        Cantidad
+                                        <span id="sortAmountIcon" class="ml-1"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="table-responsive">
                             <table class="table table-striped" id="movimientosTable">
                                 <thead>
                                     <tr>
-                                        <th>Fecha</th>
+                                        <th>Fecha y Hora</th>
                                         <th>Turno</th>
                                         <th>Concepto</th>
                                         <th>Cantidad</th>
@@ -195,6 +238,7 @@
                     <div id="noCajaMessage" class="text-center py-5">
                         <i class="tim-icons icon-wallet-43" style="font-size: 4rem; color: #ccc;"></i>
                         <h4 class="mt-3 text-muted">Selecciona una caja para ver sus movimientos</h4>
+                        <p class="text-muted">Asegúrate de haber iniciado sesión para acceder a los datos</p>
                     </div>
                 </div>
             </div>
@@ -267,6 +311,13 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
+                                <label for="hora" class="form-label">Hora *</label>
+                                <input type="time" class="form-control" name="hora" id="hora" 
+                                       value="{% now 'H:i' %}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
                                 <label for="justificante" class="form-label">Nº Justificante</label>
                                 <input type="text" class="form-control" name="justificante" id="justificante" 
                                        maxlength="5" placeholder="12345">
@@ -294,6 +345,11 @@
 {% endblock content %}
 {% block extrajs %}
 <script>
+    // Variables globales para el ordenamiento
+    let currentMovimientos = [];
+    let currentSortField = 'fecha';
+    let currentSortOrder = 'desc'; // 'asc' o 'desc'
+
     $(document).ready(function () {
         console.log('Página de registro cargada');
         
@@ -311,12 +367,32 @@
         const selectedOption = $('#cajaSelect option:selected');
         const saldo = selectedOption.data('saldo');
         
-        console.log('Actualizando saldo display:', saldo);
+        console.log('Actualizando saldo display:', saldo, 'tipo:', typeof saldo);
         
-        if (saldo !== undefined) {
-            $('#saldoActual').val(saldo.toFixed(2));
+        if (saldo !== undefined && saldo !== null && saldo !== '') {
+            // Convertir a número si es necesario
+            const saldoNum = parseFloat(saldo);
+            if (!isNaN(saldoNum)) {
+                $('#saldoActual').val(saldoNum.toFixed(2));
+            } else {
+                console.warn('Saldo no es un número válido:', saldo);
+                $('#saldoActual').val('0.00');
+            }
         } else {
             $('#saldoActual').val('');
+        }
+    }
+
+    function updateSaldoFromResponse(saldoActual) {
+        console.log('Actualizando saldo desde respuesta:', saldoActual);
+        
+        if (saldoActual !== undefined && saldoActual !== null && saldoActual !== '') {
+            const saldoNum = parseFloat(saldoActual);
+            if (!isNaN(saldoNum)) {
+                $('#saldoActual').val(saldoNum.toFixed(2));
+                // También actualizar el data attribute para futuras referencias
+                $('#cajaSelect option:selected').data('saldo', saldoNum);
+            }
         }
     }
 
@@ -345,7 +421,9 @@
             // No caja selected
             console.log('No hay caja seleccionada, ocultando tabla');
             $('#movimientosContainer').hide();
+            $('#sortControls').hide();
             $('#noCajaMessage').show();
+            currentMovimientos = [];
             return;
         }
 
@@ -368,10 +446,39 @@
             },
             success: function(data) {
                 console.log('Respuesta AJAX recibida:', data);
+                
                 if (data.success) {
+                    console.log('Datos recibidos correctamente, procesando...');
+                    
+                    // Guardar los movimientos para el ordenamiento
+                    currentMovimientos = data.movimientos;
+                    
                     displayMovimientos(data.movimientos);
                     updateResumen(data.resumen);
+                    
+                    // Actualizar el saldo actual con el valor del resumen
+                    updateSaldoFromResponse(data.resumen.saldo_actual);
+                    
+                    // Mostrar controles de ordenamiento si hay movimientos
+                    if (data.movimientos && data.movimientos.length > 0) {
+                        $('#sortControls').show();
+                        updateSortButtons();
+                    } else {
+                        $('#sortControls').hide();
+                    }
+                    
+                    // Asegurarse de que el contenedor se muestre
+                    console.log('Mostrando contenedor de movimientos...');
                     $('#movimientosContainer').show();
+                    
+                    // Verificar que realmente se muestra
+                    const isVisible = $('#movimientosContainer').is(':visible');
+                    console.log('Contenedor visible:', isVisible);
+                    
+                    if (!isVisible) {
+                        console.error('ERROR: El contenedor no se está mostrando');
+                        $('#movimientosContainer').css('display', 'block');
+                    }
                 } else {
                     console.error('Error loading movements:', data.error);
                     alert('Error: ' + data.error);
@@ -380,18 +487,37 @@
             error: function(xhr, status, error) {
                 console.error('AJAX error:', error);
                 console.error('Status:', status);
+                console.error('xhr.status:', xhr.status);
                 console.error('Response:', xhr.responseText);
-                alert('Error al cargar los movimientos: ' + error);
+                console.error('Response JSON:', xhr.responseJSON);
+                
+                if (xhr.status === 302 || xhr.status === 403) {
+                    // Problemas de autenticación
+                    alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
+                    window.location.href = '/accounts/login/';
+                } else {
+                    alert('Error al cargar los movimientos: ' + error);
+                }
             }
         });
     }
 
     function displayMovimientos(movimientos) {
-        console.log('Mostrando movimientos:', movimientos);
+        console.log('=== displayMovimientos ===');
+        console.log('Movimientos recibidos:', movimientos);
+        
         const tbody = $('#movimientosTableBody');
+        console.log('tbody encontrado:', tbody.length);
+        
+        if (tbody.length === 0) {
+            console.error('ERROR: No se encontró el tbody con ID movimientosTableBody');
+            return;
+        }
+        
         tbody.empty();
 
-        if (movimientos.length === 0) {
+        if (!movimientos || movimientos.length === 0) {
+            console.log('No hay movimientos, mostrando mensaje');
             tbody.append(`
                 <tr>
                     <td colspan="7" class="text-center text-muted">
@@ -402,14 +528,22 @@
             return;
         }
 
-        movimientos.forEach(function(mov) {
-            const fechaFormatted = new Date(mov.fecha).toLocaleDateString('es-ES');
+        console.log('Procesando', movimientos.length, 'movimientos...');
+        
+        movimientos.forEach(function(mov, index) {
+            console.log(`Procesando movimiento ${index + 1}:`, mov);
+            
+            const fechaDisplay = mov.fecha_display || new Date(mov.datetime_iso).toLocaleString('es-ES');
             const cantidadClass = mov.es_gasto ? 'text-danger' : 'text-success';
             const cantidadSign = mov.es_gasto ? '-' : '+';
             
-            tbody.append(`
+            const row = `
                 <tr>
-                    <td>${fechaFormatted}</td>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <strong>${fechaDisplay}</strong>
+                        </div>
+                    </td>
                     <td>${mov.turno}</td>
                     <td>
                         ${mov.concepto}
@@ -426,15 +560,27 @@
                         </button>
                     </td>
                 </tr>
-            `);
+            `;
+            
+            tbody.append(row);
         });
+        
+        console.log('Terminé de añadir filas. Total filas ahora:', tbody.find('tr').length);
+        console.log('HTML del tbody:', tbody.html());
+        console.log('=== fin displayMovimientos ===');
     }
 
     function updateResumen(resumen) {
         console.log('Actualizando resumen:', resumen);
-        $('#totalIngresos').text(resumen.total_ingresos.toFixed(2) + '€');
-        $('#totalGastos').text(resumen.total_gastos.toFixed(2) + '€');
-        $('#saldoResumen').text(resumen.saldo_actual.toFixed(2) + '€');
+        
+        // Proteger contra valores undefined/null
+        const totalIngresos = parseFloat(resumen.total_ingresos) || 0;
+        const totalGastos = parseFloat(resumen.total_gastos) || 0;
+        const saldoActual = parseFloat(resumen.saldo_actual) || 0;
+        
+        $('#totalIngresos').text(totalIngresos.toFixed(2) + '€');
+        $('#totalGastos').text(totalGastos.toFixed(2) + '€');
+        $('#saldoResumen').text(saldoActual.toFixed(2) + '€');
     }
 
     function deleteMovimiento(movimientoId) {
@@ -497,7 +643,11 @@
                     $('#addMovementModal').modal('hide');
                     $('#addMovementForm')[0].reset();
                     $('#fecha').val('{% now "Y-m-d" %}'); // Reset date to today
-                    loadMovimientos(); // Reload the table
+                    $('#hora').val('{% now "H:i" %}'); // Reset time to current time
+                    
+                    // Recargar los movimientos para obtener el saldo actualizado
+                    loadMovimientos(); // Esto actualizará tanto la tabla como el saldo
+                    
                     alert('Movimiento añadido correctamente');
                 } else {
                     alert('Error: ' + data.error);
@@ -524,5 +674,74 @@
             $(this).removeClass('border-success border-danger');
         }
     });
+
+    // Funciones de ordenamiento
+    function sortMovimientos(field) {
+        console.log('Ordenando por:', field);
+        
+        // Si es el mismo campo, alternar orden
+        if (currentSortField === field) {
+            currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            // Nuevo campo, empezar con descendente
+            currentSortField = field;
+            currentSortOrder = 'desc';
+        }
+        
+        // Ordenar los movimientos
+        const sortedMovimientos = [...currentMovimientos].sort((a, b) => {
+            let valueA, valueB;
+            
+            switch (field) {
+                case 'fecha':
+                    // Usar datetime_iso para ordenamiento preciso
+                    valueA = new Date(a.datetime_iso || a.fecha_completa);
+                    valueB = new Date(b.datetime_iso || b.fecha_completa);
+                    break;
+                case 'cantidad':
+                    // Calcular el valor real considerando si es gasto o ingreso
+                    valueA = a.es_gasto ? -parseFloat(a.cantidad) : parseFloat(a.cantidad);
+                    valueB = b.es_gasto ? -parseFloat(b.cantidad) : parseFloat(b.cantidad);
+                    break;
+                default:
+                    return 0;
+            }
+            
+            if (currentSortOrder === 'asc') {
+                return valueA < valueB ? -1 : valueA > valueB ? 1 : 0;
+            } else {
+                return valueA > valueB ? -1 : valueA < valueB ? 1 : 0;
+            }
+        });
+        
+        // Actualizar display
+        displayMovimientos(sortedMovimientos);
+        updateSortButtons();
+    }
+    
+    function updateSortButtons() {
+        // Resetear todos los botones
+        $('#sortByDate, #sortByAmount').removeClass('btn-primary').addClass('btn-outline-secondary');
+        $('#sortDateIcon, #sortAmountIcon').html('');
+        
+        // Activar el botón actual
+        let activeButton, activeIcon;
+        switch (currentSortField) {
+            case 'fecha':
+                activeButton = '#sortByDate';
+                activeIcon = '#sortDateIcon';
+                break;
+            case 'cantidad':
+                activeButton = '#sortByAmount';
+                activeIcon = '#sortAmountIcon';
+                break;
+        }
+        
+        if (activeButton) {
+            $(activeButton).removeClass('btn-outline-secondary').addClass('btn-primary');
+            const icon = currentSortOrder === 'asc' ? '↑' : '↓';
+            $(activeIcon).html(icon);
+        }
+    }
 </script>
 {% endblock extrajs %}

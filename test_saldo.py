@@ -7,6 +7,7 @@ para actualizar el saldo de la caja cuando se crean o eliminan movimientos.
 import os
 import django
 from decimal import Decimal
+from django.utils import timezone
 
 # Configurar Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -56,6 +57,7 @@ def test_saldo_updates():
         turno=turno,
         concepto=concepto_ingreso,
         cantidad=Decimal('100.00'),
+        fecha=timezone.now(),
         observaciones="Ingreso de prueba"
     )
     
@@ -70,6 +72,7 @@ def test_saldo_updates():
         turno=turno,
         concepto=concepto_gasto,
         cantidad=Decimal('30.00'),
+        fecha=timezone.now(),
         observaciones="Gasto de prueba"
     )
     

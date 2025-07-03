@@ -1,6 +1,6 @@
 from django import forms
 from .models import Concepto, Turno, Caja, MovimientoCaja
-from datetime import date
+from datetime import date, datetime
 
 
 class ConceptoForm(forms.ModelForm):
@@ -96,9 +96,25 @@ class CajaForm(forms.ModelForm):
 class MovimientoCajaForm(forms.ModelForm):
     """Form for creating and editing MovimientoCaja instances."""
     
+    fecha_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        }),
+        label='Fecha'
+    )
+    
+    fecha_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'class': 'form-control',
+            'type': 'time'
+        }),
+        label='Hora'
+    )
+    
     class Meta:
         model = MovimientoCaja
-        fields = ['caja', 'turno', 'concepto', 'cantidad', 'fecha', 'justificante', 'observaciones']
+        fields = ['caja', 'turno', 'concepto', 'cantidad', 'justificante', 'observaciones']
         widgets = {
             'caja': forms.Select(attrs={
                 'class': 'form-select'
@@ -114,10 +130,6 @@ class MovimientoCajaForm(forms.ModelForm):
                 'step': '0.01',
                 'min': '0.01',
                 'placeholder': '0.00'
-            }),
-            'fecha': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
             }),
             'justificante': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -135,7 +147,6 @@ class MovimientoCajaForm(forms.ModelForm):
             'turno': 'Turno',
             'concepto': 'Concepto',
             'cantidad': 'Cantidad (€)',
-            'fecha': 'Fecha del movimiento',
             'justificante': 'Nº Justificante',
             'observaciones': 'Observaciones'
         }
@@ -146,31 +157,31 @@ class MovimientoCajaForm(forms.ModelForm):
         # Filter only active cajas
         self.fields['caja'].queryset = Caja.objects.filter(activa=True)
         
-        # Set default date to today
+        # Set default values
         if not self.instance.pk:
-            self.fields['fecha'].initial = date.today()
+            now = datetime.now()
+            self.fields['fecha_date'].initial = now.date()
+            self.fields['fecha_time'].initial = now.time()
+        else:
+            self.fields['fecha_date'].initial = self.instance.fecha.date()
+            self.fields['fecha_time'].initial = self.instance.fecha.time()
 
-    def clean_cantidad(self):
-        """Validate that cantidad is positive."""
-        cantidad = self.cleaned_data.get('cantidad')
+    def save(self, commit=True):
+        instance = super().save(commit=False)
         
-        if cantidad <= 0:
-            raise forms.ValidationError("La cantidad debe ser mayor que 0")
+        # Combine date and time
+        from django.utils import timezone
         
-        return cantidad
-
-    def clean(self):
-        """Additional form validation."""
-        cleaned_data = super().clean()
-        caja = cleaned_data.get('caja')
+        fecha_date = self.cleaned_data['fecha_date']
+        fecha_time = self.cleaned_data['fecha_time']
         
-        if caja and not caja.activa:
-            raise forms.ValidationError(
-                "No se pueden añadir movimientos a una caja inactiva"
-            )
+        fecha_datetime = datetime.combine(fecha_date, fecha_time)
+        instance.fecha = timezone.make_aware(fecha_datetime)
         
-        return cleaned_data
-
+        if commit:
+            instance.save()
+        
+        return instance
 
 class MovimientoCajaFilterForm(forms.Form):
     """Form for filtering MovimientoCaja instances."""
