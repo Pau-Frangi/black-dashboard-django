@@ -4,114 +4,7 @@
 {% block title %} Registro de Movimientos {% endblock title %}
 
 {% block extrastyle %}
-<style>
-    /* Estilos para el tema oscuro del modal */
-    .modal-content {
-        background-color: #1e1e2f !important;
-        border: 1px solid #344675 !important;
-        color: #fff !important;
-    }
-    
-    .modal-header {
-        border-bottom: 1px solid #344675 !important;
-        background-color: #1e1e2f !important;
-    }
-    
-    .modal-footer {
-        border-top: 1px solid #344675 !important;
-        background-color: #1e1e2f !important;
-    }
-    
-    .modal-title {
-        color: #fff !important;
-    }
-    
-    /* Estilos para los campos de formulario */
-    .form-control {
-        background-color: #27293d !important;
-        border: 1px solid #344675 !important;
-        color: #fff !important;
-    }
-    
-    .form-control:focus {
-        background-color: #27293d !important;
-        border-color: #51cbce !important;
-        color: #fff !important;
-        box-shadow: 0 0 0 0.2rem rgba(81, 203, 206, 0.25) !important;
-    }
-    
-    .form-control::placeholder {
-        color: #9ca3af !important;
-        opacity: 0.8;
-    }
-    
-    /* Estilos específicos para select */
-    .form-control option {
-        background-color: #27293d !important;
-        color: #fff !important;
-    }
-    
-    /* Estilos para labels */
-    .form-label {
-        color: #fff !important;
-        font-weight: 500;
-    }
-    
-    /* Estilos para el input-group */
-    .input-group-text {
-        background-color: #344675 !important;
-        border-color: #344675 !important;
-        color: #fff !important;
-    }
-    
-    /* Estilos para campos de fecha */
-    input[type="date"].form-control::-webkit-calendar-picker-indicator {
-        filter: invert(1);
-        cursor: pointer;
-    }
-    
-    /* Estilos para campos numéricos */
-    input[type="number"].form-control::-webkit-outer-spin-button,
-    input[type="number"].form-control::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    
-    /* Mejorar visibilidad del botón close */
-    .close {
-        color: #fff !important;
-        opacity: 0.8;
-    }
-    
-    .close:hover {
-        color: #fff !important;
-        opacity: 1;
-    }
-    
-    /* Estilos para los controles de ordenamiento */
-    #sortControls .btn-group .btn {
-        border-color: #344675 !important;
-        color: #fff !important;
-    }
-    
-    #sortControls .btn-outline-secondary {
-        background-color: #27293d !important;
-        border-color: #344675 !important;
-        color: #fff !important;
-    }
-    
-    #sortControls .btn-outline-secondary:hover {
-        background-color: #344675 !important;
-        border-color: #51cbce !important;
-        color: #fff !important;
-    }
-    
-    #sortControls .btn-primary {
-        background-color: #51cbce !important;
-        border-color: #51cbce !important;
-        color: #1e1e2f !important;
-    }
-</style>
+<link href="{% static 'assets/css/registro.css' %}" rel="stylesheet" />
 {% endblock extrastyle %}
 
 {% block content %}
@@ -128,7 +21,7 @@
                 <div class="card-body">
                     <!-- Selector de Caja -->
                     <div class="row mb-4">
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <div class="form-group">
                                 <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
                                 <select class="form-control" id="cajaSelect" onchange="loadMovimientos()">
@@ -144,12 +37,19 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label">Saldo Actual:</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">€</span>
-                                    <input type="text" class="form-control" id="saldoActual" readonly>
+                        <div class="col-md-4">
+                            <div class="totals-section">
+                                <div class="total-item">
+                                    <span class="total-label">Ingresos</span>
+                                    <div class="total-value ingresos" id="totalIngresosHeader">--</div>
+                                </div>
+                                <div class="total-item">
+                                    <span class="total-label">Gastos</span>
+                                    <div class="total-value gastos" id="totalGastosHeader">--</div>
+                                </div>
+                                <div class="total-item">
+                                    <span class="total-label">Saldo</span>
+                                    <div class="total-value saldo" id="saldoActual">--</div>
                                 </div>
                             </div>
                         </div>
@@ -180,6 +80,37 @@
                         </div>
                     </div>
 
+                    <!-- Buscador de movimientos -->
+                    <div class="row mb-3" id="searchSection" style="display: none;">
+                        <div class="col-md-12">
+                            <div class="movements-search-bar">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text search-icon">
+                                            <i class="tim-icons icon-zoom-split"></i>
+                                        </span>
+                                    </div>
+                                    <input type="text" 
+                                        class="form-control search-input" 
+                                        id="movementsSearch" 
+                                        placeholder="Buscar por concepto, cantidad, justificante u observaciones..."
+                                        autocomplete="off">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-clear" type="button" id="clearSearch" style="display: none;">
+                                            <i class="tim-icons icon-simple-remove"></i>
+                                        </button>
+                                    </div>
+                                    <div class="search-results-info" id="searchResultsInfo">
+                                    <i class="tim-icons icon-check-2 text-success"></i>
+                                    <span class="results-count" id="resultsCount">0</span> 
+                                    <span id="resultsText">resultados encontrados</span>
+                            </div>
+                                    </div>
+                                </div>
+
+                        </div>
+                    </div>
+
                     <!-- Tabla de Movimientos -->
                     <div id="movimientosContainer">
                         <div class="table-responsive">
@@ -199,34 +130,6 @@
                                     <!-- Los movimientos se cargarán aquí dinámicamente -->
                                 </tbody>
                             </table>
-                        </div>
-                        
-                        <!-- Resumen -->
-                        <div class="row mt-4">
-                            <div class="col-md-4">
-                                <div class="card bg-success">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title text-white">Total Ingresos</h5>
-                                        <h3 class="text-white" id="totalIngresos">0.00€</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-danger">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title text-white">Total Gastos</h5>
-                                        <h3 class="text-white" id="totalGastos">0.00€</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card bg-info">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title text-white">Saldo Actual</h5>
-                                        <h3 class="text-white" id="saldoResumen">0.00€</h3>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -263,7 +166,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="turno" class="form-label">Turno *</label>
+                                <label for="turno" class="form-label">Turno</label>
                                 <select class="form-control" name="turno" id="turno" required>
                                     <option value="">-- Selecciona un turno --</option>
                                     {% for turno in turnos %}
@@ -274,7 +177,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="concepto" class="form-label">Concepto *</label>
+                                <label for="concepto" class="form-label">Concepto</label>
                                 <select class="form-control" name="concepto" id="concepto" required>
                                     <option value="">-- Selecciona un concepto --</option>
                                     {% for concepto in conceptos %}
@@ -290,14 +193,14 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="cantidad" class="form-label">Cantidad (€) *</label>
+                                <label for="cantidad" class="form-label">Cantidad (€)</label>
                                 <input type="number" class="form-control" name="cantidad" id="cantidad" 
                                        step="0.01" min="0.01" required placeholder="0.00">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="fecha" class="form-label">Fecha *</label>
+                                <label for="fecha" class="form-label">Fecha</label>
                                 <input type="date" class="form-control" name="fecha" id="fecha" 
                                        value="{% now 'Y-m-d' %}" required>
                             </div>
@@ -307,7 +210,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="hora" class="form-label">Hora *</label>
+                                <label for="hora" class="form-label">Hora</label>
                                 <input type="time" class="form-control" name="hora" id="hora" 
                                        value="{% now 'H:i' %}" required>
                             </div>
@@ -328,7 +231,10 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="tim-icons icon-simple-remove"></i>
+                        Cancelar
+                    </button>
                     <button type="submit" class="btn btn-primary">
                         <i class="tim-icons icon-check-2"></i>
                         Guardar Movimiento
@@ -339,10 +245,12 @@
     </div>
 </div>
 {% endblock content %}
+
 {% block extrajs %}
 <script>
     // Variables globales para el ordenamiento
     let currentMovimientos = [];
+    let filteredMovimientos = [];
     let currentSortField = 'fecha';
     let currentSortOrder = 'desc'; // 'asc' o 'desc'
 
@@ -357,6 +265,41 @@
             console.log('Caja ya seleccionada, cargando movimientos...');
             loadMovimientos();
         }
+
+        // Search functionality
+        $('#movementsSearch').on('input', function() {
+            const searchTerm = $(this).val().toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                // Si no hay búsqueda, mostrar todos los movimientos
+                $('#clearSearch').hide();
+                filteredMovimientos = [...currentMovimientos];
+                displayMovimientos(filteredMovimientos);
+                updateSearchResults(filteredMovimientos.length, false);
+            } else {
+                // Filtrar movimientos
+                $('#clearSearch').show();
+                filteredMovimientos = currentMovimientos.filter(mov => {
+                    return mov.concepto.toLowerCase().includes(searchTerm) ||
+                           mov.cantidad.toString().includes(searchTerm) ||
+                           (mov.justificante && mov.justificante.toLowerCase().includes(searchTerm)) ||
+                           (mov.observaciones && mov.observaciones.toLowerCase().includes(searchTerm)) ||
+                           mov.turno.toLowerCase().includes(searchTerm);
+                });
+                
+                displayMovimientos(filteredMovimientos);
+                updateSearchResults(filteredMovimientos.length, true);
+            }
+        });
+
+        // Clear search
+        $('#clearSearch').on('click', function() {
+            $('#movementsSearch').val('');
+            $(this).hide();
+            filteredMovimientos = [...currentMovimientos];
+            displayMovimientos(filteredMovimientos);
+            updateSearchResults(filteredMovimientos.length, false);
+        });
     });
 
     function updateSaldoDisplay() {
@@ -369,29 +312,38 @@
             // Convertir a número si es necesario
             const saldoNum = parseFloat(saldo);
             if (!isNaN(saldoNum)) {
-                $('#saldoActual').val(saldoNum.toFixed(2));
+                $('#saldoActual').text(saldoNum.toFixed(2) + '€');
             } else {
                 console.warn('Saldo no es un número válido:', saldo);
-                $('#saldoActual').val('0.00');
+                $('#saldoActual').text('0.00€');
             }
+            // Limpiar los totales hasta que se carguen los movimientos
+            $('#totalIngresosHeader').text('--');
+            $('#totalGastosHeader').text('--');
         } else {
-            $('#saldoActual').val('');
+            $('#saldoActual').text('--');
+            $('#totalIngresosHeader').text('--');
+            $('#totalGastosHeader').text('--');
         }
     }
 
-    function updateSaldoFromResponse(saldoActual) {
-        console.log('Actualizando saldo desde respuesta:', saldoActual);
+    function updateSaldoFromResponse(resumen) {
+        console.log('Actualizando valores desde respuesta:', resumen);
         
-        if (saldoActual !== undefined && saldoActual !== null && saldoActual !== '') {
-            const saldoNum = parseFloat(saldoActual);
-            if (!isNaN(saldoNum)) {
-                $('#saldoActual').val(saldoNum.toFixed(2));
-                // También actualizar el data attribute para futuras referencias
-                $('#cajaSelect option:selected').data('saldo', saldoNum);
-            }
+        if (resumen) {
+            const totalIngresos = parseFloat(resumen.total_ingresos) || 0;
+            const totalGastos = parseFloat(resumen.total_gastos) || 0;
+            const saldoActual = parseFloat(resumen.saldo_actual) || 0;
+            
+            $('#totalIngresosHeader').text(totalIngresos.toFixed(2) + '€');
+            $('#totalGastosHeader').text(totalGastos.toFixed(2) + '€');
+            $('#saldoActual').text(saldoActual.toFixed(2) + '€');
+            
+            // También actualizar el data attribute para futuras referencias
+            $('#cajaSelect option:selected').data('saldo', saldoActual);
         }
     }
-
+    
     function prepareModal() {
         console.log('Preparando modal');
         const cajaId = $('#cajaSelect').val();
@@ -418,8 +370,14 @@
             console.log('No hay caja seleccionada, ocultando tabla');
             $('#movimientosContainer').hide();
             $('#sortControls').hide();
+            $('#searchSection').hide();
             $('#noCajaMessage').show();
+            // Limpiar los campos del header
+            $('#totalIngresosHeader').text('--');
+            $('#totalGastosHeader').text('--');
+            $('#saldoActual').text('--');
             currentMovimientos = [];
+            filteredMovimientos = [];
             return;
         }
 
@@ -448,19 +406,27 @@
                     
                     // Guardar los movimientos para el ordenamiento
                     currentMovimientos = data.movimientos;
+                    filteredMovimientos = [...currentMovimientos];
+                    
+                    // Limpiar búsqueda
+                    $('#movementsSearch').val('');
+                    $('#clearSearch').hide();
                     
                     displayMovimientos(data.movimientos);
                     updateResumen(data.resumen);
                     
-                    // Actualizar el saldo actual con el valor del resumen
-                    updateSaldoFromResponse(data.resumen.saldo_actual);
+                    // Actualizar los campos del header con el resumen
+                    updateSaldoFromResponse(data.resumen);
                     
-                    // Mostrar controles de ordenamiento si hay movimientos
+                    // Mostrar controles si hay movimientos
                     if (data.movimientos && data.movimientos.length > 0) {
                         $('#sortControls').show();
+                        $('#searchSection').show();
                         updateSortButtons();
+                        updateSearchResults(data.movimientos.length, false);
                     } else {
                         $('#sortControls').hide();
+                        $('#searchSection').hide();
                     }
                     
                     // Asegurarse de que el contenedor se muestre
@@ -642,7 +608,7 @@
                     $('#hora').val('{% now "H:i" %}'); // Reset time to current time
                     
                     // Recargar los movimientos para obtener el saldo actualizado
-                    loadMovimientos(); // Esto actualizará tanto la tabla como el saldo
+                    loadMovimientos(); // Esto actualizará tanto la tabla como los campos del header
                     
                     alert('Movimiento añadido correctamente');
                 } else {
@@ -684,8 +650,8 @@
             currentSortOrder = 'desc';
         }
         
-        // Ordenar los movimientos
-        const sortedMovimientos = [...currentMovimientos].sort((a, b) => {
+        // Ordenar los movimientos filtrados
+        const sortedMovimientos = [...filteredMovimientos].sort((a, b) => {
             let valueA, valueB;
             
             switch (field) {
@@ -739,6 +705,21 @@
             $(activeIcon).html(icon);
         }
     }
+
+    function updateSearchResults(count, isSearching) {
+        $('#resultsCount').text(count);
+        
+        if (isSearching) {
+            $('#resultsText').text(count === 1 ? 'resultado encontrado' : 'resultados encontrados');
+            $('#searchResultsInfo').removeClass('text-muted').addClass(count > 0 ? 'text-success' : 'text-warning');
+            $('#searchResultsInfo i').removeClass('tim-icons icon-check-2').addClass(
+                count > 0 ? 'tim-icons icon-check-2' : 'tim-icons icon-alert-circle-exc'
+            );
+        } else {
+            $('#resultsText').text('movimientos en total');
+            $('#searchResultsInfo').removeClass('text-success text-warning').addClass('text-muted');
+            $('#searchResultsInfo i').removeClass().addClass('tim-icons icon-check-2');
+        }
+    }
 </script>
 {% endblock extrajs %}
-

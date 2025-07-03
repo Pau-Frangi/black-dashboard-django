@@ -1,0 +1,626 @@
+/* Estilos mejorados para el modal */
+.modal-content {
+    background: linear-gradient(135deg, #1e1e2f 0%, #27293d 100%) !important;
+    border: 1px solid #344675 !important;
+    color: #fff !important;
+    border-radius: 20px !important;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5) !important;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(52, 70, 117, 0.3) !important;
+    background: linear-gradient(135deg, #27293d 0%, #344675 100%) !important;
+    padding: 25px 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    position: relative;
+}
+
+.modal-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #51cbce 0%, #fd5d93 100%);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(52, 70, 117, 0.3) !important;
+    background: linear-gradient(135deg, #1e1e2f 0%, #27293d 100%) !important;
+    padding: 25px 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 15px !important;
+}
+
+.modal-title {
+    color: #fff !important;
+    font-weight: 700 !important;
+    font-size: 1.4rem !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 15px !important;
+    letter-spacing: 0.5px !important;
+}
+
+.modal-title i {
+    font-size: 1.3rem;
+    color: #51cbce;
+    background: linear-gradient(135deg, #51cbce 0%, #3eb8bb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.modal-body {
+    padding: 35px 30px !important;
+    background: linear-gradient(135deg, #1e1e2f 0%, #252847 100%) !important;
+}
+
+/* Mejorar el botón close */
+.modal-header .close {
+    color: #fff !important;
+    opacity: 0.8 !important;
+    font-size: 1.8rem !important;
+    font-weight: 300 !important;
+    text-shadow: none !important;
+    padding: 10px !important;
+    margin: 0 !important;
+    background: rgba(253, 93, 147, 0.1) !important;
+    border: 2px solid rgba(253, 93, 147, 0.3) !important;
+    border-radius: 50% !important;
+    width: 45px !important;
+    height: 45px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.modal-header .close:hover {
+    color: #fff !important;
+    opacity: 1 !important;
+    background: rgba(253, 93, 147, 0.2) !important;
+    border-color: #fd5d93 !important;
+    transform: scale(1.1) rotate(90deg) !important;
+    box-shadow: 0 8px 25px rgba(253, 93, 147, 0.3) !important;
+}
+
+/* Estilos mejorados para los botones del footer */
+.modal-footer .btn {
+    padding: 15px 30px !important;
+    font-weight: 600 !important;
+    border-radius: 12px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-width: 160px !important;
+    justify-content: center !important;
+    font-size: 0.95rem !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    border: none !important;
+}
+
+.modal-footer .btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.2) !important;
+}
+
+.modal-footer .btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #495057 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4) !important;
+}
+
+.modal-footer .btn-primary {
+    background: linear-gradient(135deg, #51cbce 0%, #3eb8bb 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 20px rgba(81, 203, 206, 0.3) !important;
+}
+
+.modal-footer .btn-primary:hover {
+    background: linear-gradient(135deg, #3eb8bb 0%, #2da5a8 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 10px 30px rgba(81, 203, 206, 0.5) !important;
+}
+
+.modal-footer .btn i {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.modal-footer .btn:hover i {
+    transform: scale(1.1);
+}
+
+/* Estilos mejorados para los grupos de formulario */
+.modal-body .form-group {
+    margin-bottom: 28px !important;
+    position: relative;
+}
+
+.modal-body .form-group:last-child {
+    margin-bottom: 0 !important;
+}
+
+.modal-body .form-label {
+    color: #fff !important;
+    font-weight: 700 !important;
+    margin-bottom: 10px !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.8px !important;
+    text-transform: uppercase !important;
+    display: block !important;
+}
+
+.modal-body .form-control {
+    background: linear-gradient(135deg, #27293d 0%, #2a2d42 100%) !important;
+    border: 2px solid rgba(52, 70, 117, 0.5) !important;
+    color: #fff !important;
+    border-radius: 12px !important;
+    padding: 15px 18px !important;
+    font-size: 0.95rem !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.modal-body .form-control:focus {
+    background: linear-gradient(135deg, #2a2d42 0%, #2f3349 100%) !important;
+    border-color: #51cbce !important;
+    color: #fff !important;
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.1),
+        0 0 0 0.25rem rgba(81, 203, 206, 0.25),
+        0 8px 25px rgba(81, 203, 206, 0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+.modal-body .form-control::placeholder {
+    color: rgba(156, 163, 175, 0.7) !important;
+    font-style: italic;
+}
+
+/* Estilo especial para campos requeridos */
+.modal-body .form-label::after {
+    content: " *";
+    color: #fd5d93;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.modal-body label[for="justificante"]::after,
+.modal-body label[for="observaciones"]::after {
+    content: "";
+}
+
+/* Estilos especiales para select */
+.modal-body select.form-control {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%2351cbce' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 15px center !important;
+    background-size: 12px !important;
+    padding-right: 45px !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    line-height: 1.2 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    height: auto !important;
+    min-height: 50px !important;
+}
+
+/* Ajustar el tamaño del texto en los selects para mejor legibilidad */
+.modal-body select.form-control {
+    font-size: 0.9rem !important;
+    padding: 15px 45px 15px 18px !important;
+}
+
+/* Asegurar que las opciones también tengan buen contraste */
+.modal-body select.form-control option {
+    background-color: #27293d !important;
+    color: #fff !important;
+    padding: 10px 15px !important;
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+}
+
+/* Estilos para select fuera del modal también */
+select.form-control {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%2351cbce' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 15px center !important;
+    background-size: 12px !important;
+    padding-right: 35px !important;
+    line-height: 1.2 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    height: auto !important;
+    min-height: 45px !important;
+}
+
+/* Estilos para textarea */
+.modal-body textarea.form-control {
+    resize: vertical !important;
+    min-height: 100px !important;
+}
+
+/* Animaciones del modal */
+.modal.fade .modal-dialog {
+    transform: translate(0, -80px) scale(0.9);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal.show .modal-dialog {
+    transform: translate(0, 0) scale(1);
+}
+
+/* Efectos de entrada para elementos del modal */
+.modal.show .modal-title {
+    animation: slideInFromLeft 0.6s ease-out;
+}
+
+.modal.show .modal-body .form-group {
+    animation: fadeInUp 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+.modal.show .modal-body .form-group:nth-child(1) { animation-delay: 0.1s; }
+.modal.show .modal-body .form-group:nth-child(2) { animation-delay: 0.15s; }
+.modal.show .modal-body .form-group:nth-child(3) { animation-delay: 0.2s; }
+.modal.show .modal-body .form-group:nth-child(4) { animation-delay: 0.25s; }
+
+@keyframes slideInFromLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive para el modal */
+@media (max-width: 768px) {
+    .modal-header,
+    .modal-footer,
+    .modal-body {
+        padding: 20px !important;
+    }
+    
+    .modal-footer {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        gap: 12px !important;
+    }
+    
+    .modal-footer .btn {
+        flex: 1 !important;
+        min-width: unset !important;
+    }
+    
+    .modal-title {
+        font-size: 1.2rem !important;
+    }
+    
+    .modal-content {
+        border-radius: 15px !important;
+    }
+}
+
+/* Estilos para los campos de formulario */
+.form-control {
+    background-color: #27293d !important;
+    border: 1px solid #344675 !important;
+    color: #fff !important;
+}
+
+.form-control:focus {
+    background-color: #27293d !important;
+    border-color: #51cbce !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 0.2rem rgba(81, 203, 206, 0.25) !important;
+}
+
+.form-control::placeholder {
+    color: #9ca3af !important;
+    opacity: 0.8;
+}
+
+/* Estilos específicos para select */
+.form-control option {
+    background-color: #27293d !important;
+    color: #fff !important;
+}
+
+/* Estilos para labels */
+.form-label {
+    color: #fff !important;
+    font-weight: 500;
+}
+
+/* Estilos para el input-group */
+.input-group-text {
+    background-color: #344675 !important;
+    border-color: #344675 !important;
+    color: #fff !important;
+}
+
+/* Estilos para campos de fecha */
+input[type="date"].form-control::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
+
+/* Estilos para campos numéricos */
+input[type="number"].form-control::-webkit-outer-spin-button,
+input[type="number"].form-control::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Mejorar visibilidad del botón close */
+.close {
+    color: #fff !important;
+    opacity: 0.8;
+}
+
+.close:hover {
+    color: #fff !important;
+    opacity: 1;
+}
+
+/* Estilos para los controles de ordenamiento */
+#sortControls .btn-group .btn {
+    border-color: #344675 !important;
+    color: #fff !important;
+}
+
+#sortControls .btn-outline-secondary {
+    background-color: #27293d !important;
+    border-color: #344675 !important;
+    color: #fff !important;
+}
+
+#sortControls .btn-outline-secondary:hover {
+    background-color: #344675 !important;
+    border-color: #51cbce !important;
+    color: #fff !important;
+}
+
+#sortControls .btn-primary {
+    background-color: #51cbce !important;
+    border-color: #51cbce !important;
+    color: #1e1e2f !important;
+}
+
+/* Estilos para los campos de totales compactos */
+.totals-section {
+    background: none;
+    border-radius: 12px;
+    padding: 15px;
+    border: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-item {
+    text-align: center;
+    flex: 1;
+    padding: 0 10px;
+}
+
+.total-item:not(:last-child) {
+    border-right: 1px solid #344675;
+}
+
+.total-label {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+}
+
+.total-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.total-value.ingresos {
+    color: #27c24c !important;
+}
+
+.total-value.gastos {
+    color: #fd5d93 !important;
+}
+
+.total-value.saldo {
+    color: #51cbce !important;
+}
+
+/* Estilos para el buscador de movimientos */
+.movements-search-bar {
+    position: relative;
+}
+
+.movements-search-bar .input-group {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.movements-search-bar .input-group:focus-within {
+    box-shadow: 0 4px 20px rgba(81, 203, 206, 0.3);
+    transform: translateY(-1px);
+}
+
+.movements-search-bar .search-icon {
+    background: linear-gradient(135deg, #344675 0%, #51cbce 100%);
+    border: none;
+    color: #fff;
+    font-size: 0.9rem;
+    width: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.movements-search-bar .search-input {
+    background-color: #27293d !important;
+    border: none !important;
+    color: #fff !important;
+    font-size: 0.9rem;
+    padding: 12px 15px;
+    transition: all 0.3s ease;
+}
+
+.movements-search-bar .search-input:focus {
+    background-color: #2a2d42 !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.movements-search-bar .search-input::placeholder {
+    color: #9ca3af !important;
+    opacity: 0.7;
+    font-style: italic;
+}
+
+.movements-search-bar .btn-clear {
+    background-color: #27293d;
+    border: none;
+    color: #fd5d93;
+    padding: 0 15px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.movements-search-bar .btn-clear:hover {
+    background-color: #fd5d93;
+    color: #fff;
+    transform: scale(1.05);
+}
+
+.movements-search-bar .btn-clear i {
+    font-size: 0.8rem;
+}
+
+/* Estilos para la información de resultados de búsqueda */
+.search-results-info {
+    background: linear-gradient(135deg, #27293d 0%, #344675 100%);
+    border-radius: 8px;
+    padding: 10px 15px;
+    border: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.search-results-info.text-success {
+    border: none;
+    color: #27c24c !important;
+}
+
+.search-results-info.text-warning {
+    border: none;
+    color: #ff9500 !important;
+}
+
+.search-results-info .results-count {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.search-results-info i {
+    font-size: 0.9rem;
+}
+
+/* Responsive para pantallas pequeñas */
+@media (max-width: 768px) {
+    .totals-section {
+        margin-top: 15px;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .total-item {
+        padding: 8px 0;
+    }
+    
+    .total-item:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid #344675;
+    }
+
+    .movements-search-bar .search-input {
+        font-size: 0.85rem;
+        padding: 10px 12px;
+    }
+
+    .search-results-info {
+        margin-top: 10px;
+        justify-content: center;
+    }
+}
+
+/* Animaciones para elementos que aparecen/desaparecen */
+#searchSection {
+    transition: all 0.3s ease;
+}
+
+#sortControls {
+    transition: all 0.3s ease;
+}
+
+/* Mejoras en la tabla para búsquedas */
+#movimientosTable tbody tr {
+    transition: all 0.2s ease;
+}
+
+#movimientosTable tbody tr:hover {
+    background-color: rgba(81, 203, 206, 0.1) !important;
+    transform: translateY(-1px);
+}
+
+
