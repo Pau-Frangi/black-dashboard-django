@@ -5,268 +5,283 @@
 
 {% block extrastyle %}
 <link href="{% static 'assets/css/registro.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/css/tables.css' %}" rel="stylesheet" />
 {% endblock extrastyle %}
 
 {% block content %}
 <div class="content">
-    <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="page-header">
-                <h2 class="page-title">
-                    <i class="tim-icons icon-chart-pie-36 mr-3"></i>
-                    Tablas de Resultados por Caja
-                </h2>
-                <p class="page-subtitle">Análisis detallado de resultados por conceptos y turnos</p>
-            </div>
-        </div>
+  <!-- Header Section -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="page-header">
+        <h2 class="page-title">
+          <i class="tim-icons icon-chart-pie-36 mr-3"></i>
+          Tablas de Resultados por Caja
+        </h2>
+        <p class="page-subtitle">Análisis detallado de resultados por conceptos y turnos</p>
+      </div>
     </div>
+  </div>
 
-    <!-- Selector de Caja -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
-                        <select class="form-control" id="cajaSelect" onchange="loadTablesData()">
-                            <option value="">-- Selecciona una caja --</option>
-                            {% for caja in cajas %}
-                                <option value="{{ caja.id }}" 
-                                        data-saldo="{{ caja.saldo }}"
-                                        data-nombre="{{ caja.nombre }}"
-                                        data-año="{{ caja.año }}">
-                                    {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </div>
+  <!-- Selector de Caja -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <div class="form-group">
+            <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
+            <select class="form-control" id="cajaSelect" onchange="loadTablesData()">
+              <option value="">-- Selecciona una caja --</option>
+              {% for caja in cajas %}
+              <option value="{{ caja.id }}" data-saldo="{{ caja.saldo }}" data-nombre="{{ caja.nombre }}"
+                data-año="{{ caja.año }}">
+                {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
+              </option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
-        <div class="col-md-4">
-            <div class="card card-stats">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-5 col-md-4">
-                            <div class="icon-big text-center icon-warning">
-                                <i class="tim-icons icon-wallet-43 text-warning"></i>
-                            </div>
-                        </div>
-                        <div class="col-7 col-md-8">
-                            <div class="numbers">
-                                <p class="card-category">Saldo Actual</p>
-                                <p class="card-title" id="saldoDisplay">--</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+    <div class="col-md-4">
+      <div class="card card-stats">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-5 col-md-4">
+              <div class="icon-big text-center icon-warning">
+                <i class="tim-icons icon-wallet-43 text-warning"></i>
+              </div>
+            </div>
+            <div class="col-7 col-md-8">
+              <div class="numbers">
+                <p class="card-category">Saldo Actual</p>
+                <p class="card-title" id="saldoDisplay">--</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <!-- Selector de Tipo de Tabla -->
-    <div class="row mb-4" id="tableTypeSection" style="display: none;">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label class="form-label">Seleccionar Tipo de Tabla:</label>
-                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                            <label class="btn btn-outline-primary btn-lg active" style="flex: 1;">
-                                <input type="radio" name="tableType" value="conceptos" checked onchange="showTable('conceptos')">
-                                <i class="tim-icons icon-tag mr-2"></i>
-                                Por Conceptos
-                            </label>
-                            <label class="btn btn-outline-primary btn-lg" style="flex: 1;">
-                                <input type="radio" name="tableType" value="turnos" onchange="showTable('turnos')">
-                                <i class="tim-icons icon-calendar-60 mr-2"></i>
-                                Por Turnos
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <!-- Selector de Tipo de Tabla -->
+  <div class="row mb-4" id="tableTypeSection" style="display: none;">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="modern-tabs-container">
+          <div class="modern-tabs">
+            <button type="button" class="modern-tab active" onclick="selectTab('conceptos', this)">
+              <i class="tim-icons icon-tag tab-icon"></i>
+              <span class="tab-text">Por Conceptos</span>
+            </button>
+            <button type="button" class="modern-tab" onclick="selectTab('turnos', this)">
+              <i class="tim-icons icon-calendar-60 tab-icon"></i>
+              <span class="tab-text">Por Turnos</span>
+            </button>
+          </div>
         </div>
-    </div>
-
-    <!-- Tabla de Conceptos -->
-    <div class="row" id="conceptosTable" style="display: none;">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">
-                        <i class="tim-icons icon-tag mr-2"></i>
-                        Resultados por Conceptos
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Concepto</th>
-                                    <th>Tipo</th>
-                                    <th class="text-center">Nº Movimientos</th>
-                                    <th class="text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="conceptosTableBody">
-                                <!-- Los datos se cargarán aquí -->
-                            </tbody>
-                            <tfoot id="conceptosTableFooter">
-                                <!-- Los totales se cargarán aquí -->
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
+        <div class="tab-content-wrapper">
+          <p class="tab-description" id="tabDescription">
+            Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto
+          </p>
         </div>
-    </div>
+        <!-- Tabla de Conceptos -->
+        <div id="conceptosTable" style="display: none;">
 
-    <!-- Tabla de Turnos -->
-    <div class="row" id="turnosTable" style="display: none;">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">
-                        <i class="tim-icons icon-calendar-60 mr-2"></i>
-                        Resultados por Turnos
-                    </h4>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Turno</th>
-                                    <th class="text-center">Nº Movimientos</th>
-                                    <th class="text-right">Total Ingresos</th>
-                                    <th class="text-right">Total Gastos</th>
-                                    <th class="text-right">Balance</th>
-                                </tr>
-                            </thead>
-                            <tbody id="turnosTableBody">
-                                <!-- Los datos se cargarán aquí -->
-                            </tbody>
-                            <tfoot id="turnosTableFooter">
-                                <!-- Los totales se cargarán aquí -->
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
+          <div class="card-header">
+            <h4 class="card-title">
+              <i class="tim-icons icon-tag mr-2"></i>
+              Resultados por Conceptos
+            </h4>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th>Tipo</th>
+                    <th class="text-center">Nº Movimientos</th>
+                    <th class="text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="conceptosTableBody">
+                  <!-- Los datos se cargarán aquí -->
+                </tbody>
+                <tfoot id="conceptosTableFooter">
+                  <!-- Los totales se cargarán aquí -->
+                </tfoot>
+              </table>
             </div>
-        </div>
-    </div>
+          </div>
 
-    <!-- Mensaje cuando no hay caja seleccionada -->
-    <div id="noCajaMessage" class="text-center py-5">
-        <i class="tim-icons icon-chart-pie-36" style="font-size: 4rem; color: #ccc;"></i>
-        <h4 class="mt-3 text-muted">Selecciona una caja para ver las tablas de resultados</h4>
-        <p class="text-muted">Elige una caja del selector superior para visualizar los análisis por conceptos y turnos</p>
+        </div>
+
+        <!-- Tabla de Turnos -->
+        <div id="turnosTable" style="display: none;">
+
+          <div class="card-header">
+            <h4 class="card-title">
+              <i class="tim-icons icon-calendar-60 mr-2"></i>
+              Resultados por Turnos
+            </h4>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Turno</th>
+                    <th class="text-center">Nº Movimientos</th>
+                    <th class="text-right">Total Ingresos</th>
+                    <th class="text-right">Total Gastos</th>
+                    <th class="text-right">Balance</th>
+                  </tr>
+                </thead>
+                <tbody id="turnosTableBody">
+                  <!-- Los datos se cargarán aquí -->
+                </tbody>
+                <tfoot id="turnosTableFooter">
+                  <!-- Los totales se cargarán aquí -->
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Mensaje cuando no hay caja seleccionada -->
+        <div id="noCajaMessage" class="text-center py-5">
+          <i class="tim-icons icon-chart-pie-36" style="font-size: 4rem; color: #ccc;"></i>
+          <h4 class="mt-3 text-muted">Selecciona una caja para ver las tablas de resultados</h4>
+          <p class="text-muted">Elige una caja del selector superior para visualizar los análisis por conceptos y turnos
+          </p>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock content %}
 
 {% block extrajs %}
 <script>
-    let currentTablesData = null;
+  let currentTablesData = null;
+  let currentTableType = 'conceptos';
 
-    $(document).ready(function() {
-        console.log('Página de tablas cargada');
+  const tabDescriptions = {
+    'conceptos': 'Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto',
+    'turnos': 'Resumen de actividad financiera organizado por turnos de trabajo'
+  };
+
+  $(document).ready(function () {
+    console.log('Página de tablas cargada');
+  });
+
+  function selectTab(type, button) {
+    // Remove active class from all tabs
+    $('.modern-tab').removeClass('active');
+
+    // Add active class to clicked tab
+    $(button).addClass('active');
+
+    // Update description
+    $('#tabDescription').text(tabDescriptions[type]);
+
+    // Update current type and show table
+    currentTableType = type;
+    showTable(type);
+  }
+
+  function loadTablesData() {
+    const cajaId = $('#cajaSelect').val();
+
+    if (!cajaId) {
+      $('#tableTypeSection').hide();
+      $('#conceptosTable').hide();
+      $('#turnosTable').hide();
+      $('#noCajaMessage').show();
+      $('#saldoDisplay').text('--');
+      return;
+    }
+
+    const selectedOption = $('#cajaSelect option:selected');
+    const saldo = selectedOption.data('saldo');
+    $('#saldoDisplay').text(saldo + '€');
+    $('#noCajaMessage').hide();
+
+    // Load data via AJAX
+    $.ajax({
+      url: '{% url "tables" %}',
+      method: 'GET',
+      data: {
+        'caja_id': cajaId,
+        'ajax': 'true'
+      },
+      success: function (data) {
+        if (data.success) {
+          currentTablesData = data;
+          $('#tableTypeSection').show();
+
+          // Show the currently active table
+          showTable(currentTableType);
+        } else {
+          alert('Error: ' + data.error);
+        }
+      },
+      error: function (xhr, status, error) {
+        console.error('Error loading tables data:', error);
+        alert('Error al cargar los datos: ' + error);
+      }
     });
+  }
 
-    function loadTablesData() {
-        const cajaId = $('#cajaSelect').val();
-        
-        if (!cajaId) {
-            $('#tableTypeSection').hide();
-            $('#conceptosTable').hide();
-            $('#turnosTable').hide();
-            $('#noCajaMessage').show();
-            $('#saldoDisplay').text('--');
-            return;
-        }
+  function showTable(tableType) {
+    if (!currentTablesData) return;
 
-        const selectedOption = $('#cajaSelect option:selected');
-        const saldo = selectedOption.data('saldo');
-        $('#saldoDisplay').text(saldo + '€');
-        $('#noCajaMessage').hide();
+    // Hide all tables
+    $('#conceptosTable').hide();
+    $('#turnosTable').hide();
 
-        // Load data via AJAX
-        $.ajax({
-            url: '{% url "tables" %}',
-            method: 'GET',
-            data: {
-                'caja_id': cajaId,
-                'ajax': 'true'
-            },
-            success: function(data) {
-                if (data.success) {
-                    currentTablesData = data;
-                    $('#tableTypeSection').show();
-                    
-                    // Show the currently selected table
-                    const activeTable = $('input[name="tableType"]:checked').val();
-                    showTable(activeTable);
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading tables data:', error);
-                alert('Error al cargar los datos: ' + error);
-            }
-        });
+    if (tableType === 'conceptos') {
+      showConceptosTable();
+    } else if (tableType === 'turnos') {
+      showTurnosTable();
     }
+  }
 
-    function showTable(tableType) {
-        if (!currentTablesData) return;
+  function showConceptosTable() {
+    const tbody = $('#conceptosTableBody');
+    const tfoot = $('#conceptosTableFooter');
+    tbody.empty();
+    tfoot.empty();
 
-        // Hide all tables
-        $('#conceptosTable').hide();
-        $('#turnosTable').hide();
-
-        if (tableType === 'conceptos') {
-            showConceptosTable();
-        } else if (tableType === 'turnos') {
-            showTurnosTable();
-        }
-    }
-
-    function showConceptosTable() {
-        const tbody = $('#conceptosTableBody');
-        const tfoot = $('#conceptosTableFooter');
-        tbody.empty();
-        tfoot.empty();
-
-        if (!currentTablesData.conceptos || currentTablesData.conceptos.length === 0) {
-            tbody.append(`
+    if (!currentTablesData.conceptos || currentTablesData.conceptos.length === 0) {
+      tbody.append(`
                 <tr>
                     <td colspan="4" class="text-center text-muted">No hay datos de conceptos para esta caja</td>
                 </tr>
             `);
-            $('#conceptosTable').show();
-            return;
-        }
+      $('#conceptosTable').show();
+      return;
+    }
 
-        let totalIngresos = 0;
-        let totalGastos = 0;
-        let totalMovimientos = 0;
+    let totalIngresos = 0;
+    let totalGastos = 0;
+    let totalMovimientos = 0;
 
-        currentTablesData.conceptos.forEach(function(concepto) {
-            const tipoClass = concepto.es_gasto ? 'text-danger' : 'text-success';
-            const tipoText = concepto.es_gasto ? 'Gasto' : 'Ingreso';
-            const tipoIcon = concepto.es_gasto ? 'tim-icons icon-simple-remove' : 'tim-icons icon-simple-add';
-            
-            if (concepto.es_gasto) {
-                totalGastos += concepto.total;
-            } else {
-                totalIngresos += concepto.total;
-            }
-            totalMovimientos += concepto.count;
+    currentTablesData.conceptos.forEach(function (concepto) {
+      const tipoClass = concepto.es_gasto ? 'text-danger' : 'text-success';
+      const tipoText = concepto.es_gasto ? 'Gasto' : 'Ingreso';
+      const tipoIcon = concepto.es_gasto ? 'tim-icons icon-simple-remove' : 'tim-icons icon-simple-add';
 
-            const row = `
+      if (concepto.es_gasto) {
+        totalGastos += concepto.total;
+      } else {
+        totalIngresos += concepto.total;
+      }
+      totalMovimientos += concepto.count;
+
+      const row = `
                 <tr>
                     <td>
                         <strong>${concepto.nombre}</strong>
@@ -285,14 +300,14 @@
                     </td>
                 </tr>
             `;
-            tbody.append(row);
-        });
+      tbody.append(row);
+    });
 
-        const balance = totalIngresos - totalGastos;
-        const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
+    const balance = totalIngresos - totalGastos;
+    const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
 
-        // Add totals footer
-        const footerRow = `
+    // Add totals footer
+    const footerRow = `
             <tr class="table-active" style="border-top: 2px solid #344675;">
                 <td><strong>TOTALES</strong></td>
                 <td>
@@ -319,40 +334,40 @@
                 </td>
             </tr>
         `;
-        tfoot.append(footerRow);
+    tfoot.append(footerRow);
 
-        $('#conceptosTable').show();
-    }
+    $('#conceptosTable').show();
+  }
 
-    function showTurnosTable() {
-        const tbody = $('#turnosTableBody');
-        const tfoot = $('#turnosTableFooter');
-        tbody.empty();
-        tfoot.empty();
+  function showTurnosTable() {
+    const tbody = $('#turnosTableBody');
+    const tfoot = $('#turnosTableFooter');
+    tbody.empty();
+    tfoot.empty();
 
-        if (!currentTablesData.turnos || currentTablesData.turnos.length === 0) {
-            tbody.append(`
+    if (!currentTablesData.turnos || currentTablesData.turnos.length === 0) {
+      tbody.append(`
                 <tr>
                     <td colspan="5" class="text-center text-muted">No hay datos de turnos para esta caja</td>
                 </tr>
             `);
-            $('#turnosTable').show();
-            return;
-        }
+      $('#turnosTable').show();
+      return;
+    }
 
-        let totalMovimientos = 0;
-        let totalIngresosTurnos = 0;
-        let totalGastosTurnos = 0;
+    let totalMovimientos = 0;
+    let totalIngresosTurnos = 0;
+    let totalGastosTurnos = 0;
 
-        currentTablesData.turnos.forEach(function(turno) {
-            const balance = turno.ingresos - turno.gastos;
-            const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
-            
-            totalMovimientos += turno.count;
-            totalIngresosTurnos += turno.ingresos;
-            totalGastosTurnos += turno.gastos;
+    currentTablesData.turnos.forEach(function (turno) {
+      const balance = turno.ingresos - turno.gastos;
+      const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
 
-            const row = `
+      totalMovimientos += turno.count;
+      totalIngresosTurnos += turno.ingresos;
+      totalGastosTurnos += turno.gastos;
+
+      const row = `
                 <tr>
                     <td>
                         <strong>${turno.nombre}</strong>
@@ -371,14 +386,14 @@
                     </td>
                 </tr>
             `;
-            tbody.append(row);
-        });
+      tbody.append(row);
+    });
 
-        const totalBalance = totalIngresosTurnos - totalGastosTurnos;
-        const totalBalanceClass = totalBalance >= 0 ? 'text-success' : 'text-danger';
+    const totalBalance = totalIngresosTurnos - totalGastosTurnos;
+    const totalBalanceClass = totalBalance >= 0 ? 'text-success' : 'text-danger';
 
-        // Add totals footer
-        const footerRow = `
+    // Add totals footer
+    const footerRow = `
             <tr class="table-active" style="border-top: 2px solid #344675;">
                 <td><strong>TOTALES</strong></td>
                 <td class="text-center">
@@ -395,9 +410,9 @@
                 </td>
             </tr>
         `;
-        tfoot.append(footerRow);
+    tfoot.append(footerRow);
 
-        $('#turnosTable').show();
-    }
+    $('#turnosTable').show();
+  }
 </script>
 {% endblock extrajs %}

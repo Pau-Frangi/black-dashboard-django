@@ -1,0 +1,135 @@
+.modern-tabs-container {
+  background: transparent;
+  border-radius: 12px;
+  padding: 8px 8px 0 8px;
+  margin-bottom: 0;
+}
+
+.modern-tabs {
+  display: flex;
+  position: relative;
+  background: transparent;
+  border: none;
+  overflow: hidden;
+}
+
+.modern-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 16px 24px;
+  color: #8b949e;
+  font-weight: 500;
+  font-size: 15px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  outline: none;
+  box-shadow: none;
+}
+
+.modern-tab:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+
+.modern-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #c9d1d9;
+}
+
+.modern-tab.active {
+  color: #58a6ff;
+  background: rgba(88, 166, 255, 0.08);
+}
+
+.modern-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #58a6ff;
+  transform: scaleX(0);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 1px 1px 0 0;
+}
+
+.modern-tab.active::after {
+  transform: scaleX(1);
+}
+
+.modern-tab .tab-icon {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.modern-tab:hover .tab-icon {
+  transform: scale(1.1);
+}
+
+.modern-tab .tab-text {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.tab-content-wrapper {
+  background: transparent;
+  border-radius: 0 0 12px 12px;
+  border-top: none;
+  padding: 20px;
+  min-height: 60px;
+}
+
+.tab-description {
+  color: #8b949e;
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .modern-tab {
+    padding: 12px 16px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .modern-tab .tab-icon {
+    font-size: 14px;
+  }
+
+  .modern-tabs-container {
+    padding: 6px 6px 0 6px;
+  }
+
+  .tab-content-wrapper {
+    padding: 16px;
+  }
+}
+
+/* Smooth entrance animation */
+.modern-tabs-container {
+  animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
