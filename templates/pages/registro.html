@@ -64,7 +64,7 @@
                     </div>
 
                     <!-- Botón para añadir movimiento y controles de ordenamiento -->
-                    <div class="row mb-3" id="addMovementSection">
+                    <div class="row mb-3" id="addMovementSection" style="display: none;">
                         <div class="col-md-6">
                             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
                                 <i class="tim-icons icon-simple-add"></i>
@@ -120,7 +120,7 @@
                     </div>
 
                     <!-- Tabla de Movimientos -->
-                    <div id="movimientosContainer">
+                    <div id="movimientosContainer" style="display: none;">
                         <div class="table-responsive">
                             <table class="table table-striped" id="movimientosTable">
                                 <thead>
@@ -540,10 +540,11 @@
         
         if (!cajaId) {
             // No caja selected
-            console.log('No hay caja seleccionada, ocultando tabla');
+            console.log('No hay caja seleccionada, ocultando elementos');
             $('#movimientosContainer').hide();
             $('#sortControls').hide();
             $('#searchSection').hide();
+            $('#addMovementSection').hide();
             $('#noCajaMessage').show();
             // Limpiar los campos del header
             $('#totalIngresosHeader').text('--');
@@ -560,8 +561,9 @@
         // Set caja ID in the form
         $('#cajaIdInput').val(cajaId);
         
-        // Hide no caja message
+        // Hide no caja message and show add movement section
         $('#noCajaMessage').hide();
+        $('#addMovementSection').show();
 
         // Load movements via AJAX
         $.ajax({
