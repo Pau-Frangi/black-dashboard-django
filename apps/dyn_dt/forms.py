@@ -29,14 +29,18 @@ class TurnoForm(forms.ModelForm):
     
     class Meta:
         model = Turno
-        fields = ['nombre']
+        fields = ['caja', 'nombre']
         widgets = {
+            'caja': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nombre del turno (ej. Primer turno chicas)'
             })
         }
         labels = {
+            'caja': 'Caja',
             'nombre': 'Nombre del turno'
         }
 
@@ -161,6 +165,18 @@ class MovimientoCajaForm(forms.ModelForm):
         
         # Filter only active cajas
         self.fields['caja'].queryset = Caja.objects.filter(activa=True)
+        
+        # Filter turnos based on selected caja
+        if 'caja' in self.data:
+            try:
+                caja_id = int(self.data.get('caja'))
+                self.fields['turno'].queryset = Turno.objects.filter(caja_id=caja_id)
+            except (ValueError, TypeError):
+                self.fields['turno'].queryset = Turno.objects.none()
+        elif self.instance.pk and self.instance.caja:
+            self.fields['turno'].queryset = Turno.objects.filter(caja=self.instance.caja)
+        else:
+            self.fields['turno'].queryset = Turno.objects.none()
         
         # Set default values
         if not self.instance.pk:

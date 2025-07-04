@@ -160,6 +160,78 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal para detalles de movimientos -->
+  <div class="modal fade" id="movimientosModal" tabindex="-1" role="dialog" aria-labelledby="movimientosModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="movimientosModalLabel">
+            <i class="tim-icons icon-notes mr-2"></i>
+            Detalle de Movimientos
+          </h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="modalLoading" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="sr-only">Cargando...</span>
+            </div>
+            <p class="mt-2 text-muted">Cargando movimientos...</p>
+          </div>
+          <div id="modalContent" style="display: none;">
+            <div class="movement-summary mb-3">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="summary-card">
+                    <div class="summary-icon">
+                      <i class="tim-icons icon-chart-bar-32"></i>
+                    </div>
+                    <div class="summary-info">
+                      <h6>Total Movimientos</h6>
+                      <span id="modalTotalCount">0</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="summary-card">
+                    <div class="summary-icon">
+                      <i class="tim-icons icon-wallet-43"></i>
+                    </div>
+                    <div class="summary-info">
+                      <h6>Importe Total</h6>
+                      <span id="modalTotalAmount">0.00€</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Turno</th>
+                    <th>Concepto</th>
+                    <th>Descripción</th>
+                    <th class="text-right">Importe</th>
+                  </tr>
+                </thead>
+                <tbody id="modalMovimientosTable">
+                  <!-- Los movimientos se cargarán aquí -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock content %}
 
@@ -282,7 +354,7 @@
       totalMovimientos += concepto.count;
 
       const row = `
-                <tr>
+                <tr class="clickable-row" data-tipo="concepto" data-id="${concepto.id}" data-nombre="${concepto.nombre}" style="cursor: pointer;">
                     <td>
                         <strong>${concepto.nombre}</strong>
                     </td>
@@ -368,7 +440,7 @@
       totalGastosTurnos += turno.gastos;
 
       const row = `
-                <tr>
+                <tr class="clickable-row" data-tipo="turno" data-id="${turno.id}" data-nombre="${turno.nombre}" style="cursor: pointer;">
                     <td>
                         <strong>${turno.nombre}</strong>
                     </td>
@@ -414,5 +486,334 @@
 
     $('#turnosTable').show();
   }
+
+  // Event handler for clickable rows
+  $(document).on('click', '.clickable-row', function() {
+    const tipo = $(this).data('tipo');
+    const id = $(this).data('id');
+    const nombre = $(this).data('nombre');
+    const cajaId = $('#cajaSelect').val();
+    
+    if (!cajaId) return;
+    
+    showMovimientosModal(tipo, id, nombre, cajaId);
+  });
+
+  function showMovimientosModal(tipo, id, nombre, cajaId) {
+    // Set modal title
+    $('#movimientosModalLabel').html(`
+      <i class="tim-icons icon-notes mr-2"></i>
+      Movimientos - ${nombre}
+    `);
+    
+    // Show modal and loading state
+    $('#movimientosModal').modal('show');
+    $('#modalLoading').show();
+    $('#modalContent').hide();
+    
+    console.log('Loading movements for:', { tipo, id, nombre, cajaId });
+    
+    // First try: Use the existing movimientos endpoint from registro page
+    $.ajax({
+      url: '{% url "registro" %}',
+      method: 'GET',
+      data: {
+        'caja_id': cajaId,
+        'ajax': 'true'
+      },
+      success: function(data) {
+        console.log('Registro data received:', data);
+        
+        if (data.success && data.movimientos) {
+          // Filter movements based on tipo and id/nombre
+          let filteredMovements = data.movimientos;
+          
+          if (tipo === 'concepto') {
+            filteredMovements = data.movimientos.filter(mov => {
+              return mov.concepto === nombre || mov.concepto_id == id;
+            });
+          } else if (tipo === 'turno') {
+            filteredMovements = data.movimientos.filter(mov => {
+              return mov.turno === nombre || mov.turno_id == id;
+            });
+          }
+          
+          console.log('Filtered movements:', filteredMovements);
+          
+          if (filteredMovements.length > 0) {
+            // Transform data to match expected format
+            const transformedMovements = filteredMovements.map(mov => ({
+              fecha: mov.datetime_iso || mov.fecha,
+              concepto: mov.concepto,
+              turno: mov.turno,
+              importe: mov.es_gasto ? -Math.abs(parseFloat(mov.cantidad)) : Math.abs(parseFloat(mov.cantidad)),
+              observaciones: mov.descripcion || mov.observaciones || ''
+            }));
+            
+            displayMovimientosData(transformedMovements);
+          } else {
+            // No movements found, show empty state with explanation
+            showNoMovimientosFound(tipo, nombre);
+          }
+        } else {
+          // Fallback: show test data to verify modal works
+          console.log('No data from registro, showing test data...');
+          showTestMovimientosData(tipo, nombre);
+        }
+      },
+      error: function(xhr, status, error) {
+        console.error('Error loading from registro:', error);
+        // Fallback: show test data
+        showTestMovimientosData(tipo, nombre);
+      }
+    });
+  }
+
+  function showNoMovimientosFound(tipo, nombre) {
+    $('#modalContent').html(`
+      <div class="text-center py-5">
+        <i class="tim-icons icon-zoom-split" style="font-size: 3rem; color: #8b949e;"></i>
+        <h5 class="mt-3 text-muted">No se encontraron movimientos</h5>
+        <p class="text-muted">
+          No hay movimientos registrados para ${tipo === 'concepto' ? 'el concepto' : 'el turno'} 
+          <strong>"${nombre}"</strong> en esta caja.
+        </p>
+        <div class="mt-4">
+          <div class="summary-card" style="display: inline-block; min-width: 200px;">
+            <div class="summary-icon">
+              <i class="tim-icons icon-chart-bar-32"></i>
+            </div>
+            <div class="summary-info">
+              <h6>Total Movimientos</h6>
+              <span>0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+    
+    $('#modalLoading').hide();
+    $('#modalContent').show();
+  }
+
+  function showTestMovimientosData(tipo, nombre) {
+    console.log('Showing test data for debugging...');
+    
+    // Create test data based on the type
+    let testData = [];
+    
+    if (tipo === 'concepto') {
+      testData = [
+        {
+          fecha: '2024-01-15T10:30:00',
+          concepto: nombre,
+          turno: 'Mañana',
+          importe: 25.50,
+          observaciones: 'Movimiento de prueba para ' + nombre
+        },
+        {
+          fecha: '2024-01-14T16:45:00',
+          concepto: nombre,
+          turno: 'Tarde',
+          importe: -15.75,
+          observaciones: 'Otro movimiento de prueba'
+        }
+      ];
+    } else if (tipo === 'turno') {
+      testData = [
+        {
+          fecha: '2024-01-15T09:00:00',
+          concepto: 'Venta productos',
+          turno: nombre,
+          importe: 45.00,
+          observaciones: 'Venta durante ' + nombre
+        },
+        {
+          fecha: '2024-01-15T11:30:00',
+          concepto: 'Material oficina',
+          turno: nombre,
+          importe: -12.50,
+          observaciones: 'Gasto en ' + nombre
+        }
+      ];
+    }
+    
+    // Add a warning that this is test data
+    $('#modalContent').html(`
+      <div class="alert alert-warning">
+        <i class="tim-icons icon-alert-circle-exc mr-2"></i>
+        <strong>Datos de prueba:</strong> Los movimientos reales no se pudieron cargar. 
+        Estos son datos de ejemplo para verificar que el modal funciona correctamente.
+      </div>
+      <div class="movement-summary mb-3">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="summary-card">
+              <div class="summary-icon">
+                <i class="tim-icons icon-chart-bar-32"></i>
+              </div>
+              <div class="summary-info">
+                <h6>Total Movimientos</h6>
+                <span id="modalTotalCount">0</span>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="summary-card">
+              <div class="summary-icon">
+                <i class="tim-icons icon-wallet-43"></i>
+              </div>
+              <div class="summary-info">
+                <h6>Importe Total</h6>
+                <span id="modalTotalAmount">0.00€</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Turno</th>
+              <th>Concepto</th>
+              <th>Descripción</th>
+              <th class="text-right">Importe</th>
+            </tr>
+          </thead>
+          <tbody id="modalMovimientosTable">
+            <!-- Los movimientos se cargarán aquí -->
+          </tbody>
+        </table>
+      </div>
+    `);
+    
+    displayMovimientosData(testData);
+  }
+
+  function displayMovimientosData(movimientos) {
+    console.log('=== displayMovimientosData ===');
+    console.log('Displaying movements:', movimientos);
+    console.log('Movements length:', movimientos.length);
+    console.log('First movement:', movimientos[0]);
+    
+    const tbody = $('#modalMovimientosTable');
+    tbody.empty();
+    
+    let totalAmount = 0;
+    let totalCount = movimientos.length;
+    
+    if (movimientos.length === 0) {
+      tbody.append(`
+        <tr>
+          <td colspan="5" class="text-center text-muted">
+            <div class="py-3">
+              <i class="tim-icons icon-minimal-down" style="font-size: 2rem; color: #8b949e;"></i>
+              <p class="mt-2 mb-0">No hay movimientos para mostrar</p>
+              <small>Este concepto/turno no tiene movimientos registrados</small>
+            </div>
+          </td>
+        </tr>
+      `);
+    } else {
+      movimientos.forEach(function(mov, index) {
+        console.log(`Processing movement ${index}:`, mov);
+        
+        // Handle different possible data structures with more flexibility
+        const importe = parseFloat(mov.importe || mov.amount || mov.cantidad || 0);
+        const fecha = mov.fecha || mov.date || mov.created_at || mov.datetime_iso || new Date().toISOString();
+        const concepto = mov.concepto || mov.concept || mov.concepto_nombre || 'Sin concepto';
+        const turno = mov.turno || mov.turn || mov.turno_nombre || 'Sin turno';
+        const descripcion = mov.observaciones || mov.observations || mov.descripcion || '';
+        
+        totalAmount += importe;
+        const importeClass = importe >= 0 ? 'text-success' : 'text-danger';
+        const importeIcon = importe >= 0 ? '+' : '';
+        
+        let fechaFormatted;
+        try {
+          const dateObj = new Date(fecha);
+          if (isNaN(dateObj.getTime())) {
+            fechaFormatted = fecha.toString();
+          } else {
+            fechaFormatted = dateObj.toLocaleDateString('es-ES', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          }
+        } catch (e) {
+          fechaFormatted = fecha.toString();
+        }
+        
+        const row = `
+          <tr>
+            <td>${fechaFormatted}</td>
+            <td>
+              <span class="badge badge-secondary">${turno}</span>
+            </td>
+            <td>${concepto}</td>
+            <td>
+              <small class="text-muted">${descripcion || '-'}</small>
+            </td>
+            <td class="text-right ${importeClass}">
+              <strong>${importeIcon}${Math.abs(importe).toFixed(2)}€</strong>
+            </td>
+          </tr>
+        `;
+        tbody.append(row);
+      });
+    }
+    
+    // Update summary
+    $('#modalTotalCount').text(totalCount);
+    $('#modalTotalAmount').text(totalAmount.toFixed(2) + '€');
+    $('#modalTotalAmount').removeClass('text-success text-danger');
+    $('#modalTotalAmount').addClass(totalAmount >= 0 ? 'text-success' : 'text-danger');
+    
+    // Hide loading and show content
+    $('#modalLoading').hide();
+    $('#modalContent').show();
+    
+    console.log('Modal content displayed successfully');
+    console.log('=== fin displayMovimientosData ===');
+  }
+
+  // Add test function for debugging
+  function testMovimientosModal() {
+    const testData = [
+      {
+        fecha: '2024-01-15',
+        concepto: 'Venta producto',
+        turno: 'Mañana',
+        importe: 25.50,
+        observaciones: 'Venta de prueba'
+      },
+      {
+        fecha: '2024-01-15',
+        concepto: 'Gasto material',
+        turno: 'Tarde',
+        importe: -15.00,
+        observaciones: 'Compra suministros'
+      }
+    ];
+    
+    $('#movimientosModalLabel').html(`
+      <i class="tim-icons icon-notes mr-2"></i>
+      Movimientos - Test Data
+    `);
+    
+    $('#movimientosModal').modal('show');
+    $('#modalLoading').hide();
+    $('#modalContent').show();
+    
+    displayMovimientosData(testData);
+  }
+
+  // Make test function available globally for debugging
+  window.testMovimientosModal = testMovimientosModal;
 </script>
 {% endblock extrajs %}

@@ -10,9 +10,14 @@ admin.site.register(ModelFilter)
 
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
-    list_display = ('nombre',)
-    search_fields = ('nombre',)
-    ordering = ('nombre',)
+    list_display = ('nombre', 'caja', 'caja_año')
+    list_filter = ('caja', 'caja__año')
+    search_fields = ('nombre', 'caja__nombre')
+    ordering = ('caja__nombre', 'nombre')
+    
+    def caja_año(self, obj):
+        return obj.caja.año
+    caja_año.short_description = 'Año de la caja'
 
 
 @admin.register(Concepto)
@@ -25,7 +30,7 @@ class ConceptoAdmin(admin.ModelAdmin):
 
 @admin.register(Caja)
 class CajaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'año', 'saldo', 'activa', 'total_movimientos')
+    list_display = ('nombre', 'año', 'saldo', 'activa', 'total_movimientos', 'total_turnos')
     list_filter = ('año', 'activa')
     search_fields = ('nombre',)
     ordering = ('-año', 'nombre')
@@ -49,6 +54,10 @@ class CajaAdmin(admin.ModelAdmin):
     def total_movimientos(self, obj):
         return obj.movimientos.count()
     total_movimientos.short_description = 'Total movimientos'
+    
+    def total_turnos(self, obj):
+        return obj.turnos.count()
+    total_turnos.short_description = 'Total turnos'
     
     actions = ['recalcular_saldos_accion']
     

@@ -133,3 +133,155 @@
     transform: translateY(0);
   }
 }
+
+/* Clickable row styles */
+.clickable-row {
+  transition: background-color 0.2s ease;
+}
+
+.clickable-row:hover {
+  background-color: rgba(88, 166, 255, 0.08) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Modal styles */
+.modal-content {
+  background-color: #1e1e2e;
+  border: 1px solid #344675;
+  border-radius: 12px;
+}
+
+.modal-header {
+  border-bottom: 1px solid #344675;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-title {
+  color: #fff;
+  font-weight: 600;
+}
+
+.modal-body {
+  color: #c9d1d9;
+}
+
+.modal-footer {
+  border-top: 1px solid #344675;
+  background-color: #16213e;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Movement summary cards */
+.movement-summary {
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid #344675;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+}
+
+.summary-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(88, 166, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #58a6ff;
+  font-size: 20px;
+}
+
+.summary-info h6 {
+  margin: 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8b949e;
+  font-weight: 600;
+}
+
+.summary-info span {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Modal table styles */
+.modal-body .table {
+  color: #c9d1d9;
+  margin-bottom: 0;
+}
+
+.modal-body .table thead th {
+  border-bottom: 2px solid #344675;
+  color: #8b949e;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modal-body .table tbody tr {
+  border-bottom: 1px solid #21262d;
+}
+
+.modal-body .table tbody tr:hover {
+  background-color: rgba(88, 166, 255, 0.05);
+}
+
+.modal-body .table tbody td {
+  border-top: 1px solid #21262d;
+  vertical-align: middle;
+}
+
+/* Loading spinner */
+.spinner-border {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Close button */
+.modal-header .close {
+  color: #8b949e;
+  opacity: 1;
+  font-size: 24px;
+  font-weight: 300;
+}
+
+.modal-header .close:hover {
+  color: #fff;
+  opacity: 1;
+}
+
+/* Responsive modal */
+@media (max-width: 768px) {
+  .modal-dialog {
+    margin: 10px;
+    max-width: calc(100% - 20px);
+  }
+  
+  .summary-card {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .summary-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .summary-info span {
+    font-size: 16px;
+  }
+}

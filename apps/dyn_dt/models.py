@@ -36,21 +36,30 @@ class ModelFilter(models.Model):
 class Turno(models.Model):
     """
     Representa un turno del campamento (por ejemplo: 'Primer turno chicas').
+    Cada turno debe estar asociado a una caja específica.
     """
+    
+    caja = models.ForeignKey(
+        'Caja',
+        on_delete=models.CASCADE,
+        verbose_name="Caja",
+        related_name="turnos",
+        help_text="Caja a la que pertenece este turno"
+    )
 
     nombre = models.CharField(
         max_length=100,
-        unique=True,
         verbose_name="Nombre del turno"
     )
 
     def __str__(self):
-        return self.nombre
+        return f"{self.nombre} ({self.caja.nombre})"
 
     class Meta:
         verbose_name = "Turno"
         verbose_name_plural = "Turnos"
-        ordering = ['nombre']
+        ordering = ['caja__nombre', 'nombre']
+        unique_together = [['caja', 'nombre']]  # Unique turno name per caja
 
 
 

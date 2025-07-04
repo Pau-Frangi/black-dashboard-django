@@ -47,6 +47,7 @@ def test_saldo_protection():
     
     # Crear datos para movimientos
     turno, created = Turno.objects.get_or_create(
+        caja=caja,
         nombre="Turno Protección Test"
     )
     

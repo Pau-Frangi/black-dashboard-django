@@ -324,6 +324,16 @@ def registro(request):
     if request.method == 'GET' and request.GET.get('ajax') == 'true':
         caja_id = request.GET.get('caja_id')
         
+        if request.GET.get('get_turnos') == 'true':
+            # Return turnos for the selected caja
+            if caja_id:
+                turnos = Turno.objects.filter(caja_id=caja_id).values('id', 'nombre')
+                return JsonResponse({
+                    'success': True,
+                    'turnos': list(turnos)
+                })
+            return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
+        
         if not caja_id:
             return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
         
@@ -438,7 +448,8 @@ def registro(request):
     
     # GET request - render the template
     cajas = Caja.objects.all().order_by('-año', 'nombre')
-    turnos = Turno.objects.all()
+    # Only get turnos for active cajas initially
+    turnos = Turno.objects.filter(caja__activa=True)
     conceptos = Concepto.objects.all()
     
     context = {

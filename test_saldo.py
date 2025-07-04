@@ -32,6 +32,7 @@ def test_saldo_updates():
     )
     
     turno, created = Turno.objects.get_or_create(
+        caja=caja,
         nombre="Turno de Prueba"
     )
     

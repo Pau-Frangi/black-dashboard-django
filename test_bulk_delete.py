@@ -31,6 +31,7 @@ def test_bulk_delete():
     )
     
     turno, created = Turno.objects.get_or_create(
+        caja=caja,
         nombre="Turno Bulk Test"
     )
     
