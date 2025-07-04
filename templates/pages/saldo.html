@@ -67,7 +67,7 @@
 
     <!-- Resumen de Totales -->
     <div class="row" id="totalsSection" style="display: none;">
-        <div class="col-lg-3">
+        <div class="col-lg-4">
             <div class="card card-chart">
                 <div class="card-header">
                     <h5 class="card-category">Total Ingresos</h5>
@@ -80,7 +80,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3">
+        <div class="col-lg-4">
             <div class="card card-chart">
                 <div class="card-header">
                     <h5 class="card-category">Total Gastos</h5>
@@ -93,7 +93,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3">
+        <div class="col-lg-4">
             <div class="card card-chart">
                 <div class="card-header">
                     <h5 class="card-category">Total Movimientos</h5>
@@ -102,19 +102,6 @@
                 <div class="card-body">
                     <div class="chart-area">
                         <canvas id="movimientosChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-3">
-            <div class="card card-chart">
-                <div class="card-header">
-                    <h5 class="card-category">Balance Final</h5>
-                    <h3 class="card-title"><i class="tim-icons icon-coins text-primary"></i> <span id="balanceFinal">0€</span></h3>
-                </div>
-                <div class="card-body">
-                    <div class="chart-area">
-                        <canvas id="balanceChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -747,88 +734,6 @@
             balanceLabels.push('Actual');
             balanceData.push(currentBalance);
         }
-
-        // Mini chart for balance evolution with axes
-        const balanceCtx = document.getElementById('balanceChart').getContext('2d');
-        currentCharts.balanceChart = new Chart(balanceCtx, {
-            type: 'line',
-            data: {
-                labels: balanceLabels,
-                datasets: [{
-                    label: 'Balance Diario',
-                    data: balanceData,
-                    borderColor: '#d346b1',
-                    backgroundColor: 'rgba(211, 70, 177, 0.1)',
-                    fill: true,
-                    pointBackgroundColor: '#d346b1',
-                    pointBorderColor: '#fff',
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                legend: { display: false },
-                scales: {
-                    yAxes: [{
-                        display: true,
-                        gridLines: {
-                            drawBorder: false,
-                            color: 'rgba(255,255,255,0.1)',
-                            zeroLineColor: "transparent"
-                        },
-                        ticks: {
-                            padding: 10,
-                            fontColor: "#9a9a9a",
-                            fontSize: 10,
-                            callback: function(value) {
-                                return value.toFixed(0) + '€';
-                            }
-                        }
-                    }],
-                    xAxes: [{
-                        display: true,
-                        gridLines: {
-                            drawBorder: false,
-                            color: 'rgba(255,255,255,0.1)',
-                            zeroLineColor: "transparent"
-                        },
-                        ticks: {
-                            padding: 10,
-                            fontColor: "#9a9a9a",
-                            fontSize: 10
-                        }
-                    }]
-                },
-                elements: {
-                    point: { 
-                        radius: 3,
-                        hoverRadius: 5,
-                        backgroundColor: '#fff',
-                        borderWidth: 2
-                    },
-                    line: {
-                        borderWidth: 2
-                    }
-                },
-                tooltips: {
-                    backgroundColor: '#f5f5f5',
-                    titleFontColor: '#333',
-                    bodyFontColor: '#666',
-                    bodySpacing: 4,
-                    xPadding: 12,
-                    mode: "nearest",
-                    intersect: 0,
-                    position: "nearest",
-                    callbacks: {
-                        label: function(tooltipItem, data) {
-                            return 'Balance: ' + tooltipItem.yLabel.toFixed(2) + '€';
-                        }
-                    }
-                }
-            }
-        });
     }
 
     function updateRecentMovements(movements) {

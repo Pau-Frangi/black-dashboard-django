@@ -395,7 +395,7 @@
                             transition: all 0.3s ease;
                         ">
                             <i class="tim-icons icon-simple-remove"></i>
-                            Eliminar
+                            Cambiar
                         </button>
                     </div>
                 </div>
@@ -418,7 +418,9 @@
             );
             
             // Add remove functionality
-            fileDisplay.find('.remove-file').on('click', function() {
+            fileDisplay.find('.remove-file').on('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
                 $(input).val('');
                 fileDisplay.fadeOut(300, function() {
                     $(this).remove();

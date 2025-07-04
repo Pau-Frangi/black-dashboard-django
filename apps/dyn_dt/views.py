@@ -547,3 +547,87 @@ def saldo(request):
     }
     
     return render(request, 'pages/saldo.html', context)
+
+@login_required
+def tables(request):
+    """Vista para mostrar tablas de resultados por conceptos y turnos"""
+    
+    # Get all cajas for the selector
+    cajas = Caja.objects.all().order_by('-año', 'nombre')
+    
+    # Handle AJAX requests for table data
+    if request.method == 'GET' and request.GET.get('ajax') == 'true':
+        caja_id = request.GET.get('caja_id')
+        
+        if not caja_id:
+            return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
+        
+        try:
+            caja = get_object_or_404(Caja, id=caja_id)
+            movimientos = MovimientoCaja.objects.filter(caja=caja)
+            
+            # Prepare data for conceptos table
+            conceptos_data = []
+            conceptos_dict = {}
+            
+            for mov in movimientos:
+                concepto_nombre = str(mov.concepto)
+                if concepto_nombre not in conceptos_dict:
+                    conceptos_dict[concepto_nombre] = {
+                        'nombre': concepto_nombre,
+                        'es_gasto': mov.concepto.es_gasto,
+                        'total': 0,
+                        'count': 0
+                    }
+                
+                conceptos_dict[concepto_nombre]['total'] += float(mov.cantidad)
+                conceptos_dict[concepto_nombre]['count'] += 1
+            
+            conceptos_data = list(conceptos_dict.values())
+            conceptos_data.sort(key=lambda x: x['nombre'])
+            
+            # Prepare data for turnos table
+            turnos_data = []
+            turnos_dict = {}
+            
+            for mov in movimientos:
+                turno_nombre = str(mov.turno)
+                if turno_nombre not in turnos_dict:
+                    turnos_dict[turno_nombre] = {
+                        'nombre': turno_nombre,
+                        'ingresos': 0,
+                        'gastos': 0,
+                        'count': 0
+                    }
+                
+                if mov.es_gasto():
+                    turnos_dict[turno_nombre]['gastos'] += float(mov.cantidad)
+                else:
+                    turnos_dict[turno_nombre]['ingresos'] += float(mov.cantidad)
+                
+                turnos_dict[turno_nombre]['count'] += 1
+            
+            turnos_data = list(turnos_dict.values())
+            turnos_data.sort(key=lambda x: x['nombre'])
+            
+            return JsonResponse({
+                'success': True,
+                'caja_info': {
+                    'nombre': caja.nombre,
+                    'año': caja.año,
+                    'saldo_actual': float(caja.saldo)
+                },
+                'conceptos': conceptos_data,
+                'turnos': turnos_data
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    # GET request - render the template
+    context = {
+        'cajas': cajas,
+        'segment': 'tables'
+    }
+    
+    return render(request, 'pages/tables.html', context)

@@ -27,6 +27,7 @@ urlpatterns = [
     path("", include('admin_black.urls')),
     path('registro/', registro, name='registro'),
     path('saldo/', saldo, name='saldo'),
+    path('tables/', include('apps.dyn_dt.urls')),
 ]
 
 # Lazy-load on routing is needed
