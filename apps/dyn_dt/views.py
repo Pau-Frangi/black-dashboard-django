@@ -449,3 +449,101 @@ def registro(request):
     }
     
     return render(request, 'pages/registro.html', context)
+
+@login_required
+def saldo(request):
+    """Vista para mostrar el estado económico detallado de la caja seleccionada"""
+    
+    # Get all cajas for the selector
+    cajas = Caja.objects.all().order_by('-año', 'nombre')
+    
+    # Handle AJAX requests for chart data
+    if request.method == 'GET' and request.GET.get('ajax') == 'true':
+        caja_id = request.GET.get('caja_id')
+        
+        if not caja_id:
+            return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
+        
+        try:
+            caja = get_object_or_404(Caja, id=caja_id)
+            movimientos = MovimientoCaja.objects.filter(caja=caja).order_by('fecha')
+            
+            # Prepare data for charts
+            monthly_data = {}
+            daily_data = {}
+            concept_data = {}
+            balance_evolution = []
+            
+            running_balance = caja.saldo  # Start with the current balance of the caja
+            
+            for mov in movimientos:
+                month_key = mov.fecha.strftime('%Y-%m')
+                day_key = mov.fecha.strftime('%Y-%m-%d')
+                concept_key = str(mov.concepto)
+                
+                # Monthly aggregation
+                if month_key not in monthly_data:
+                    monthly_data[month_key] = {'ingresos': 0, 'gastos': 0}
+                
+                if mov.es_gasto():
+                    monthly_data[month_key]['gastos'] += float(mov.cantidad)
+                else:
+                    monthly_data[month_key]['ingresos'] += float(mov.cantidad)
+                
+                # Concept aggregation
+                if concept_key not in concept_data:
+                    concept_data[concept_key] = {'total': 0, 'tipo': 'gasto' if mov.es_gasto() else 'ingreso'}
+                concept_data[concept_key]['total'] += float(mov.cantidad)
+                
+                # Balance evolution
+                running_balance += mov.cantidad_real()
+                balance_evolution.append({
+                    'fecha': mov.fecha.strftime('%Y-%m-%d'),
+                    'balance': float(running_balance),
+                    'movimiento': float(mov.cantidad_real())
+                })
+            
+            # Calculate totals
+            total_ingresos = sum(mov.cantidad for mov in movimientos if not mov.es_gasto())
+            total_gastos = sum(mov.cantidad for mov in movimientos if mov.es_gasto())
+            
+            # Recent movements (last 10)
+            recent_movements = []
+            for mov in movimientos.order_by('-fecha')[:10]:
+                recent_movements.append({
+                    'fecha': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                    'concepto': str(mov.concepto),
+                    'cantidad': float(mov.cantidad),
+                    'es_gasto': mov.es_gasto(),
+                    'turno': str(mov.turno)
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'caja_info': {
+                    'nombre': caja.nombre,
+                    'año': caja.año,
+                    'saldo_actual': float(caja.saldo)
+                },
+                'totals': {
+                    'total_ingresos': float(total_ingresos),
+                    'total_gastos': float(total_gastos),
+                    'saldo_actual': float(caja.saldo),
+                    'total_movimientos': movimientos.count()
+                },
+                'monthly_data': monthly_data,
+                'concept_data': concept_data,
+                'balance_evolution': balance_evolution,
+                'recent_movements': recent_movements
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    # GET request - render the template
+    context = {
+        'cajas': cajas,
+        'segment': 'saldo'
+    }
+    
+    return render(request, 'pages/saldo.html', context)

@@ -364,13 +364,13 @@
             // Create file display element
             const fileDisplay = $(`
                 <div class="file-display mt-3">
-                    <div class="file-container d-flex align-items-center justify-content-between p-3" style="
+                    <div class="d-flex align-items-center justify-content-between p-3" style="
                         background: linear-gradient(135deg, rgba(81, 203, 206, 0.1) 0%, rgba(81, 203, 206, 0.05) 100%);
                         border: 2px solid rgba(81, 203, 206, 0.3);
                         border-radius: 12px;
                         transition: all 0.3s ease;
                     ">
-                        <div class="file-info d-flex align-items-center">
+                        <div class="d-flex align-items-center">
                             <i class="tim-icons icon-attach-87 mr-3" style="
                                 color: #51cbce;
                                 font-size: 1.2rem;
@@ -402,7 +402,7 @@
             `);
             
             // Add hover effects
-            fileDisplay.find('.file-container').hover(
+            fileDisplay.find('.d-flex').hover(
                 function() {
                     $(this).css({
                         'background': 'linear-gradient(135deg, rgba(81, 203, 206, 0.15) 0%, rgba(81, 203, 206, 0.08) 100%)',
@@ -417,31 +417,15 @@
                 }
             );
             
-            // Add remove functionality with proper event handling
-            fileDisplay.find('.remove-file').on('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
-                
-                // Clear the file input
+            // Add remove functionality
+            fileDisplay.find('.remove-file').on('click', function() {
                 $(input).val('');
-                
-                // Remove the display with animation
                 fileDisplay.fadeOut(300, function() {
                     $(this).remove();
                 });
-                
-                return false;
             });
             
-            // Prevent the file container from triggering file input
-            fileDisplay.find('.file-container').on('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            });
-            
-            // Insert after the small text
+            // Insert after the input
             $fileGroup.find('small.form-text').after(fileDisplay);
             
             // Add entrance animation

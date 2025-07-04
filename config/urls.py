@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework.authtoken.views import obtain_auth_token # <-- NEW
+from apps.dyn_dt.views import registro, saldo
 
 urlpatterns = [
     path('', include('apps.pages.urls')),
@@ -24,6 +25,8 @@ urlpatterns = [
     path('charts/', include('apps.charts.urls')),
     path("admin/", admin.site.urls),
     path("", include('admin_black.urls')),
+    path('registro/', registro, name='registro'),
+    path('saldo/', saldo, name='saldo'),
 ]
 
 # Lazy-load on routing is needed

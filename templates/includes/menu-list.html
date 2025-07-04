@@ -18,6 +18,12 @@
       <p>Registro de Caja</p>
     </a>
   </li>
+  <li class="{% if 'saldo' in segment %} active {% endif %}">
+    <a href="{% url 'saldo' %}">
+        <i class="tim-icons icon-chart-bar-32"></i>
+        <p>Estado Económico</p>
+    </a>
+</li>
   <li class="{% if 'dynamic_api' in segment %} active {% endif %}">
     <a href="{% url "dynamic_api" %}">
       <i class="tim-icons icon-send"></i>

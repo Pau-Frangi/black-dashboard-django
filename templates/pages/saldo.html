@@ -1,0 +1,865 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Estado Económico {% endblock title %}
+
+{% block extrastyle %}
+<link href="{% static 'assets/css/registro.css' %}" rel="stylesheet" />
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="content">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="page-header">
+                <h2 class="page-title">
+                    <i class="tim-icons icon-chart-bar-32 mr-3"></i>
+                    Estado Económico de Caja
+                </h2>
+                <p class="page-subtitle">Análisis detallado del estado financiero con gráficos y estadísticas</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Caja -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
+                        <select class="form-control" id="cajaSelect" onchange="loadSaldoData()">
+                            <option value="">-- Selecciona una caja --</option>
+                            {% for caja in cajas %}
+                                <option value="{{ caja.id }}" 
+                                        data-saldo="{{ caja.saldo }}"
+                                        data-nombre="{{ caja.nombre }}"
+                                        data-año="{{ caja.año }}">
+                                    {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-stats">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-5 col-md-4">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="tim-icons icon-wallet-43 text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="col-7 col-md-8">
+                            <div class="numbers">
+                                <p class="card-category">Saldo Actual</p>
+                                <p class="card-title" id="saldoDisplay">--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen de Totales -->
+    <div class="row" id="totalsSection" style="display: none;">
+        <div class="col-lg-3">
+            <div class="card card-chart">
+                <div class="card-header">
+                    <h5 class="card-category">Total Ingresos</h5>
+                    <h3 class="card-title"><i class="tim-icons icon-send text-success"></i> <span id="totalIngresos">0€</span></h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="ingresosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-chart">
+                <div class="card-header">
+                    <h5 class="card-category">Total Gastos</h5>
+                    <h3 class="card-title"><i class="tim-icons icon-simple-remove text-danger"></i> <span id="totalGastos">0€</span></h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="gastosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-chart">
+                <div class="card-header">
+                    <h5 class="card-category">Total Movimientos</h5>
+                    <h3 class="card-title"><i class="tim-icons icon-chart-bar-32 text-info"></i> <span id="totalMovimientos">0</span></h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="movimientosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card card-chart">
+                <div class="card-header">
+                    <h5 class="card-category">Balance Final</h5>
+                    <h3 class="card-title"><i class="tim-icons icon-coins text-primary"></i> <span id="balanceFinal">0€</span></h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="balanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos Principales -->
+    <div class="row" id="chartsSection" style="display: none;">
+        <!-- Evolución del Saldo -->
+        <div class="col-12">
+            <div class="card card-chart">
+                <div class="card-header">
+                    <div class="row">
+                        <div class="col-sm-6 text-left">
+                            <h5 class="card-category">Evolución del Saldo</h5>
+                            <h2 class="card-title">Balance a lo largo del tiempo</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="balanceEvolutionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" id="detailChartsSection" style="display: none;">
+        <!-- Gráfico por Conceptos -->
+        <div class="col-lg-6">
+            <div class="card card-chart">
+                <div class="card-header">
+                    <h5 class="card-category">Distribución por Conceptos</h5>
+                    <h3 class="card-title">Gastos e Ingresos por categoría</h3>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area">
+                        <canvas id="conceptsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movimientos Recientes -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Movimientos Recientes</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table tablesorter">
+                            <thead class="text-primary">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Concepto</th>
+                                    <th>Turno</th>
+                                    <th class="text-center">Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentMovementsTable">
+                                <!-- Los movimientos recientes se cargarán aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mensaje cuando no hay caja seleccionada -->
+    <div id="noCajaMessage" class="text-center py-5">
+        <i class="tim-icons icon-chart-bar-32" style="font-size: 4rem; color: #ccc;"></i>
+        <h4 class="mt-3 text-muted">Selecciona una caja para ver su estado económico</h4>
+        <p class="text-muted">Elige una caja del selector superior para visualizar los gráficos y estadísticas</p>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extrajs %}
+<script>
+    let currentCharts = {};
+
+    $(document).ready(function() {
+        console.log('Página de saldo cargada');
+    });
+
+    function loadSaldoData() {
+        const cajaId = $('#cajaSelect').val();
+        
+        if (!cajaId) {
+            $('#totalsSection').hide();
+            $('#chartsSection').hide();
+            $('#detailChartsSection').hide();
+            $('#noCajaMessage').show();
+            $('#saldoDisplay').text('--');
+            return;
+        }
+
+        const selectedOption = $('#cajaSelect option:selected');
+        const saldo = selectedOption.data('saldo');
+        $('#saldoDisplay').text(saldo + '€');
+        $('#noCajaMessage').hide();
+
+        // Load data via AJAX
+        $.ajax({
+            url: '{% url "saldo" %}',
+            method: 'GET',
+            data: {
+                'caja_id': cajaId,
+                'ajax': 'true'
+            },
+            success: function(data) {
+                if (data.success) {
+                    updateTotals(data.totals);
+                    createCharts(data);
+                    updateRecentMovements(data.recent_movements);
+                    
+                    $('#totalsSection').show();
+                    $('#chartsSection').show();
+                    $('#detailChartsSection').show();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading saldo data:', error);
+                alert('Error al cargar los datos: ' + error);
+            }
+        });
+    }
+
+    function updateTotals(totals) {
+        $('#totalIngresos').text(totals.total_ingresos.toFixed(2) + '€');
+        $('#totalGastos').text(totals.total_gastos.toFixed(2) + '€');
+        $('#totalMovimientos').text(totals.total_movimientos);
+        $('#balanceFinal').text(totals.saldo_actual.toFixed(2) + '€');
+    }
+
+    function createCharts(data) {
+        // Destroy existing charts
+        Object.values(currentCharts).forEach(chart => {
+            if (chart) chart.destroy();
+        });
+
+        // Balance Evolution Chart
+        createBalanceEvolutionChart(data.balance_evolution);
+        
+        // Concepts Distribution Chart
+        createConceptsChart(data.concept_data);
+        
+        // Create mini charts for totals
+        createMiniCharts(data);
+    }
+
+    function createBalanceEvolutionChart(balanceData) {
+        const ctx = document.getElementById('balanceEvolutionChart').getContext('2d');
+        
+        // Calculate balance evolution backwards from current balance
+        const processedData = [];
+        if (balanceData && balanceData.length > 0) {
+            // Get current balance from the selected caja
+            const selectedOption = $('#cajaSelect option:selected');
+            let currentBalance = parseFloat(selectedOption.data('saldo')) || 0;
+            
+            // Sort movements by date (most recent first)
+            const sortedMovements = [...balanceData].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            
+            // Start with current balance and work backwards
+            let runningBalance = currentBalance;
+            
+            // Process movements in reverse chronological order
+            for (let i = 0; i < sortedMovements.length; i++) {
+                const movement = sortedMovements[i];
+                const date = new Date(movement.fecha);
+                
+                processedData.unshift({
+                    fecha: movement.fecha,
+                    balance: runningBalance,
+                    movimiento: movement.movimiento
+                });
+                
+                // Subtract this movement to get the balance before this movement
+                runningBalance -= movement.movimiento;
+            }
+            
+            // Add initial balance point if we have movements
+            if (sortedMovements.length > 0) {
+                const firstMovement = sortedMovements[sortedMovements.length - 1];
+                const firstDate = new Date(firstMovement.fecha);
+                firstDate.setDate(firstDate.getDate() - 1); // Day before first movement
+                
+                processedData.unshift({
+                    fecha: firstDate.toISOString().split('T')[0],
+                    balance: runningBalance,
+                    movimiento: 0
+                });
+            }
+        }
+        
+        const labels = processedData.map(item => {
+            const date = new Date(item.fecha);
+            return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+        });
+        
+        const balances = processedData.map(item => item.balance);
+        
+        const gradientStroke = ctx.createLinearGradient(0, 230, 0, 50);
+        gradientStroke.addColorStop(1, 'rgba(72,72,176,0.1)');
+        gradientStroke.addColorStop(0.4, 'rgba(72,72,176,0.0)');
+        gradientStroke.addColorStop(0, 'rgba(119,52,169,0)');
+
+        currentCharts.balanceEvolution = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Saldo',
+                    data: balances,
+                    fill: true,
+                    backgroundColor: gradientStroke,
+                    borderColor: '#d346b1',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#d346b1',
+                    pointBorderColor: 'rgba(255,255,255,0)',
+                    pointHoverBackgroundColor: '#d346b1',
+                    pointBorderWidth: 20,
+                    pointHoverRadius: 4,
+                    pointHoverBorderWidth: 15,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                legend: { display: false },
+                tooltips: {
+                    backgroundColor: '#f5f5f5',
+                    titleFontColor: '#333',
+                    bodyFontColor: '#666',
+                    bodySpacing: 4,
+                    xPadding: 12,
+                    mode: "nearest",
+                    intersect: 0,
+                    position: "nearest"
+                },
+                responsive: true,
+                scales: {
+                    yAxes: [{
+                        gridLines: {
+                            drawBorder: false,
+                            color: 'rgba(29,140,248,0.1)',
+                            zeroLineColor: "transparent"
+                        },
+                        ticks: {
+                            padding: 20,
+                            fontColor: "#9a9a9a",
+                            callback: function(value) {
+                                return value.toFixed(2) + '€';
+                            }
+                        }
+                    }],
+                    xAxes: [{
+                        gridLines: {
+                            drawBorder: false,
+                            color: 'rgba(225,78,202,0.1)',
+                            zeroLineColor: "transparent"
+                        },
+                        ticks: {
+                            padding: 20,
+                            fontColor: "#9a9a9a"
+                        }
+                    }]
+                }
+            }
+        });
+    }
+
+    function createConceptsChart(conceptData) {
+        const ctx = document.getElementById('conceptsChart').getContext('2d');
+        
+        const labels = Object.keys(conceptData);
+        const values = Object.values(conceptData).map(item => item.total);
+        const colors = Object.values(conceptData).map(item => 
+            item.tipo === 'gasto' ? 'rgba(255, 99, 132, 0.8)' : 'rgba(75, 192, 192, 0.8)'
+        );
+
+        currentCharts.concepts = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        fontColor: '#9a9a9a',
+                        fontSize: 11
+                    }
+                },
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            const label = data.labels[tooltipItem.index];
+                            const value = data.datasets[0].data[tooltipItem.index];
+                            return label + ': ' + value.toFixed(2) + '€';
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createMiniCharts(data) {
+        // Enhanced mini charts for the totals cards with visible axes
+        const chartOptions = {
+            maintainAspectRatio: false,
+            legend: { display: false },
+            scales: {
+                yAxes: [{
+                    display: true,
+                    gridLines: {
+                        drawBorder: false,
+                        color: 'rgba(255,255,255,0.1)',
+                        zeroLineColor: "transparent"
+                    },
+                    ticks: {
+                        padding: 10,
+                        fontColor: "#9a9a9a",
+                        fontSize: 10,
+                        callback: function(value) {
+                            return value.toFixed(0) + '€';
+                        }
+                    }
+                }],
+                xAxes: [{
+                    display: true,
+                    gridLines: {
+                        drawBorder: false,
+                        color: 'rgba(255,255,255,0.1)',
+                        zeroLineColor: "transparent"
+                    },
+                    ticks: {
+                        padding: 10,
+                        fontColor: "#9a9a9a",
+                        fontSize: 10
+                    }
+                }]
+            },
+            elements: {
+                point: { 
+                    radius: 3,
+                    hoverRadius: 5,
+                    backgroundColor: '#fff',
+                    borderWidth: 2
+                },
+                line: {
+                    borderWidth: 2
+                }
+            },
+            tooltips: {
+                backgroundColor: '#f5f5f5',
+                titleFontColor: '#333',
+                bodyFontColor: '#666',
+                bodySpacing: 4,
+                xPadding: 12,
+                mode: "nearest",
+                intersect: 0,
+                position: "nearest",
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        return 'Valor: ' + tooltipItem.yLabel.toFixed(2) + '€';
+                    }
+                }
+            }
+        };
+
+        // Prepare data for ingresos chart using daily data from balance_evolution
+        const ingresosLabels = [];
+        const ingresosData = [];
+        
+        if (data.balance_evolution && data.balance_evolution.length > 0) {
+            // Take the last 7 days of data for better visualization
+            const recentData = data.balance_evolution.slice(-7);
+            recentData.forEach(item => {
+                const date = new Date(item.fecha);
+                ingresosLabels.push(date.getDate().toString()); // Show only day number
+                // Calculate daily ingresos (positive movements)
+                const dailyIngresos = item.movimiento > 0 ? item.movimiento : 0;
+                ingresosData.push(dailyIngresos);
+            });
+        }
+
+        // Mini chart for ingresos
+        const ingresosCtx = document.getElementById('ingresosChart').getContext('2d');
+        currentCharts.ingresosChart = new Chart(ingresosCtx, {
+            type: 'line',
+            data: {
+                labels: ingresosLabels.length > 0 ? ingresosLabels : ['Sin datos'],
+                datasets: [{
+                    label: 'Ingresos Diarios',
+                    data: ingresosData.length > 0 ? ingresosData : [0],
+                    borderColor: '#00d6b4',
+                    backgroundColor: 'rgba(0, 214, 180, 0.1)',
+                    fill: true,
+                    pointBackgroundColor: '#00d6b4',
+                    pointBorderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        // Prepare data for gastos chart using daily data from balance_evolution
+        const gastosLabels = [];
+        const gastosData = [];
+        
+        if (data.balance_evolution && data.balance_evolution.length > 0) {
+            // Take the last 7 days of data for better visualization
+            const recentData = data.balance_evolution.slice(-7);
+            recentData.forEach(item => {
+                const date = new Date(item.fecha);
+                gastosLabels.push(date.getDate().toString()); // Show only day number
+                // Calculate daily gastos (negative movements, make them positive for display)
+                const dailyGastos = item.movimiento < 0 ? Math.abs(item.movimiento) : 0;
+                gastosData.push(dailyGastos);
+            });
+        }
+
+        // Mini chart for gastos
+        const gastosCtx = document.getElementById('gastosChart').getContext('2d');
+        currentCharts.gastosChart = new Chart(gastosCtx, {
+            type: 'line',
+            data: {
+                labels: gastosLabels.length > 0 ? gastosLabels : ['Sin datos'],
+                datasets: [{
+                    label: 'Gastos Diarios',
+                    data: gastosData.length > 0 ? gastosData : [0],
+                    borderColor: '#ff8a76',
+                    backgroundColor: 'rgba(255, 138, 118, 0.1)',
+                    fill: true,
+                    pointBackgroundColor: '#ff8a76',
+                    pointBorderColor: '#fff'
+                }]
+            },
+            options: chartOptions
+        });
+
+        // Enhanced mini charts for movimientos and balance with visible axes
+        const movimientosChartOptions = {
+            maintainAspectRatio: false,
+            legend: { display: false },
+            scales: {
+                yAxes: [{
+                    display: true,
+                    gridLines: {
+                        drawBorder: false,
+                        color: 'rgba(255,255,255,0.1)',
+                        zeroLineColor: "transparent"
+                    },
+                    ticks: {
+                        padding: 10,
+                        fontColor: "#9a9a9a",
+                        fontSize: 10,
+                        callback: function(value) {
+                            return Math.round(value);
+                        },
+                        beginAtZero: true
+                    }
+                }],
+                xAxes: [{
+                    display: true,
+                    gridLines: {
+                        drawBorder: false,
+                        color: 'rgba(255,255,255,0.1)',
+                        zeroLineColor: "transparent"
+                    },
+                    ticks: {
+                        padding: 10,
+                        fontColor: "#9a9a9a",
+                        fontSize: 10
+                    }
+                }]
+            },
+            elements: {
+                point: { radius: 0 },
+                line: { borderWidth: 2 }
+            },
+            tooltips: {
+                backgroundColor: '#f5f5f5',
+                titleFontColor: '#333',
+                bodyFontColor: '#666',
+                bodySpacing: 4,
+                xPadding: 12,
+                mode: "nearest",
+                intersect: 0,
+                position: "nearest",
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        if (data.datasets[0].label === 'Movimientos Diarios') {
+                            return 'Movimientos: ' + tooltipItem.yLabel;
+                        } else {
+                            return 'Balance: ' + tooltipItem.yLabel.toFixed(2) + '€';
+                        }
+                    }
+                }
+            }
+        };
+
+        // Prepare data for movimientos chart using daily movement count
+        const movimientosLabels = [];
+        const movimientosData = [];
+        
+        if (data.balance_evolution && data.balance_evolution.length > 0) {
+            // Group movements by day and count them
+            const dailyCounts = {};
+            const recentData = data.balance_evolution.slice(-7);
+            
+            recentData.forEach(item => {
+                const date = new Date(item.fecha);
+                const dayKey = date.getDate().toString();
+                
+                if (!dailyCounts[dayKey]) {
+                    dailyCounts[dayKey] = 0;
+                }
+                dailyCounts[dayKey] += 1; // Count movements per day
+            });
+            
+            Object.keys(dailyCounts).sort((a, b) => parseInt(a) - parseInt(b)).forEach(day => {
+                movimientosLabels.push(day);
+                movimientosData.push(dailyCounts[day]);
+            });
+        }
+
+        // Mini chart for movimientos count with axes
+        const movimientosCtx = document.getElementById('movimientosChart').getContext('2d');
+        currentCharts.movimientosChart = new Chart(movimientosCtx, {
+            type: 'bar',
+            data: {
+                labels: movimientosLabels.length > 0 ? movimientosLabels : ['Sin datos'],
+                datasets: [{
+                    label: 'Movimientos por Día',
+                    data: movimientosData.length > 0 ? movimientosData : [0],
+                    backgroundColor: 'rgba(29, 140, 248, 0.8)',
+                    borderColor: '#1d8cf8',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                legend: { display: false },
+                scales: {
+                    yAxes: [{
+                        display: true,
+                        gridLines: {
+                            drawBorder: false,
+                            color: 'rgba(255,255,255,0.1)',
+                            zeroLineColor: "transparent"
+                        },
+                        ticks: {
+                            padding: 10,
+                            fontColor: "#9a9a9a",
+                            fontSize: 10,
+                            callback: function(value) {
+                                return Math.round(value);
+                            },
+                            beginAtZero: true,
+                            stepSize: 1
+                        }
+                    }],
+                    xAxes: [{
+                        display: true,
+                        gridLines: {
+                            drawBorder: false,
+                            color: 'rgba(255,255,255,0.1)',
+                            zeroLineColor: "transparent"
+                        },
+                        ticks: {
+                            padding: 10,
+                            fontColor: "#9a9a9a",
+                            fontSize: 10
+                        }
+                    }]
+                },
+                elements: {
+                    point: { radius: 0 },
+                    line: { borderWidth: 2 }
+                },
+                tooltips: {
+                    backgroundColor: '#f5f5f5',
+                    titleFontColor: '#333',
+                    bodyFontColor: '#666',
+                    bodySpacing: 4,
+                    xPadding: 12,
+                    mode: "nearest",
+                    intersect: 0,
+                    position: "nearest",
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            const count = tooltipItem.yLabel;
+                            return count === 1 ? '1 movimiento' : count + ' movimientos';
+                        }
+                    }
+                }
+            }
+        });
+
+        // Prepare data for balance chart using daily balance evolution
+        const balanceLabels = [];
+        const balanceData = [];
+        
+        if (data.balance_evolution && data.balance_evolution.length > 0) {
+            // Take the last 7 days of balance data
+            const recentData = data.balance_evolution.slice(-7);
+            recentData.forEach(item => {
+                const date = new Date(item.fecha);
+                balanceLabels.push(date.getDate().toString());
+                balanceData.push(item.balance);
+            });
+        } else {
+            // If no movements, show current caja balance as flat line
+            const currentBalance = data.caja_info ? data.caja_info.saldo_actual : 0;
+            balanceLabels.push('Actual');
+            balanceData.push(currentBalance);
+        }
+
+        // Mini chart for balance evolution with axes
+        const balanceCtx = document.getElementById('balanceChart').getContext('2d');
+        currentCharts.balanceChart = new Chart(balanceCtx, {
+            type: 'line',
+            data: {
+                labels: balanceLabels,
+                datasets: [{
+                    label: 'Balance Diario',
+                    data: balanceData,
+                    borderColor: '#d346b1',
+                    backgroundColor: 'rgba(211, 70, 177, 0.1)',
+                    fill: true,
+                    pointBackgroundColor: '#d346b1',
+                    pointBorderColor: '#fff',
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                legend: { display: false },
+                scales: {
+                    yAxes: [{
+                        display: true,
+                        gridLines: {
+                            drawBorder: false,
+                            color: 'rgba(255,255,255,0.1)',
+                            zeroLineColor: "transparent"
+                        },
+                        ticks: {
+                            padding: 10,
+                            fontColor: "#9a9a9a",
+                            fontSize: 10,
+                            callback: function(value) {
+                                return value.toFixed(0) + '€';
+                            }
+                        }
+                    }],
+                    xAxes: [{
+                        display: true,
+                        gridLines: {
+                            drawBorder: false,
+                            color: 'rgba(255,255,255,0.1)',
+                            zeroLineColor: "transparent"
+                        },
+                        ticks: {
+                            padding: 10,
+                            fontColor: "#9a9a9a",
+                            fontSize: 10
+                        }
+                    }]
+                },
+                elements: {
+                    point: { 
+                        radius: 3,
+                        hoverRadius: 5,
+                        backgroundColor: '#fff',
+                        borderWidth: 2
+                    },
+                    line: {
+                        borderWidth: 2
+                    }
+                },
+                tooltips: {
+                    backgroundColor: '#f5f5f5',
+                    titleFontColor: '#333',
+                    bodyFontColor: '#666',
+                    bodySpacing: 4,
+                    xPadding: 12,
+                    mode: "nearest",
+                    intersect: 0,
+                    position: "nearest",
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            return 'Balance: ' + tooltipItem.yLabel.toFixed(2) + '€';
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateRecentMovements(movements) {
+        const tbody = $('#recentMovementsTable');
+        tbody.empty();
+
+        if (!movements || movements.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No hay movimientos recientes</td>
+                </tr>
+            `);
+            return;
+        }
+
+        movements.forEach(function(mov) {
+            const cantidadClass = mov.es_gasto ? 'text-danger' : 'text-success';
+            const cantidadSign = mov.es_gasto ? '-' : '+';
+            
+            const row = `
+                <tr>
+                    <td>${mov.fecha}</td>
+                    <td>${mov.concepto}</td>
+                    <td>${mov.turno}</td>
+                    <td class="text-center ${cantidadClass}">
+                        <strong>${cantidadSign}${mov.cantidad.toFixed(2)}€</strong>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    }
+</script>
+{% endblock extrajs %}
