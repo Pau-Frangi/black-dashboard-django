@@ -24,336 +24,426 @@
   </div>
 
   <!-- Selector de Caja -->
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <div class="card">
-        <div class="card-body">
-          <div class="form-group">
-            <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
-            <select class="form-control" id="cajaSelect" onchange="loadTablesData()">
-              <option value="">-- Selecciona una caja --</option>
-              {% for caja in cajas %}
-              <option value="{{ caja.id }}" data-saldo="{{ caja.saldo }}" data-nombre="{{ caja.nombre }}"
-                data-año="{{ caja.año }}">
-                {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card card-stats">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-5 col-md-4">
-              <div class="icon-big text-center icon-warning">
-                <i class="tim-icons icon-wallet-43 text-warning"></i>
-              </div>
-            </div>
-            <div class="col-7 col-md-8">
-              <div class="numbers">
-                <p class="card-category">Saldo Actual</p>
-                <p class="card-title" id="saldoDisplay">--</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Selector de Tipo de Tabla -->
-  <div class="row mb-4" id="tableTypeSection" style="display: none;">
+  <div class="row">
     <div class="col-md-12">
       <div class="card">
-        <div class="modern-tabs-container">
-          <div class="modern-tabs">
-            <button type="button" class="modern-tab active" onclick="selectTab('conceptos', this)">
-              <i class="tim-icons icon-tag tab-icon"></i>
-              <span class="tab-text">Por Conceptos</span>
-            </button>
-            <button type="button" class="modern-tab" onclick="selectTab('turnos', this)">
-              <i class="tim-icons icon-calendar-60 tab-icon"></i>
-              <span class="tab-text">Por Turnos</span>
-            </button>
-          </div>
-        </div>
-        <div class="tab-content-wrapper">
-          <p class="tab-description" id="tabDescription">
-            Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto
-          </p>
-        </div>
-        <!-- Tabla de Conceptos -->
-        <div id="conceptosTable" style="display: none;">
-
-          <div class="card-header">
-            <h4 class="card-title">
-              <i class="tim-icons icon-tag mr-2"></i>
-              Resultados por Conceptos
-            </h4>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Concepto</th>
-                    <th>Tipo</th>
-                    <th class="text-center">Nº Movimientos</th>
-                    <th class="text-right">Total</th>
-                  </tr>
-                </thead>
-                <tbody id="conceptosTableBody">
-                  <!-- Los datos se cargarán aquí -->
-                </tbody>
-                <tfoot id="conceptosTableFooter">
-                  <!-- Los totales se cargarán aquí -->
-                </tfoot>
-              </table>
+        <div class="card-body">
+          <div class="row mb-4">
+            <div class="col-md-8">
+              <div class="form-group">
+                <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
+                <select class="form-control" id="cajaSelect" onchange="loadTablesData()">
+                  <option value="">-- Selecciona una caja --</option>
+                  {% for caja in cajas %}
+                  <option value="{{ caja.id }}" data-saldo="{{ caja.saldo }}" data-nombre="{{ caja.nombre }}"
+                    data-año="{{ caja.año }}">
+                    {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
             </div>
-          </div>
-
-        </div>
-
-        <!-- Tabla de Turnos -->
-        <div id="turnosTable" style="display: none;">
-
-          <div class="card-header">
-            <h4 class="card-title">
-              <i class="tim-icons icon-calendar-60 mr-2"></i>
-              Resultados por Turnos
-            </h4>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Turno</th>
-                    <th class="text-center">Nº Movimientos</th>
-                    <th class="text-right">Total Ingresos</th>
-                    <th class="text-right">Total Gastos</th>
-                    <th class="text-right">Balance</th>
-                  </tr>
-                </thead>
-                <tbody id="turnosTableBody">
-                  <!-- Los datos se cargarán aquí -->
-                </tbody>
-                <tfoot id="turnosTableFooter">
-                  <!-- Los totales se cargarán aquí -->
-                </tfoot>
-              </table>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Mensaje cuando no hay caja seleccionada -->
-        <div id="noCajaMessage" class="text-center py-5">
-          <i class="tim-icons icon-chart-pie-36" style="font-size: 4rem; color: #ccc;"></i>
-          <h4 class="mt-3 text-muted">Selecciona una caja para ver las tablas de resultados</h4>
-          <p class="text-muted">Elige una caja del selector superior para visualizar los análisis por conceptos y turnos
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal para detalles de movimientos -->
-  <div class="modal fade" id="movimientosModal" tabindex="-1" role="dialog" aria-labelledby="movimientosModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="movimientosModalLabel">
-            <i class="tim-icons icon-notes mr-2"></i>
-            Detalle de Movimientos
-          </h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div id="modalLoading" class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-              <span class="sr-only">Cargando...</span>
-            </div>
-            <p class="mt-2 text-muted">Cargando movimientos...</p>
-          </div>
-          <div id="modalContent" style="display: none;">
-            <div class="movement-summary mb-3">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="summary-card">
-                    <div class="summary-icon">
-                      <i class="tim-icons icon-chart-bar-32"></i>
-                    </div>
-                    <div class="summary-info">
-                      <h6>Total Movimientos</h6>
-                      <span id="modalTotalCount">0</span>
-                    </div>
-                  </div>
+            <div class="col-md-4">
+              <div class="totals-section">
+                <div class="total-item">
+                  <span class="total-label">Ingresos</span>
+                  <div class="total-value ingresos" id="totalIngresosHeader">--</div>
                 </div>
-                <div class="col-md-6">
-                  <div class="summary-card">
-                    <div class="summary-icon">
-                      <i class="tim-icons icon-wallet-43"></i>
-                    </div>
-                    <div class="summary-info">
-                      <h6>Importe Total</h6>
-                      <span id="modalTotalAmount">0.00€</span>
-                    </div>
-                  </div>
+                <div class="total-item">
+                  <span class="total-label">Gastos</span>
+                  <div class="total-value gastos" id="totalGastosHeader">--</div>
+                </div>
+                <div class="total-item">
+                  <span class="total-label">Saldo</span>
+                  <div class="total-value saldo" id="saldoActual">--</div>
                 </div>
               </div>
             </div>
-            <div class="table-responsive">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Turno</th>
-                    <th>Concepto</th>
-                    <th>Descripción</th>
-                    <th class="text-right">Importe</th>
-                  </tr>
-                </thead>
-                <tbody id="modalMovimientosTable">
-                  <!-- Los movimientos se cargarán aquí -->
-                </tbody>
-              </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selector de Tipo de Tabla -->
+      <div class="row mb-4" id="tableTypeSection" style="display: none;">
+        <div class="col-md-12">
+            <div class="modern-tabs-container">
+              <div class="modern-tabs">
+                <button type="button" class="modern-tab active" onclick="selectTab('conceptos', this)">
+                  <i class="tim-icons icon-tag tab-icon"></i>
+                  <span class="tab-text">Por Conceptos</span>
+                </button>
+                <button type="button" class="modern-tab" onclick="selectTab('turnos', this)">
+                  <i class="tim-icons icon-calendar-60 tab-icon"></i>
+                  <span class="tab-text">Por Turnos</span>
+                </button>
+              </div>
+            </div>
+            <div class="tab-content-wrapper">
+              <p class="tab-description" id="tabDescription">
+                Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto
+              </p>
+            </div>
+            <!-- Tabla de Conceptos -->
+            <div id="conceptosTable" style="display: none;">
+
+              <div class="card-header">
+                <h4 class="card-title">
+                  <i class="tim-icons icon-tag mr-2"></i>
+                  Resultados por Conceptos
+                </h4>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Concepto</th>
+                        <th>Tipo</th>
+                        <th class="text-center">Nº Movimientos</th>
+                        <th class="text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody id="conceptosTableBody">
+                      <!-- Los datos se cargarán aquí -->
+                    </tbody>
+                    <tfoot id="conceptosTableFooter">
+                      <!-- Los totales se cargarán aquí -->
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Tabla de Turnos -->
+            <div id="turnosTable" style="display: none;">
+
+              <div class="card-header">
+                <h4 class="card-title">
+                  <i class="tim-icons icon-calendar-60 mr-2"></i>
+                  Resultados por Turnos
+                </h4>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Turno</th>
+                        <th class="text-center">Nº Movimientos</th>
+                        <th class="text-right">Total Ingresos</th>
+                        <th class="text-right">Total Gastos</th>
+                        <th class="text-right">Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody id="turnosTableBody">
+                      <!-- Los datos se cargarán aquí -->
+                    </tbody>
+                    <tfoot id="turnosTableFooter">
+                      <!-- Los totales se cargarán aquí -->
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Mensaje cuando no hay caja seleccionada -->
+            <div id="noCajaMessage" class="text-center py-5">
+              <i class="tim-icons icon-chart-pie-36" style="font-size: 4rem; color: #ccc;"></i>
+              <h4 class="mt-3 text-muted">Selecciona una caja para ver las tablas de resultados</h4>
+              <p class="text-muted">Elige una caja del selector superior para visualizar los análisis por conceptos y
+                turnos
+              </p>
+            </div>
+          </div>
+      </div>
+
+      <!-- Modal para detalles de movimientos -->
+      <div class="modal fade" id="movimientosModal" tabindex="-1" role="dialog" aria-labelledby="movimientosModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="movimientosModalLabel">
+                <i class="tim-icons icon-notes mr-2"></i>
+                Detalle de Movimientos
+              </h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div id="modalLoading" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="sr-only">Cargando...</span>
+                </div>
+                <p class="mt-2 text-muted">Cargando movimientos...</p>
+              </div>
+              <div id="modalContent" style="display: none;">
+                <div class="movement-summary mb-3">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="summary-card">
+                        <div class="summary-icon">
+                          <i class="tim-icons icon-chart-bar-32"></i>
+                        </div>
+                        <div class="summary-info">
+                          <h6>Total Movimientos</h6>
+                          <span id="modalTotalCount">0</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="summary-card">
+                        <div class="summary-icon">
+                          <i class="tim-icons icon-wallet-43"></i>
+                        </div>
+                        <div class="summary-info">
+                          <h6>Importe Total</h6>
+                          <span id="modalTotalAmount">0.00€</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Turno</th>
+                        <th>Concepto</th>
+                        <th>Descripción</th>
+                        <th class="text-right">Importe</th>
+                      </tr>
+                    </thead>
+                    <tbody id="modalMovimientosTable">
+                      <!-- Los movimientos se cargarán aquí -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-        </div>
       </div>
     </div>
-  </div>
-</div>
-{% endblock content %}
+    {% endblock content %}
 
-{% block extrajs %}
-<script>
-  let currentTablesData = null;
-  let currentTableType = 'conceptos';
+    {% block extrajs %}
+    <script>
+      let currentTablesData = null;
+      let currentTableType = 'conceptos';
 
-  const tabDescriptions = {
-    'conceptos': 'Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto',
-    'turnos': 'Resumen de actividad financiera organizado por turnos de trabajo'
-  };
+      const tabDescriptions = {
+        'conceptos': 'Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto',
+        'turnos': 'Resumen de actividad financiera organizado por turnos de trabajo'
+      };
 
-  $(document).ready(function () {
-    console.log('Página de tablas cargada');
-  });
-
-  function selectTab(type, button) {
-    // Remove active class from all tabs
-    $('.modern-tab').removeClass('active');
-
-    // Add active class to clicked tab
-    $(button).addClass('active');
-
-    // Update description
-    $('#tabDescription').text(tabDescriptions[type]);
-
-    // Update current type and show table
-    currentTableType = type;
-    showTable(type);
-  }
-
-  function loadTablesData() {
-    const cajaId = $('#cajaSelect').val();
-
-    if (!cajaId) {
-      $('#tableTypeSection').hide();
-      $('#conceptosTable').hide();
-      $('#turnosTable').hide();
-      $('#noCajaMessage').show();
-      $('#saldoDisplay').text('--');
-      return;
-    }
-
-    const selectedOption = $('#cajaSelect option:selected');
-    const saldo = selectedOption.data('saldo');
-    $('#saldoDisplay').text(saldo + '€');
-    $('#noCajaMessage').hide();
-
-    // Load data via AJAX
-    $.ajax({
-      url: '{% url "tables" %}',
-      method: 'GET',
-      data: {
-        'caja_id': cajaId,
-        'ajax': 'true'
-      },
-      success: function (data) {
-        if (data.success) {
-          currentTablesData = data;
-          $('#tableTypeSection').show();
-
-          // Show the currently active table
-          showTable(currentTableType);
-        } else {
-          alert('Error: ' + data.error);
+      $(document).ready(function () {
+        console.log('Página de tablas cargada');
+        
+        // Initialize page
+        updateSaldoDisplay();
+        
+        // Load tables data if a caja is already selected
+        if ($('#cajaSelect').val()) {
+          console.log('Caja ya seleccionada, cargando datos...');
+          loadTablesData();
         }
-      },
-      error: function (xhr, status, error) {
-        console.error('Error loading tables data:', error);
-        alert('Error al cargar los datos: ' + error);
+      });
+
+      function updateSaldoDisplay() {
+        const selectedOption = $('#cajaSelect option:selected');
+        const saldo = selectedOption.data('saldo');
+        
+        console.log('Actualizando saldo display:', saldo, 'tipo:', typeof saldo);
+        
+        if (saldo !== undefined && saldo !== null && saldo !== '') {
+          // Convertir a número si es necesario
+          const saldoNum = parseFloat(saldo);
+          if (!isNaN(saldoNum)) {
+            $('#saldoActual').text(saldoNum.toFixed(2) + '€');
+          } else {
+            console.warn('Saldo no es un número válido:', saldo);
+            $('#saldoActual').text('0.00€');
+          }
+          // Limpiar los totales hasta que se carguen los datos
+          $('#totalIngresosHeader').text('--');
+          $('#totalGastosHeader').text('--');
+        } else {
+          $('#saldoActual').text('--');
+          $('#totalIngresosHeader').text('--');
+          $('#totalGastosHeader').text('--');
+        }
       }
-    });
-  }
 
-  function showTable(tableType) {
-    if (!currentTablesData) return;
+      function updateSaldoFromResponse(resumen) {
+        console.log('Actualizando valores desde respuesta:', resumen);
+        
+        if (resumen) {
+          const totalIngresos = parseFloat(resumen.total_ingresos) || 0;
+          const totalGastos = parseFloat(resumen.total_gastos) || 0;
+          const saldoActual = parseFloat(resumen.saldo_actual) || 0;
+          
+          $('#totalIngresosHeader').text(totalIngresos.toFixed(2) + '€');
+          $('#totalGastosHeader').text(totalGastos.toFixed(2) + '€');
+          $('#saldoActual').text(saldoActual.toFixed(2) + '€');
+          
+          // También actualizar el data attribute para futuras referencias
+          $('#cajaSelect option:selected').data('saldo', saldoActual);
+        }
+      }
 
-    // Hide all tables
-    $('#conceptosTable').hide();
-    $('#turnosTable').hide();
+      function selectTab(type, button) {
+        // Remove active class from all tabs
+        $('.modern-tab').removeClass('active');
 
-    if (tableType === 'conceptos') {
-      showConceptosTable();
-    } else if (tableType === 'turnos') {
-      showTurnosTable();
-    }
-  }
+        // Add active class to clicked tab
+        $(button).addClass('active');
 
-  function showConceptosTable() {
-    const tbody = $('#conceptosTableBody');
-    const tfoot = $('#conceptosTableFooter');
-    tbody.empty();
-    tfoot.empty();
+        // Update description
+        $('#tabDescription').text(tabDescriptions[type]);
 
-    if (!currentTablesData.conceptos || currentTablesData.conceptos.length === 0) {
-      tbody.append(`
+        // Update current type and show table
+        currentTableType = type;
+        showTable(type);
+      }
+
+      function loadTablesData() {
+        const cajaId = $('#cajaSelect').val();
+
+        if (!cajaId) {
+          $('#tableTypeSection').hide();
+          $('#conceptosTable').hide();
+          $('#turnosTable').hide();
+          $('#noCajaMessage').show();
+          // Limpiar los campos del header
+          $('#totalIngresosHeader').text('--');
+          $('#totalGastosHeader').text('--');
+          $('#saldoActual').text('--');
+          return;
+        }
+
+        // Update saldo display
+        updateSaldoDisplay();
+        $('#noCajaMessage').hide();
+
+        // Load data via AJAX
+        $.ajax({
+          url: '{% url "tables" %}',
+          method: 'GET',
+          data: {
+            'caja_id': cajaId,
+            'ajax': 'true'
+          },
+          success: function (data) {
+            console.log('Respuesta AJAX recibida:', data);
+            
+            if (data.success) {
+              currentTablesData = data;
+              $('#tableTypeSection').show();
+
+              // Actualizar los campos del header con el resumen si está disponible
+              if (data.resumen) {
+                updateSaldoFromResponse(data.resumen);
+              } else {
+                // Si no hay resumen en la respuesta, cargar los movimientos para obtenerlo
+                loadMovimientosForSummary(cajaId);
+              }
+
+              // Show the currently active table
+              showTable(currentTableType);
+            } else {
+              alert('Error: ' + data.error);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error('Error loading tables data:', error);
+            if (xhr.status === 302 || xhr.status === 403) {
+              // Problemas de autenticación
+              alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
+              window.location.href = '/accounts/login/';
+            } else {
+              alert('Error al cargar los datos: ' + error);
+            }
+          }
+        });
+      }
+
+      function loadMovimientosForSummary(cajaId) {
+        // Cargar los movimientos desde el endpoint de registro para obtener el resumen
+        $.ajax({
+          url: '{% url "registro" %}',
+          method: 'GET',
+          data: {
+            'caja_id': cajaId,
+            'ajax': 'true'
+          },
+          success: function (data) {
+            console.log('Datos de movimientos para resumen:', data);
+            
+            if (data.success && data.resumen) {
+              updateSaldoFromResponse(data.resumen);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.warn('No se pudo cargar el resumen desde movimientos:', error);
+          }
+        });
+      }
+
+      function showTable(tableType) {
+        if (!currentTablesData) return;
+
+        // Hide all tables
+        $('#conceptosTable').hide();
+        $('#turnosTable').hide();
+
+        if (tableType === 'conceptos') {
+          showConceptosTable();
+        } else if (tableType === 'turnos') {
+          showTurnosTable();
+        }
+      }
+
+      function showConceptosTable() {
+        const tbody = $('#conceptosTableBody');
+        const tfoot = $('#conceptosTableFooter');
+        tbody.empty();
+        tfoot.empty();
+
+        if (!currentTablesData.conceptos || currentTablesData.conceptos.length === 0) {
+          tbody.append(`
                 <tr>
                     <td colspan="4" class="text-center text-muted">No hay datos de conceptos para esta caja</td>
                 </tr>
             `);
-      $('#conceptosTable').show();
-      return;
-    }
+          $('#conceptosTable').show();
+          return;
+        }
 
-    let totalIngresos = 0;
-    let totalGastos = 0;
-    let totalMovimientos = 0;
+        let totalIngresos = 0;
+        let totalGastos = 0;
+        let totalMovimientos = 0;
 
-    currentTablesData.conceptos.forEach(function (concepto) {
-      const tipoClass = concepto.es_gasto ? 'text-danger' : 'text-success';
-      const tipoText = concepto.es_gasto ? 'Gasto' : 'Ingreso';
-      const tipoIcon = concepto.es_gasto ? 'tim-icons icon-simple-remove' : 'tim-icons icon-simple-add';
+        currentTablesData.conceptos.forEach(function (concepto) {
+          const tipoClass = concepto.es_gasto ? 'text-danger' : 'text-success';
+          const tipoText = concepto.es_gasto ? 'Gasto' : 'Ingreso';
+          const tipoIcon = concepto.es_gasto ? 'tim-icons icon-simple-remove' : 'tim-icons icon-simple-add';
 
-      if (concepto.es_gasto) {
-        totalGastos += concepto.total;
-      } else {
-        totalIngresos += concepto.total;
-      }
-      totalMovimientos += concepto.count;
+          if (concepto.es_gasto) {
+            totalGastos += concepto.total;
+          } else {
+            totalIngresos += concepto.total;
+          }
+          totalMovimientos += concepto.count;
 
-      const row = `
+          const row = `
                 <tr class="clickable-row" data-tipo="concepto" data-id="${concepto.id}" data-nombre="${concepto.nombre}" style="cursor: pointer;">
                     <td>
                         <strong>${concepto.nombre}</strong>
@@ -372,14 +462,14 @@
                     </td>
                 </tr>
             `;
-      tbody.append(row);
-    });
+          tbody.append(row);
+        });
 
-    const balance = totalIngresos - totalGastos;
-    const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
+        const balance = totalIngresos - totalGastos;
+        const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
 
-    // Add totals footer
-    const footerRow = `
+        // Add totals footer
+        const footerRow = `
             <tr class="table-active" style="border-top: 2px solid #344675;">
                 <td><strong>TOTALES</strong></td>
                 <td>
@@ -406,40 +496,40 @@
                 </td>
             </tr>
         `;
-    tfoot.append(footerRow);
+        tfoot.append(footerRow);
 
-    $('#conceptosTable').show();
-  }
+        $('#conceptosTable').show();
+      }
 
-  function showTurnosTable() {
-    const tbody = $('#turnosTableBody');
-    const tfoot = $('#turnosTableFooter');
-    tbody.empty();
-    tfoot.empty();
+      function showTurnosTable() {
+        const tbody = $('#turnosTableBody');
+        const tfoot = $('#turnosTableFooter');
+        tbody.empty();
+        tfoot.empty();
 
-    if (!currentTablesData.turnos || currentTablesData.turnos.length === 0) {
-      tbody.append(`
+        if (!currentTablesData.turnos || currentTablesData.turnos.length === 0) {
+          tbody.append(`
                 <tr>
                     <td colspan="5" class="text-center text-muted">No hay datos de turnos para esta caja</td>
                 </tr>
             `);
-      $('#turnosTable').show();
-      return;
-    }
+          $('#turnosTable').show();
+          return;
+        }
 
-    let totalMovimientos = 0;
-    let totalIngresosTurnos = 0;
-    let totalGastosTurnos = 0;
+        let totalMovimientos = 0;
+        let totalIngresosTurnos = 0;
+        let totalGastosTurnos = 0;
 
-    currentTablesData.turnos.forEach(function (turno) {
-      const balance = turno.ingresos - turno.gastos;
-      const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
+        currentTablesData.turnos.forEach(function (turno) {
+          const balance = turno.ingresos - turno.gastos;
+          const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
 
-      totalMovimientos += turno.count;
-      totalIngresosTurnos += turno.ingresos;
-      totalGastosTurnos += turno.gastos;
+          totalMovimientos += turno.count;
+          totalIngresosTurnos += turno.ingresos;
+          totalGastosTurnos += turno.gastos;
 
-      const row = `
+          const row = `
                 <tr class="clickable-row" data-tipo="turno" data-id="${turno.id}" data-nombre="${turno.nombre}" style="cursor: pointer;">
                     <td>
                         <strong>${turno.nombre}</strong>
@@ -458,14 +548,14 @@
                     </td>
                 </tr>
             `;
-      tbody.append(row);
-    });
+          tbody.append(row);
+        });
 
-    const totalBalance = totalIngresosTurnos - totalGastosTurnos;
-    const totalBalanceClass = totalBalance >= 0 ? 'text-success' : 'text-danger';
+        const totalBalance = totalIngresosTurnos - totalGastosTurnos;
+        const totalBalanceClass = totalBalance >= 0 ? 'text-success' : 'text-danger';
 
-    // Add totals footer
-    const footerRow = `
+        // Add totals footer
+        const footerRow = `
             <tr class="table-active" style="border-top: 2px solid #344675;">
                 <td><strong>TOTALES</strong></td>
                 <td class="text-center">
@@ -482,95 +572,95 @@
                 </td>
             </tr>
         `;
-    tfoot.append(footerRow);
+        tfoot.append(footerRow);
 
-    $('#turnosTable').show();
-  }
+        $('#turnosTable').show();
+      }
 
-  // Event handler for clickable rows
-  $(document).on('click', '.clickable-row', function() {
-    const tipo = $(this).data('tipo');
-    const id = $(this).data('id');
-    const nombre = $(this).data('nombre');
-    const cajaId = $('#cajaSelect').val();
-    
-    if (!cajaId) return;
-    
-    showMovimientosModal(tipo, id, nombre, cajaId);
-  });
+      // Event handler for clickable rows
+      $(document).on('click', '.clickable-row', function () {
+        const tipo = $(this).data('tipo');
+        const id = $(this).data('id');
+        const nombre = $(this).data('nombre');
+        const cajaId = $('#cajaSelect').val();
 
-  function showMovimientosModal(tipo, id, nombre, cajaId) {
-    // Set modal title
-    $('#movimientosModalLabel').html(`
+        if (!cajaId) return;
+
+        showMovimientosModal(tipo, id, nombre, cajaId);
+      });
+
+      function showMovimientosModal(tipo, id, nombre, cajaId) {
+        // Set modal title
+        $('#movimientosModalLabel').html(`
       <i class="tim-icons icon-notes mr-2"></i>
       Movimientos - ${nombre}
     `);
-    
-    // Show modal and loading state
-    $('#movimientosModal').modal('show');
-    $('#modalLoading').show();
-    $('#modalContent').hide();
-    
-    console.log('Loading movements for:', { tipo, id, nombre, cajaId });
-    
-    // First try: Use the existing movimientos endpoint from registro page
-    $.ajax({
-      url: '{% url "registro" %}',
-      method: 'GET',
-      data: {
-        'caja_id': cajaId,
-        'ajax': 'true'
-      },
-      success: function(data) {
-        console.log('Registro data received:', data);
-        
-        if (data.success && data.movimientos) {
-          // Filter movements based on tipo and id/nombre
-          let filteredMovements = data.movimientos;
-          
-          if (tipo === 'concepto') {
-            filteredMovements = data.movimientos.filter(mov => {
-              return mov.concepto === nombre || mov.concepto_id == id;
-            });
-          } else if (tipo === 'turno') {
-            filteredMovements = data.movimientos.filter(mov => {
-              return mov.turno === nombre || mov.turno_id == id;
-            });
-          }
-          
-          console.log('Filtered movements:', filteredMovements);
-          
-          if (filteredMovements.length > 0) {
-            // Transform data to match expected format
-            const transformedMovements = filteredMovements.map(mov => ({
-              fecha: mov.datetime_iso || mov.fecha,
-              concepto: mov.concepto,
-              turno: mov.turno,
-              importe: mov.es_gasto ? -Math.abs(parseFloat(mov.cantidad)) : Math.abs(parseFloat(mov.cantidad)),
-              observaciones: mov.descripcion || mov.observaciones || ''
-            }));
-            
-            displayMovimientosData(transformedMovements);
-          } else {
-            // No movements found, show empty state with explanation
-            showNoMovimientosFound(tipo, nombre);
-          }
-        } else {
-          // Fallback: show test data to verify modal works
-          console.log('No data from registro, showing test data...');
-          showTestMovimientosData(tipo, nombre);
-        }
-      },
-      error: function(xhr, status, error) {
-        console.error('Error loading from registro:', error);
-        // Fallback: show test data
-        showTestMovimientosData(tipo, nombre);
-      }
-    });
-  }
 
-  function showNoMovimientosFound(tipo, nombre) {
-    $('#modalContent').html(`
+        // Show modal and loading state
+        $('#movimientosModal').modal('show');
+        $('#modalLoading').show();
+        $('#modalContent').hide();
+
+        console.log('Loading movements for:', { tipo, id, nombre, cajaId });
+
+        // First try: Use the existing movimientos endpoint from registro page
+        $.ajax({
+          url: '{% url "registro" %}',
+          method: 'GET',
+          data: {
+            'caja_id': cajaId,
+            'ajax': 'true'
+          },
+          success: function (data) {
+            console.log('Registro data received:', data);
+
+            if (data.success && data.movimientos) {
+              // Filter movements based on tipo and id/nombre
+              let filteredMovements = data.movimientos;
+
+              if (tipo === 'concepto') {
+                filteredMovements = data.movimientos.filter(mov => {
+                  return mov.concepto === nombre || mov.concepto_id == id;
+                });
+              } else if (tipo === 'turno') {
+                filteredMovements = data.movimientos.filter(mov => {
+                  return mov.turno === nombre || mov.turno_id == id;
+                });
+              }
+
+              console.log('Filtered movements:', filteredMovements);
+
+              if (filteredMovements.length > 0) {
+                // Transform data to match expected format
+                const transformedMovements = filteredMovements.map(mov => ({
+                  fecha: mov.datetime_iso || mov.fecha,
+                  concepto: mov.concepto,
+                  turno: mov.turno,
+                  importe: mov.es_gasto ? -Math.abs(parseFloat(mov.cantidad)) : Math.abs(parseFloat(mov.cantidad)),
+                  observaciones: mov.descripcion || mov.observaciones || ''
+                }));
+
+                displayMovimientosData(transformedMovements);
+              } else {
+                // No movements found, show empty state with explanation
+                showNoMovimientosFound(tipo, nombre);
+              }
+            } else {
+              // Fallback: show test data to verify modal works
+              console.log('No data from registro, showing test data...');
+              showTestMovimientosData(tipo, nombre);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error('Error loading from registro:', error);
+            // Fallback: show test data
+            showTestMovimientosData(tipo, nombre);
+          }
+        });
+      }
+
+      function showNoMovimientosFound(tipo, nombre) {
+        $('#modalContent').html(`
       <div class="text-center py-5">
         <i class="tim-icons icon-zoom-split" style="font-size: 3rem; color: #8b949e;"></i>
         <h5 class="mt-3 text-muted">No se encontraron movimientos</h5>
@@ -591,55 +681,55 @@
         </div>
       </div>
     `);
-    
-    $('#modalLoading').hide();
-    $('#modalContent').show();
-  }
 
-  function showTestMovimientosData(tipo, nombre) {
-    console.log('Showing test data for debugging...');
-    
-    // Create test data based on the type
-    let testData = [];
-    
-    if (tipo === 'concepto') {
-      testData = [
-        {
-          fecha: '2024-01-15T10:30:00',
-          concepto: nombre,
-          turno: 'Mañana',
-          importe: 25.50,
-          observaciones: 'Movimiento de prueba para ' + nombre
-        },
-        {
-          fecha: '2024-01-14T16:45:00',
-          concepto: nombre,
-          turno: 'Tarde',
-          importe: -15.75,
-          observaciones: 'Otro movimiento de prueba'
+        $('#modalLoading').hide();
+        $('#modalContent').show();
+      }
+
+      function showTestMovimientosData(tipo, nombre) {
+        console.log('Showing test data for debugging...');
+
+        // Create test data based on the type
+        let testData = [];
+
+        if (tipo === 'concepto') {
+          testData = [
+            {
+              fecha: '2024-01-15T10:30:00',
+              concepto: nombre,
+              turno: 'Mañana',
+              importe: 25.50,
+              observaciones: 'Movimiento de prueba para ' + nombre
+            },
+            {
+              fecha: '2024-01-14T16:45:00',
+              concepto: nombre,
+              turno: 'Tarde',
+              importe: -15.75,
+              observaciones: 'Otro movimiento de prueba'
+            }
+          ];
+        } else if (tipo === 'turno') {
+          testData = [
+            {
+              fecha: '2024-01-15T09:00:00',
+              concepto: 'Venta productos',
+              turno: nombre,
+              importe: 45.00,
+              observaciones: 'Venta durante ' + nombre
+            },
+            {
+              fecha: '2024-01-15T11:30:00',
+              concepto: 'Material oficina',
+              turno: nombre,
+              importe: -12.50,
+              observaciones: 'Gasto en ' + nombre
+            }
+          ];
         }
-      ];
-    } else if (tipo === 'turno') {
-      testData = [
-        {
-          fecha: '2024-01-15T09:00:00',
-          concepto: 'Venta productos',
-          turno: nombre,
-          importe: 45.00,
-          observaciones: 'Venta durante ' + nombre
-        },
-        {
-          fecha: '2024-01-15T11:30:00',
-          concepto: 'Material oficina',
-          turno: nombre,
-          importe: -12.50,
-          observaciones: 'Gasto en ' + nombre
-        }
-      ];
-    }
-    
-    // Add a warning that this is test data
-    $('#modalContent').html(`
+
+        // Add a warning that this is test data
+        $('#modalContent').html(`
       <div class="alert alert-warning">
         <i class="tim-icons icon-alert-circle-exc mr-2"></i>
         <strong>Datos de prueba:</strong> Los movimientos reales no se pudieron cargar. 
@@ -688,24 +778,24 @@
         </table>
       </div>
     `);
-    
-    displayMovimientosData(testData);
-  }
 
-  function displayMovimientosData(movimientos) {
-    console.log('=== displayMovimientosData ===');
-    console.log('Displaying movements:', movimientos);
-    console.log('Movements length:', movimientos.length);
-    console.log('First movement:', movimientos[0]);
-    
-    const tbody = $('#modalMovimientosTable');
-    tbody.empty();
-    
-    let totalAmount = 0;
-    let totalCount = movimientos.length;
-    
-    if (movimientos.length === 0) {
-      tbody.append(`
+        displayMovimientosData(testData);
+      }
+
+      function displayMovimientosData(movimientos) {
+        console.log('=== displayMovimientosData ===');
+        console.log('Displaying movements:', movimientos);
+        console.log('Movements length:', movimientos.length);
+        console.log('First movement:', movimientos[0]);
+
+        const tbody = $('#modalMovimientosTable');
+        tbody.empty();
+
+        let totalAmount = 0;
+        let totalCount = movimientos.length;
+
+        if (movimientos.length === 0) {
+          tbody.append(`
         <tr>
           <td colspan="5" class="text-center text-muted">
             <div class="py-3">
@@ -716,40 +806,40 @@
           </td>
         </tr>
       `);
-    } else {
-      movimientos.forEach(function(mov, index) {
-        console.log(`Processing movement ${index}:`, mov);
-        
-        // Handle different possible data structures with more flexibility
-        const importe = parseFloat(mov.importe || mov.amount || mov.cantidad || 0);
-        const fecha = mov.fecha || mov.date || mov.created_at || mov.datetime_iso || new Date().toISOString();
-        const concepto = mov.concepto || mov.concept || mov.concepto_nombre || 'Sin concepto';
-        const turno = mov.turno || mov.turn || mov.turno_nombre || 'Sin turno';
-        const descripcion = mov.observaciones || mov.observations || mov.descripcion || '';
-        
-        totalAmount += importe;
-        const importeClass = importe >= 0 ? 'text-success' : 'text-danger';
-        const importeIcon = importe >= 0 ? '+' : '';
-        
-        let fechaFormatted;
-        try {
-          const dateObj = new Date(fecha);
-          if (isNaN(dateObj.getTime())) {
-            fechaFormatted = fecha.toString();
-          } else {
-            fechaFormatted = dateObj.toLocaleDateString('es-ES', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-          }
-        } catch (e) {
-          fechaFormatted = fecha.toString();
-        }
-        
-        const row = `
+        } else {
+          movimientos.forEach(function (mov, index) {
+            console.log(`Processing movement ${index}:`, mov);
+
+            // Handle different possible data structures with more flexibility
+            const importe = parseFloat(mov.importe || mov.amount || mov.cantidad || 0);
+            const fecha = mov.fecha || mov.date || mov.created_at || mov.datetime_iso || new Date().toISOString();
+            const concepto = mov.concepto || mov.concept || mov.concepto_nombre || 'Sin concepto';
+            const turno = mov.turno || mov.turno_nombre || 'Sin turno';
+            const descripcion = mov.observaciones || mov.observations || mov.descripcion || '';
+
+            totalAmount += importe;
+            const importeClass = importe >= 0 ? 'text-success' : 'text-danger';
+            const importeIcon = importe >= 0 ? '+' : '';
+
+            let fechaFormatted;
+            try {
+              const dateObj = new Date(fecha);
+              if (isNaN(dateObj.getTime())) {
+                fechaFormatted = fecha.toString();
+              } else {
+                fechaFormatted = dateObj.toLocaleDateString('es-ES', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+              }
+            } catch (e) {
+              fechaFormatted = fecha.toString();
+            }
+
+            const row = `
           <tr>
             <td>${fechaFormatted}</td>
             <td>
@@ -764,56 +854,56 @@
             </td>
           </tr>
         `;
-        tbody.append(row);
-      });
-    }
-    
-    // Update summary
-    $('#modalTotalCount').text(totalCount);
-    $('#modalTotalAmount').text(totalAmount.toFixed(2) + '€');
-    $('#modalTotalAmount').removeClass('text-success text-danger');
-    $('#modalTotalAmount').addClass(totalAmount >= 0 ? 'text-success' : 'text-danger');
-    
-    // Hide loading and show content
-    $('#modalLoading').hide();
-    $('#modalContent').show();
-    
-    console.log('Modal content displayed successfully');
-    console.log('=== fin displayMovimientosData ===');
-  }
+            tbody.append(row);
+          });
+        }
 
-  // Add test function for debugging
-  function testMovimientosModal() {
-    const testData = [
-      {
-        fecha: '2024-01-15',
-        concepto: 'Venta producto',
-        turno: 'Mañana',
-        importe: 25.50,
-        observaciones: 'Venta de prueba'
-      },
-      {
-        fecha: '2024-01-15',
-        concepto: 'Gasto material',
-        turno: 'Tarde',
-        importe: -15.00,
-        observaciones: 'Compra suministros'
+        // Update summary
+        $('#modalTotalCount').text(totalCount);
+        $('#modalTotalAmount').text(totalAmount.toFixed(2) + '€');
+        $('#modalTotalAmount').removeClass('text-success text-danger');
+        $('#modalTotalAmount').addClass(totalAmount >= 0 ? 'text-success' : 'text-danger');
+
+        // Hide loading and show content
+        $('#modalLoading').hide();
+        $('#modalContent').show();
+
+        console.log('Modal content displayed successfully');
+        console.log('=== fin displayMovimientosData ===');
       }
-    ];
-    
-    $('#movimientosModalLabel').html(`
+
+      // Add test function for debugging
+      function testMovimientosModal() {
+        const testData = [
+          {
+            fecha: '2024-01-15',
+            concepto: 'Venta producto',
+            turno: 'Mañana',
+            importe: 25.50,
+            observaciones: 'Venta de prueba'
+          },
+          {
+            fecha: '2024-01-15',
+            concepto: 'Gasto material',
+            turno: 'Tarde',
+            importe: -15.00,
+            observaciones: 'Compra suministros'
+          }
+        ];
+
+        $('#movimientosModalLabel').html(`
       <i class="tim-icons icon-notes mr-2"></i>
       Movimientos - Test Data
     `);
-    
-    $('#movimientosModal').modal('show');
-    $('#modalLoading').hide();
-    $('#modalContent').show();
-    
-    displayMovimientosData(testData);
-  }
 
-  // Make test function available globally for debugging
-  window.testMovimientosModal = testMovimientosModal;
-</script>
-{% endblock extrajs %}
+        $('#movimientosModal').modal('show');
+        $('#modalLoading').hide();
+        $('#modalContent').show();
+
+        displayMovimientosData(testData);
+      }
+
+      // Make test function available globally for debugging
+      window.testMovimientosModal = testMovimientosModal;
+    </script>
+    {% endblock extrajs %}
