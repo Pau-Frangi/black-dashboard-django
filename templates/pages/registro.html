@@ -258,11 +258,11 @@
                         <h6 class="section-title">
                             <i class="tim-icons icon-coins mr-2"></i>
                             Desglose de Billetes y Monedas
-                            <small class="text-muted">(Opcional)</small>
+                            <small class="text-danger">(Obligatorio)</small>
                         </h6>
                         <p class="section-description">
-                            Especifica la cantidad exacta de cada billete y moneda que entra y sale de la caja.
-                            El total debe coincidir con la cantidad del movimiento.
+                            <strong>Especifica la cantidad exacta de cada billete y moneda que entra y sale de la caja.</strong>
+                            El total debe coincidir exactamente con la cantidad del movimiento.
                         </p>
                         
                         <div class="row">
@@ -680,6 +680,12 @@
         // Remove file display if exists
         $('.file-display').remove();
         
+        // Limpiar el desglose de dinero
+        clearMoneyBreakdown();
+        
+        // Reset validación de desglose
+        $('#totalNeto').parent().removeClass('border border-warning border-success');
+        
         console.log('Formulario reseteado completamente');
     }
 
@@ -914,10 +920,38 @@
             return;
         }
         
+        // Validar que el desglose esté completo y sea correcto
+        const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
+        const totales = calculateMoneyTotals();
+        
+        // Verificar que hay al menos una entrada en el desglose
+        let tieneDesglose = false;
+        $('.money-input').each(function() {
+            if (parseInt($(this).val()) > 0) {
+                tieneDesglose = true;
+                return false; // break
+            }
+        });
+        
+        if (!tieneDesglose) {
+            alert('ERROR: El desglose de billetes y monedas es obligatorio. Por favor, especifica la cantidad exacta de cada denominación que entra y sale de la caja.');
+            return;
+        }
+        
+        // Verificar que el total neto coincida exactamente con la cantidad
+        const diferencia = Math.abs(totales.neto - cantidadMovimiento);
+        const tolerance = 0.01; // Tolerancia de 1 céntimo
+        
+        if (diferencia > tolerance) {
+            alert(`ERROR: El desglose (${totales.neto.toFixed(2)}€) no coincide con la cantidad del movimiento (${cantidadMovimiento.toFixed(2)}€). Diferencia: ${diferencia.toFixed(2)}€. El desglose debe ser exacto.`);
+            return;
+        }
+        
         // Asegurar que el caja_id esté establecido en el formulario
         $('#cajaIdInput').val(cajaId);
         
         console.log('Caja ID:', cajaId);
+        console.log('Desglose validado correctamente');
         
         // Create FormData object to handle file upload
         const formData = new FormData(this);
@@ -933,13 +967,7 @@
                 console.log('Respuesta guardar:', data);
                 if (data.success) {
                     $('#addMovementModal').modal('hide');
-                    $('#addMovementForm')[0].reset();
-                    $('#fecha').val('{% now "Y-m-d" %}'); // Reset date to today
-                    $('#hora').val('{% now "H:i" %}'); // Reset time to current time
-                    
-                    // Hide justificante fields after reset
-                    $('#justificanteGroup').hide();
-                    $('#justificanteFields').hide();
+                    resetModalForm(); // Usar la función de reset más completa
                     
                     // Recargar los movimientos para obtener el saldo actualizado
                     loadMovimientos(); // Esto actualizará tanto la tabla como los campos del header

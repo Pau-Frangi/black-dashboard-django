@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.urls import reverse
 from decimal import Decimal
+from django.core.exceptions import ValidationError
 from django.views import View
 from django.db import models
 from pprint import pp 
@@ -431,36 +432,62 @@ def registro(request):
                 movimiento.full_clean()
                 movimiento.save()
                 
-                # Procesar desglose de dinero si se proporciona
+                # Procesar desglose de dinero - AHORA ES OBLIGATORIO
                 desglose_form = DesgloseDineroForm(request.POST)
-                if desglose_form.is_valid():
-                    movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
-                    
-                    # Validar que el total neto del desglose coincida con la cantidad del movimiento
-                    if movimientos_dinero_data:
-                        total_neto_desglose = Decimal('0.00')
-                        for mov_data in movimientos_dinero_data:
-                            cantidad_neta = mov_data['cantidad_entrada'] - mov_data['cantidad_salida']
-                            valor_neto = cantidad_neta * mov_data['denominacion'].valor
-                            total_neto_desglose += valor_neto
-                        
-                        # Verificar que coincida con la cantidad del movimiento (con tolerancia de 1 céntimo)
-                        diferencia = abs(total_neto_desglose - movimiento.cantidad)
-                        if diferencia > Decimal('0.01'):
-                            return JsonResponse({
-                                'success': False, 
-                                'error': f'El desglose de dinero no coincide con la cantidad del movimiento. '
-                                        f'Diferencia: {diferencia:.2f}€'
-                            })
-                    
-                    # Crear los movimientos de dinero
-                    for mov_data in movimientos_dinero_data:
-                        MovimientoDinero.objects.create(
-                            movimiento_caja=movimiento,
-                            denominacion=mov_data['denominacion'],
-                            cantidad_entrada=mov_data['cantidad_entrada'],
-                            cantidad_salida=mov_data['cantidad_salida']
-                        )
+                if not desglose_form.is_valid():
+                    # Si el formulario de desglose no es válido, eliminar el movimiento creado
+                    movimiento.delete()
+                    return JsonResponse({
+                        'success': False, 
+                        'error': 'El formulario de desglose tiene errores. Por favor, revísalo.'
+                    })
+                
+                movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
+                
+                # Validar que se haya proporcionado desglose
+                if not movimientos_dinero_data:
+                    movimiento.delete()
+                    return JsonResponse({
+                        'success': False, 
+                        'error': 'Es obligatorio especificar el desglose de billetes y monedas para cada movimiento.'
+                    })
+                
+                # Validar que el total neto del desglose coincida con la cantidad del movimiento
+                total_neto_desglose = Decimal('0.00')
+                for mov_data in movimientos_dinero_data:
+                    cantidad_neta = mov_data['cantidad_entrada'] - mov_data['cantidad_salida']
+                    valor_neto = cantidad_neta * mov_data['denominacion'].valor
+                    total_neto_desglose += valor_neto
+                
+                # Verificar que coincida con la cantidad del movimiento (con tolerancia de 1 céntimo)
+                diferencia = abs(total_neto_desglose - movimiento.cantidad)
+                if diferencia > Decimal('0.01'):
+                    movimiento.delete()
+                    return JsonResponse({
+                        'success': False, 
+                        'error': f'El desglose de dinero ({total_neto_desglose:.2f}€) no coincide con la cantidad del movimiento ({movimiento.cantidad:.2f}€). '
+                                f'Diferencia: {diferencia:.2f}€. El desglose debe ser exacto.'
+                    })
+                
+                # Crear los movimientos de dinero
+                for mov_data in movimientos_dinero_data:
+                    MovimientoDinero.objects.create(
+                        movimiento_caja=movimiento,
+                        denominacion=mov_data['denominacion'],
+                        cantidad_entrada=mov_data['cantidad_entrada'],
+                        cantidad_salida=mov_data['cantidad_salida']
+                    )
+                
+                # Validar que el desglose esté completo después de crearlo
+                try:
+                    movimiento.validar_desglose_obligatorio()
+                except ValidationError as e:
+                    # Si la validación falla, eliminar el movimiento y sus desglose
+                    movimiento.delete()
+                    return JsonResponse({
+                        'success': False, 
+                        'error': str(e)
+                    })
                 
                 return JsonResponse({'success': True, 'message': 'Movimiento añadido correctamente'})
                 

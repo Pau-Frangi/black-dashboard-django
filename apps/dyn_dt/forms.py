@@ -96,6 +96,16 @@ class CajaForm(forms.ModelForm):
             )
         
         return año
+    
+    def save(self, commit=True):
+        """Sobrescribir save para asegurar que la caja nueva tenga desglose inicializado"""
+        caja = super().save(commit=commit)
+        
+        if commit and not caja.pk:  # Solo para cajas nuevas
+            # La señal post_save se encargará de inicializar el desglose
+            pass
+            
+        return caja
 
 
 class MovimientoCajaForm(forms.ModelForm):

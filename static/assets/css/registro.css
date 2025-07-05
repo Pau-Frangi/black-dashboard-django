@@ -1250,19 +1250,35 @@ select.form-control {
     box-shadow: 0 0 0 0.25rem rgba(81, 203, 206, 0.25) !important;
 }
 
-/* Estilos para el desglose de billetes y monedas */
+/* Estilos para el desglose de billetes y monedas - OBLIGATORIO */
 .desglose-dinero-section {
-    background: linear-gradient(135deg, rgba(81, 203, 206, 0.05) 0%, rgba(81, 203, 206, 0.02) 100%);
-    border: 1px solid rgba(81, 203, 206, 0.2);
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.08) 0%, rgba(81, 203, 206, 0.05) 100%);
+    border: 2px solid rgba(253, 93, 147, 0.4);
     border-radius: 12px;
     padding: 25px;
     margin: 25px 0;
     transition: all 0.3s ease;
+    position: relative;
+}
+
+.desglose-dinero-section::before {
+    content: "OBLIGATORIO";
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: linear-gradient(135deg, #fd5d93 0%, #51cbce 100%);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(253, 93, 147, 0.3);
 }
 
 .white-content .desglose-dinero-section {
-    background: linear-gradient(135deg, rgba(81, 203, 206, 0.08) 0%, rgba(81, 203, 206, 0.03) 100%);
-    border: 1px solid rgba(81, 203, 206, 0.3);
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.05) 0%, rgba(81, 203, 206, 0.03) 100%);
+    border: 2px solid rgba(253, 93, 147, 0.5);
 }
 
 .section-title {

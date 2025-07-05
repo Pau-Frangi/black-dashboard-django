@@ -99,7 +99,7 @@ class CajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoCaja)
 class MovimientoCajaAdmin(admin.ModelAdmin):
-    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante_display', 'tiene_archivo')
+    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante_display', 'tiene_archivo', 'tiene_desglose')
     list_filter = ('fecha', 'caja', 'turno', 'concepto__es_gasto')
     search_fields = ('descripcion', 'justificante')
     ordering = ('-fecha',)
@@ -126,6 +126,13 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
         return "N/A"
     tiene_archivo.short_description = 'Archivo'
     tiene_archivo.boolean = False
+    
+    def tiene_desglose(self, obj):
+        count = obj.movimientos_dinero.count()
+        if count > 0:
+            return f"✅ ({count})"
+        return "❌ Sin desglose"
+    tiene_desglose.short_description = 'Desglose'
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('caja', 'turno', 'concepto')
