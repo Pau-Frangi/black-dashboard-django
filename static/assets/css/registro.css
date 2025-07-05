@@ -297,8 +297,32 @@
     min-height: 50px !important;
 }
 
+/* Estilos especiales para select en modo blanco */
+.white-content .modal-body select.form-control {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%2351cbce' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 15px center !important;
+    background-size: 12px !important;
+    padding-right: 45px !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    line-height: 1.2 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    height: auto !important;
+    min-height: 50px !important;
+}
+
 /* Ajustar el tamaño del texto en los selects para mejor legibilidad */
 .modal-body select.form-control {
+    font-size: 0.9rem !important;
+    padding: 15px 45px 15px 18px !important;
+}
+
+/* Ajustar el tamaño del texto en los selects para mejor legibilidad - modo blanco */
+.white-content .modal-body select.form-control {
     font-size: 0.9rem !important;
     padding: 15px 45px 15px 18px !important;
 }
@@ -312,8 +336,35 @@
     line-height: 1.4 !important;
 }
 
+/* Asegurar que las opciones también tengan buen contraste - modo blanco */
+.white-content .modal-body select.form-control option {
+    background-color: #ffffff !important;
+    color: #1d253b !important;
+    padding: 10px 15px !important;
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+}
+
 /* Estilos para select fuera del modal también */
 select.form-control {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%2351cbce' d='M2 0L0 2h4zm0 5L0 3h4z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 15px center !important;
+    background-size: 12px !important;
+    padding-right: 35px !important;
+    line-height: 1.2 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    height: auto !important;
+    min-height: 45px !important;
+}
+
+/* Estilos para select fuera del modal también - modo blanco */
+.white-content select.form-control {
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
     appearance: none !important;
