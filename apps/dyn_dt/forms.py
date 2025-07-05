@@ -1,6 +1,7 @@
 from django import forms
-from .models import Concepto, Turno, Caja, MovimientoCaja
+from .models import Concepto, Turno, Caja, MovimientoCaja, DenominacionEuro, MovimientoDinero
 from datetime import date, datetime
+import os
 
 
 class ConceptoForm(forms.ModelForm):
@@ -193,7 +194,6 @@ class MovimientoCajaForm(forms.ModelForm):
         archivo = self.cleaned_data.get('archivo_justificante')
         
         if archivo:
-            import os
             ext = os.path.splitext(archivo.name)[1].lower()
             valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp']
             
@@ -223,6 +223,106 @@ class MovimientoCajaForm(forms.ModelForm):
             cleaned_data['archivo_justificante'] = None
         
         return cleaned_data
+
+
+class MovimientoDineroForm(forms.ModelForm):
+    """Form for creating and editing MovimientoDinero instances."""
+    
+    class Meta:
+        model = MovimientoDinero
+        fields = ['denominacion', 'cantidad_entrada', 'cantidad_salida']
+        widgets = {
+            'denominacion': forms.HiddenInput(),
+            'cantidad_entrada': forms.NumberInput(attrs={
+                'class': 'form-control form-control-sm',
+                'min': '0',
+                'placeholder': '0'
+            }),
+            'cantidad_salida': forms.NumberInput(attrs={
+                'class': 'form-control form-control-sm',
+                'min': '0',
+                'placeholder': '0'
+            })
+        }
+
+
+# Formset para manejar múltiples MovimientoDinero
+MovimientoDineroFormSet = forms.modelformset_factory(
+    MovimientoDinero,
+    form=MovimientoDineroForm,
+    extra=0,  # No crear formularios extra por defecto
+    can_delete=False
+)
+
+
+class DesgloseDineroForm(forms.Form):
+    """
+    Formulario dinámico para el desglose de dinero en movimientos.
+    Se genera basándose en las denominaciones activas.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Obtener todas las denominaciones activas
+        denominaciones = DenominacionEuro.objects.filter(activa=True).order_by('-valor')
+        
+        for denominacion in denominaciones:
+            # Campo para cantidad que entra
+            self.fields[f'entrada_{denominacion.id}'] = forms.IntegerField(
+                required=False,
+                min_value=0,
+                initial=0,
+                widget=forms.NumberInput(attrs={
+                    'class': 'form-control form-control-sm',
+                    'placeholder': '0',
+                    'data-denominacion': denominacion.id,
+                    'data-valor': float(denominacion.valor),
+                    'data-tipo': 'entrada'
+                }),
+                label=f'Entra {denominacion.valor}€'
+            )
+            
+            # Campo para cantidad que sale
+            self.fields[f'salida_{denominacion.id}'] = forms.IntegerField(
+                required=False,
+                min_value=0,
+                initial=0,
+                widget=forms.NumberInput(attrs={
+                    'class': 'form-control form-control-sm',
+                    'placeholder': '0',
+                    'data-denominacion': denominacion.id,
+                    'data-valor': float(denominacion.valor),
+                    'data-tipo': 'salida'
+                }),
+                label=f'Sale {denominacion.valor}€'
+            )
+    
+    def get_movimientos_dinero_data(self):
+        """
+        Procesa los datos del formulario y retorna una lista de datos
+        para crear objetos MovimientoDinero
+        """
+        if not self.is_valid():
+            return []
+        
+        movimientos_data = []
+        denominaciones = DenominacionEuro.objects.filter(activa=True)
+        
+        for denominacion in denominaciones:
+            entrada = self.cleaned_data.get(f'entrada_{denominacion.id}', 0) or 0
+            salida = self.cleaned_data.get(f'salida_{denominacion.id}', 0) or 0
+            
+            # Solo crear el movimiento si hay entrada o salida
+            if entrada > 0 or salida > 0:
+                movimientos_data.append({
+                    'denominacion': denominacion,
+                    'cantidad_entrada': entrada,
+                    'cantidad_salida': salida
+                })
+        
+        return movimientos_data
+
 
 class MovimientoCajaFilterForm(forms.Form):
     """Form for filtering MovimientoCaja instances."""

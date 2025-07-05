@@ -165,6 +165,66 @@ class Caja(models.Model):
         self.save(skip_validation=True)  # Saltamos la validación para el recálculo automático
         return self.saldo
 
+    def inicializar_desglose(self):
+        """
+        Inicializa el desglose de la caja con todas las denominaciones activas en 0
+        """
+        denominaciones = DenominacionEuro.objects.filter(activa=True)
+        for denominacion in denominaciones:
+            DesgloseCaja.objects.get_or_create(
+                caja=self,
+                denominacion=denominacion,
+                defaults={'cantidad': 0}
+            )
+
+    def actualizar_desglose_movimiento(self, movimiento_caja):
+        """
+        Actualiza el desglose de la caja basándose en un movimiento específico
+        """
+        for mov_dinero in movimiento_caja.movimientos_dinero.all():
+            desglose, created = DesgloseCaja.objects.get_or_create(
+                caja=self,
+                denominacion=mov_dinero.denominacion,
+                defaults={'cantidad': 0}
+            )
+            
+            # Aplicar el cambio neto
+            cantidad_neta = mov_dinero.cantidad_neta()
+            desglose.cantidad += cantidad_neta
+            
+            # Asegurar que no sea negativo
+            if desglose.cantidad < 0:
+                desglose.cantidad = 0
+            
+            desglose.save()
+
+    def obtener_desglose_actual(self):
+        """
+        Retorna el desglose actual de la caja
+        """
+        return self.desglose.select_related('denominacion').order_by('-denominacion__valor')
+
+    def calcular_saldo_desde_desglose(self):
+        """
+        Calcula el saldo total basándose en el desglose actual
+        """
+        total = Decimal('0.00')
+        for desglose in self.desglose.all():
+            total += desglose.valor_total()
+        return total
+
+    def recalcular_desglose_completo(self):
+        """
+        Recalcula todo el desglose desde cero basándose en todos los movimientos
+        """
+        # Reinicializar desglose
+        self.desglose.all().delete()
+        self.inicializar_desglose()
+        
+        # Aplicar todos los movimientos en orden cronológico
+        for movimiento in self.movimientos.order_by('fecha'):
+            self.actualizar_desglose_movimiento(movimiento)
+
     class Meta:
         verbose_name = "Caja"
         verbose_name_plural = "Cajas"
@@ -283,25 +343,174 @@ class MovimientoCaja(models.Model):
         ordering = ['-fecha']
 
 
+
+
+
+class DenominacionEuro(models.Model):
+    """
+    Representa las diferentes denominaciones de euros (billetes y monedas)
+    """
+    valor = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        unique=True,
+        verbose_name="Valor en euros"
+    )
+    
+    es_billete = models.BooleanField(
+        default=False,
+        verbose_name="¿Es billete?",
+        help_text="Si es False, se considera moneda"
+    )
+    
+    activa = models.BooleanField(
+        default=True,
+        verbose_name="¿Denominación activa?",
+        help_text="Solo las denominaciones activas aparecerán en los formularios"
+    )
+    
+    def __str__(self):
+        tipo = "billete" if self.es_billete else "moneda"
+        return f"{self.valor}€ ({tipo})"
+    
+    class Meta:
+        verbose_name = "Denominación Euro"
+        verbose_name_plural = "Denominaciones Euro"
+        ordering = ['-valor']
+
+
+class DesgloseCaja(models.Model):
+    """
+    Representa la cantidad de cada denominación en una caja específica
+    """
+    caja = models.ForeignKey(
+        'Caja',
+        on_delete=models.CASCADE,
+        verbose_name="Caja",
+        related_name="desglose"
+    )
+    
+    denominacion = models.ForeignKey(
+        DenominacionEuro,
+        on_delete=models.CASCADE,
+        verbose_name="Denominación"
+    )
+    
+    cantidad = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad de unidades"
+    )
+    
+    def valor_total(self):
+        """Calcula el valor total de esta denominación"""
+        return self.cantidad * self.denominacion.valor
+    
+    def __str__(self):
+        return f"{self.caja.nombre} - {self.cantidad}x {self.denominacion}"
+    
+    class Meta:
+        verbose_name = "Desglose de Caja"
+        verbose_name_plural = "Desgloses de Caja"
+        unique_together = [['caja', 'denominacion']]
+        ordering = ['-denominacion__valor']
+
+
+class MovimientoDinero(models.Model):
+    """
+    Representa el movimiento específico de denominaciones en un movimiento de caja
+    """
+    movimiento_caja = models.ForeignKey(
+        'MovimientoCaja',
+        on_delete=models.CASCADE,
+        verbose_name="Movimiento de Caja",
+        related_name="movimientos_dinero"
+    )
+    
+    denominacion = models.ForeignKey(
+        DenominacionEuro,
+        on_delete=models.CASCADE,
+        verbose_name="Denominación"
+    )
+    
+    cantidad_entrada = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad que entra",
+        help_text="Billetes/monedas que entran a la caja"
+    )
+    
+    cantidad_salida = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Cantidad que sale",
+        help_text="Billetes/monedas que salen de la caja (cambio)"
+    )
+    
+    def cantidad_neta(self):
+        """Calcula la cantidad neta (entrada - salida)"""
+        return self.cantidad_entrada - self.cantidad_salida
+    
+    def valor_neto(self):
+        """Calcula el valor neto del movimiento"""
+        return self.cantidad_neta() * self.denominacion.valor
+    
+    def __str__(self):
+        return f"{self.movimiento_caja} - {self.denominacion}: +{self.cantidad_entrada}/-{self.cantidad_salida}"
+    
+    class Meta:
+        verbose_name = "Movimiento de Dinero"
+        verbose_name_plural = "Movimientos de Dinero"
+        unique_together = [['movimiento_caja', 'denominacion']]
+
+
 # Señales Django para actualizar el saldo de la caja automáticamente
 @receiver(post_save, sender=MovimientoCaja)
 def actualizar_saldo_on_save(sender, instance, created, **kwargs):
-    """
-    Actualiza el saldo de la caja cuando se guarda un MovimientoCaja.
-    Solo se ejecuta para nuevos movimientos (created=True).
-    """
+    """Actualiza el saldo de la caja cuando se crea un movimiento"""
     if created:
-        # Actualizar el saldo de la caja
+        # Actualizar saldo
         instance.caja.saldo += instance.cantidad_real()
         instance.caja.save(skip_validation=True)
 
 
 @receiver(pre_delete, sender=MovimientoCaja)
 def actualizar_saldo_on_delete(sender, instance, **kwargs):
-    """
-    Actualiza el saldo de la caja cuando se elimina un MovimientoCaja.
-    Se ejecuta antes de eliminar para que el objeto aún exista.
-    """
-    # Restar el movimiento del saldo antes de eliminar
+    """Actualiza el saldo de la caja cuando se elimina un movimiento"""
+    # Revertir el movimiento del desglose antes de eliminar
+    for mov_dinero in instance.movimientos_dinero.all():
+        desglose = DesgloseCaja.objects.filter(
+            caja=instance.caja,
+            denominacion=mov_dinero.denominacion
+        ).first()
+        
+        if desglose:
+            # Revertir el cambio
+            desglose.cantidad -= mov_dinero.cantidad_neta()
+            if desglose.cantidad < 0:
+                desglose.cantidad = 0
+            desglose.save()
+    
+    # Actualizar saldo
     instance.caja.saldo -= instance.cantidad_real()
     instance.caja.save(skip_validation=True)
+
+
+@receiver(post_save, sender=MovimientoDinero)
+def actualizar_desglose_on_movimiento_dinero_save(sender, instance, created, **kwargs):
+    """Actualiza el desglose cuando se crea o modifica un MovimientoDinero"""
+    if created:
+        desglose, created_desglose = DesgloseCaja.objects.get_or_create(
+            caja=instance.movimiento_caja.caja,
+            denominacion=instance.denominacion,
+            defaults={'cantidad': 0}
+        )
+        
+        desglose.cantidad += instance.cantidad_neta()
+        if desglose.cantidad < 0:
+            desglose.cantidad = 0
+        desglose.save()
+
+
+@receiver(post_save, sender=Caja)
+def inicializar_desglose_caja(sender, instance, created, **kwargs):
+    """Inicializa el desglose cuando se crea una nueva caja"""
+    if created:
+        instance.inicializar_desglose()

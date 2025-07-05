@@ -253,6 +253,156 @@
                         </div>
                     </div>
                     
+                    <!-- Sección de desglose de billetes y monedas -->
+                    <div class="desglose-dinero-section" id="desgloseDineroSection">
+                        <h6 class="section-title">
+                            <i class="tim-icons icon-coins mr-2"></i>
+                            Desglose de Billetes y Monedas
+                            <small class="text-muted">(Opcional)</small>
+                        </h6>
+                        <p class="section-description">
+                            Especifica la cantidad exacta de cada billete y moneda que entra y sale de la caja.
+                            El total debe coincidir con la cantidad del movimiento.
+                        </p>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="money-breakdown-container">
+                                    <div class="row">
+                                        <!-- Billetes -->
+                                        <div class="col-md-6">
+                                            <h7 class="money-type-title">
+                                                <i class="tim-icons icon-paper mr-1"></i>
+                                                Billetes
+                                            </h7>
+                                            <div class="money-items">
+                                                {% for denominacion in denominaciones %}
+                                                    {% if denominacion.es_billete %}
+                                                        <div class="money-item" data-valor="{{ denominacion.valor }}">
+                                                            <div class="money-label">{{ denominacion.valor }}€</div>
+                                                            <div class="money-inputs">
+                                                                <div class="input-group">
+                                                                    <div class="input-group-prepend">
+                                                                        <span class="input-group-text">+</span>
+                                                                    </div>
+                                                                    <input type="number" 
+                                                                           class="form-control money-input entrada-input" 
+                                                                           name="entrada_{{ denominacion.id }}" 
+                                                                           id="entrada_{{ denominacion.id }}"
+                                                                           placeholder="0" 
+                                                                           min="0" 
+                                                                           data-denominacion="{{ denominacion.id }}"
+                                                                           data-valor="{{ denominacion.valor }}"
+                                                                           data-tipo="entrada">
+                                                                    <div class="input-group-append">
+                                                                        <span class="input-group-text">-</span>
+                                                                    </div>
+                                                                    <input type="number" 
+                                                                           class="form-control money-input salida-input" 
+                                                                           name="salida_{{ denominacion.id }}" 
+                                                                           id="salida_{{ denominacion.id }}"
+                                                                           placeholder="0" 
+                                                                           min="0" 
+                                                                           data-denominacion="{{ denominacion.id }}"
+                                                                           data-valor="{{ denominacion.valor }}"
+                                                                           data-tipo="salida">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Monedas -->
+                                        <div class="col-md-6">
+                                            <h7 class="money-type-title">
+                                                <i class="tim-icons icon-coins mr-1"></i>
+                                                Monedas
+                                            </h7>
+                                            <div class="money-items">
+                                                {% for denominacion in denominaciones %}
+                                                    {% if not denominacion.es_billete %}
+                                                        <div class="money-item" data-valor="{{ denominacion.valor }}">
+                                                            <div class="money-label">{{ denominacion.valor }}€</div>
+                                                            <div class="money-inputs">
+                                                                <div class="input-group">
+                                                                    <div class="input-group-prepend">
+                                                                        <span class="input-group-text">+</span>
+                                                                    </div>
+                                                                    <input type="number" 
+                                                                           class="form-control money-input entrada-input" 
+                                                                           name="entrada_{{ denominacion.id }}" 
+                                                                           id="entrada_{{ denominacion.id }}"
+                                                                           placeholder="0" 
+                                                                           min="0" 
+                                                                           data-denominacion="{{ denominacion.id }}"
+                                                                           data-valor="{{ denominacion.valor }}"
+                                                                           data-tipo="entrada">
+                                                                    <div class="input-group-append">
+                                                                        <span class="input-group-text">-</span>
+                                                                    </div>
+                                                                    <input type="number" 
+                                                                           class="form-control money-input salida-input" 
+                                                                           name="salida_{{ denominacion.id }}" 
+                                                                           id="salida_{{ denominacion.id }}"
+                                                                           placeholder="0" 
+                                                                           min="0" 
+                                                                           data-denominacion="{{ denominacion.id }}"
+                                                                           data-valor="{{ denominacion.valor }}"
+                                                                           data-tipo="salida">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Totales del desglose -->
+                                    <div class="row mt-3">
+                                        <div class="col-md-12">
+                                            <div class="desglose-totals">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="total-box total-entrada">
+                                                            <div class="total-label">Total Entrada</div>
+                                                            <div class="total-value" id="totalEntrada">0.00€</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="total-box total-salida">
+                                                            <div class="total-label">Total Salida</div>
+                                                            <div class="total-value" id="totalSalida">0.00€</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="total-box total-neto">
+                                                            <div class="total-label">Total Neto</div>
+                                                            <div class="total-value" id="totalNeto">0.00€</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="desglose-actions mt-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" id="calcularDesdeTotal">
+                                                        <i class="tim-icons icon-refresh-01"></i>
+                                                        Calcular desde total
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="limpiarDesglose">
+                                                        <i class="tim-icons icon-simple-remove"></i>
+                                                        Limpiar desglose
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <label for="descripcion" class="form-label">Descripción</label>
                         <textarea class="form-control" name="descripcion" id="descripcion" 
@@ -907,6 +1057,193 @@
         }
     }
     
+    // Funciones para el desglose de billetes y monedas
+    function initializeMoneyBreakdown() {
+        // Event listeners para los inputs de dinero
+        $('.money-input').on('input', function() {
+            calculateMoneyTotals();
+            validateMoneyBreakdown();
+        });
+        
+        // Botón para calcular desde total
+        $('#calcularDesdeTotal').on('click', function() {
+            calculateFromTotal();
+        });
+        
+        // Botón para limpiar desglose
+        $('#limpiarDesglose').on('click', function() {
+            clearMoneyBreakdown();
+        });
+        
+        // Calcular totales inicial
+        calculateMoneyTotals();
+    }
+    
+    function calculateMoneyTotals() {
+        let totalEntrada = 0;
+        let totalSalida = 0;
+        
+        $('.entrada-input').each(function() {
+            const cantidad = parseInt($(this).val()) || 0;
+            const valor = parseFloat($(this).data('valor'));
+            totalEntrada += cantidad * valor;
+        });
+        
+        $('.salida-input').each(function() {
+            const cantidad = parseInt($(this).val()) || 0;
+            const valor = parseFloat($(this).data('valor'));
+            totalSalida += cantidad * valor;
+        });
+        
+        const totalNeto = totalEntrada - totalSalida;
+        
+        $('#totalEntrada').text(totalEntrada.toFixed(2) + '€');
+        $('#totalSalida').text(totalSalida.toFixed(2) + '€');
+        $('#totalNeto').text(totalNeto.toFixed(2) + '€');
+        
+        // Actualizar el color del total neto
+        const $totalNeto = $('#totalNeto');
+        $totalNeto.removeClass('text-success text-danger text-info');
+        if (totalNeto > 0) {
+            $totalNeto.addClass('text-success');
+        } else if (totalNeto < 0) {
+            $totalNeto.addClass('text-danger');
+        } else {
+            $totalNeto.addClass('text-info');
+        }
+        
+        return {
+            entrada: totalEntrada,
+            salida: totalSalida,
+            neto: totalNeto
+        };
+    }
+    
+    function validateMoneyBreakdown() {
+        const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
+        const totales = calculateMoneyTotals();
+        
+        // Verificar si el total neto coincide con la cantidad del movimiento
+        const diferencia = Math.abs(totales.neto - cantidadMovimiento);
+        const tolerance = 0.01; // Tolerancia de 1 céntimo
+        
+        const $totalNeto = $('#totalNeto').parent();
+        $totalNeto.removeClass('border border-warning border-success');
+        
+        if (cantidadMovimiento > 0) {
+            if (diferencia <= tolerance) {
+                $totalNeto.addClass('border border-success');
+            } else {
+                $totalNeto.addClass('border border-warning');
+            }
+        }
+    }
+    
+    function calculateFromTotal() {
+        const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
+        
+        if (cantidadMovimiento <= 0) {
+            alert('Por favor, primero ingresa la cantidad total del movimiento.');
+            return;
+        }
+        
+        // Limpiar el desglose actual
+        clearMoneyBreakdown();
+        
+        // Obtener denominaciones ordenadas de mayor a menor
+        const denominaciones = [];
+        $('.money-input[data-tipo="entrada"]').each(function() {
+            denominaciones.push({
+                id: $(this).data('denominacion'),
+                valor: parseFloat($(this).data('valor')),
+                elemento: $(this)
+            });
+        });
+        
+        denominaciones.sort((a, b) => b.valor - a.valor);
+        
+        let remainingAmount = cantidadMovimiento;
+        
+        // Calcular automáticamente la distribución
+        denominaciones.forEach(denom => {
+            if (remainingAmount >= denom.valor) {
+                const cantidad = Math.floor(remainingAmount / denom.valor);
+                denom.elemento.val(cantidad);
+                remainingAmount -= cantidad * denom.valor;
+                remainingAmount = Math.round(remainingAmount * 100) / 100; // Evitar errores de punto flotante
+            }
+        });
+        
+        calculateMoneyTotals();
+        validateMoneyBreakdown();
+    }
+    
+    function clearMoneyBreakdown() {
+        $('.money-input').val('');
+        calculateMoneyTotals();
+    }
+    
+    // Actualizar el ready function para inicializar el desglose
+    $(document).ready(function () {
+        console.log('Página de registro cargada');
+        
+        // Initialize page
+        updateSaldoDisplay();
+        
+        // Initialize money breakdown
+        initializeMoneyBreakdown();
+        
+        // Load movements if a caja is already selected
+        if ($('#cajaSelect').val()) {
+            console.log('Caja ya seleccionada, cargando movimientos...');
+            loadMovimientos();
+        }
+
+        // File upload handler
+        $('#archivo_justificante').on('change', function() {
+            handleFileUpload(this);
+        });
+
+        // Search functionality
+        $('#movementsSearch').on('input', function() {
+            const searchTerm = $(this).val().toLowerCase().trim();
+            
+            if (searchTerm === '') {
+                // Si no hay búsqueda, mostrar todos los movimientos
+                $('#clearSearch').hide();
+                filteredMovimientos = [...currentMovimientos];
+                displayMovimientos(filteredMovimientos);
+                updateSearchResults(filteredMovimientos.length, false);
+            } else {
+                // Filtrar movimientos
+                $('#clearSearch').show();
+                filteredMovimientos = currentMovimientos.filter(mov => {
+                    return mov.concepto.toLowerCase().includes(searchTerm) ||
+                           mov.cantidad.toString().includes(searchTerm) ||
+                           (mov.justificante && mov.justificante.toLowerCase().includes(searchTerm)) ||
+                           (mov.descripcion && mov.descripcion.toLowerCase().includes(searchTerm)) ||
+                           mov.turno.toLowerCase().includes(searchTerm);
+                });
+                
+                displayMovimientos(filteredMovimientos);
+                updateSearchResults(filteredMovimientos.length, true);
+            }
+        });
+
+        // Clear search
+        $('#clearSearch').on('click', function() {
+            $('#movementsSearch').val('');
+            $(this).hide();
+            filteredMovimientos = [...currentMovimientos];
+            displayMovimientos(filteredMovimientos);
+            updateSearchResults(filteredMovimientos.length, false);
+        });
+        
+        // Event listener para el campo cantidad para validar desglose
+        $('#cantidad').on('input', function() {
+            validateMoneyBreakdown();
+        });
+    });
 
     function updateSearchResults(count, isSearching) {
         $('#resultsCount').text(count);

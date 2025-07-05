@@ -8,13 +8,14 @@ from django.conf import settings
 from django.urls import reverse
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.urls import reverse
+from decimal import Decimal
 from django.views import View
 from django.db import models
 from pprint import pp 
 
-from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Caja, MovimientoCaja, Turno, Concepto
+from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Caja, MovimientoCaja, Turno, Concepto, DenominacionEuro, MovimientoDinero
 from apps.dyn_dt.utils import user_filter
-from apps.dyn_dt.forms import MovimientoCajaForm
+from apps.dyn_dt.forms import MovimientoCajaForm, DesgloseDineroForm
 
 from cli import *
 
@@ -430,6 +431,37 @@ def registro(request):
                 movimiento.full_clean()
                 movimiento.save()
                 
+                # Procesar desglose de dinero si se proporciona
+                desglose_form = DesgloseDineroForm(request.POST)
+                if desglose_form.is_valid():
+                    movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
+                    
+                    # Validar que el total neto del desglose coincida con la cantidad del movimiento
+                    if movimientos_dinero_data:
+                        total_neto_desglose = Decimal('0.00')
+                        for mov_data in movimientos_dinero_data:
+                            cantidad_neta = mov_data['cantidad_entrada'] - mov_data['cantidad_salida']
+                            valor_neto = cantidad_neta * mov_data['denominacion'].valor
+                            total_neto_desglose += valor_neto
+                        
+                        # Verificar que coincida con la cantidad del movimiento (con tolerancia de 1 céntimo)
+                        diferencia = abs(total_neto_desglose - movimiento.cantidad)
+                        if diferencia > Decimal('0.01'):
+                            return JsonResponse({
+                                'success': False, 
+                                'error': f'El desglose de dinero no coincide con la cantidad del movimiento. '
+                                        f'Diferencia: {diferencia:.2f}€'
+                            })
+                    
+                    # Crear los movimientos de dinero
+                    for mov_data in movimientos_dinero_data:
+                        MovimientoDinero.objects.create(
+                            movimiento_caja=movimiento,
+                            denominacion=mov_data['denominacion'],
+                            cantidad_entrada=mov_data['cantidad_entrada'],
+                            cantidad_salida=mov_data['cantidad_salida']
+                        )
+                
                 return JsonResponse({'success': True, 'message': 'Movimiento añadido correctamente'})
                 
             except Exception as e:
@@ -451,11 +483,14 @@ def registro(request):
     # Only get turnos for active cajas initially
     turnos = Turno.objects.filter(caja__activa=True)
     conceptos = Concepto.objects.all()
+    # Get denominaciones for the money breakdown form
+    denominaciones = DenominacionEuro.objects.filter(activa=True).order_by('-valor')
     
     context = {
         'cajas': cajas,
         'turnos': turnos,
         'conceptos': conceptos,
+        'denominaciones': denominaciones,
         'segment': 'registro'
     }
     
@@ -529,6 +564,18 @@ def saldo(request):
                     'turno': str(mov.turno)
                 })
             
+            # Get current money breakdown for the caja
+            desglose_actual = []
+            for desglose in caja.obtener_desglose_actual():
+                if desglose.cantidad > 0:  # Solo mostrar denominaciones con cantidad > 0
+                    desglose_actual.append({
+                        'denominacion': str(desglose.denominacion),
+                        'valor': float(desglose.denominacion.valor),
+                        'cantidad': desglose.cantidad,
+                        'valor_total': float(desglose.valor_total()),
+                        'es_billete': desglose.denominacion.es_billete
+                    })
+            
             return JsonResponse({
                 'success': True,
                 'caja_info': {
@@ -545,7 +592,8 @@ def saldo(request):
                 'monthly_data': monthly_data,
                 'concept_data': concept_data,
                 'balance_evolution': balance_evolution,
-                'recent_movements': recent_movements
+                'recent_movements': recent_movements,
+                'desglose_actual': desglose_actual
             })
             
         except Exception as e:

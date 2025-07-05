@@ -171,6 +171,70 @@
                 </div>
             </div>
         </div>
+        
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        <i class="tim-icons icon-coins mr-2"></i>
+                        Desglose Actual de la Caja
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div id="desgloseActualContainer">
+                        <div class="text-center text-muted py-3" id="noDesgloseMessage">
+                            <i class="tim-icons icon-wallet-43" style="font-size: 2rem;"></i>
+                            <p class="mt-2">Selecciona una caja para ver su desglose</p>
+                        </div>
+                        
+                        <div id="desgloseContent" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">
+                                        <i class="tim-icons icon-paper mr-1"></i>
+                                        Billetes
+                                    </h6>
+                                    <div id="billetesDesglose">
+                                        <!-- Los billetes se cargarán aquí -->
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">
+                                        <i class="tim-icons icon-coins mr-1"></i>
+                                        Monedas
+                                    </h6>
+                                    <div id="monedasDesglose">
+                                        <!-- Las monedas se cargarán aquí -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Total calculado desde desglose:</strong>
+                                        <span id="totalDesglose" class="text-success">--</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>Saldo oficial:</strong>
+                                        <span id="saldoOficial" class="text-info">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="diferenciaSaldo" class="alert alert-warning mt-2" style="display: none;">
+                                <i class="tim-icons icon-alert-circle-exc mr-1"></i>
+                                <strong>Atención:</strong> Hay una diferencia entre el saldo oficial y el calculado desde el desglose.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Mensaje cuando no hay caja seleccionada -->
@@ -220,6 +284,7 @@
                     updateTotals(data.totals);
                     createCharts(data);
                     updateRecentMovements(data.recent_movements);
+                    updateDesgloseActual(data.desglose_actual, data.caja_info.saldo_actual);
                     
                     $('#totalsSection').show();
                     $('#chartsSection').show();
@@ -765,6 +830,80 @@
             `;
             tbody.append(row);
         });
+    }
+    
+    function updateDesgloseActual(desglose, saldoOficial) {
+        console.log('Actualizando desglose actual:', desglose);
+        
+        if (!desglose || desglose.length === 0) {
+            $('#noDesgloseMessage').show();
+            $('#desgloseContent').hide();
+            return;
+        }
+        
+        $('#noDesgloseMessage').hide();
+        $('#desgloseContent').show();
+        
+        // Separar billetes y monedas
+        const billetes = desglose.filter(item => item.es_billete);
+        const monedas = desglose.filter(item => !item.es_billete);
+        
+        // Actualizar billetes
+        const billetesContainer = $('#billetesDesglose');
+        billetesContainer.empty();
+        
+        if (billetes.length === 0) {
+            billetesContainer.append('<p class="text-muted small">No hay billetes</p>');
+        } else {
+            billetes.forEach(item => {
+                billetesContainer.append(`
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>${item.valor}€:</span>
+                        <span>
+                            <strong>${item.cantidad}</strong> 
+                            <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small>
+                        </span>
+                    </div>
+                `);
+            });
+        }
+        
+        // Actualizar monedas
+        const monedasContainer = $('#monedasDesglose');
+        monedasContainer.empty();
+        
+        if (monedas.length === 0) {
+            monedasContainer.append('<p class="text-muted small">No hay monedas</p>');
+        } else {
+            monedas.forEach(item => {
+                monedasContainer.append(`
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span>${item.valor}€:</span>
+                        <span>
+                            <strong>${item.cantidad}</strong> 
+                            <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small>
+                        </span>
+                    </div>
+                `);
+            });
+        }
+        
+        // Calcular total del desglose
+        const totalDesglose = desglose.reduce((total, item) => total + item.valor_total, 0);
+        
+        // Actualizar totales
+        $('#totalDesglose').text(totalDesglose.toFixed(2) + '€');
+        $('#saldoOficial').text(saldoOficial.toFixed(2) + '€');
+        
+        // Verificar si hay diferencia
+        const diferencia = Math.abs(totalDesglose - saldoOficial);
+        if (diferencia > 0.01) {
+            $('#diferenciaSaldo').show();
+            $('#totalDesglose').removeClass('text-success').addClass('text-warning');
+        } else {
+            $('#diferenciaSaldo').hide();
+            $('#totalDesglose').removeClass('text-warning').addClass('text-success');
+        }
     }
 </script>
 {% endblock extrajs %}

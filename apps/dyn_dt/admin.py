@@ -30,11 +30,11 @@ class ConceptoAdmin(admin.ModelAdmin):
 
 @admin.register(Caja)
 class CajaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'año', 'saldo', 'activa', 'total_movimientos', 'total_turnos')
+    list_display = ('nombre', 'año', 'saldo', 'saldo_desglose', 'activa', 'total_movimientos', 'total_turnos')
     list_filter = ('año', 'activa')
     search_fields = ('nombre',)
     ordering = ('-año', 'nombre')
-    readonly_fields = ('saldo',)  # El saldo no se puede modificar manualmente
+    readonly_fields = ('saldo', 'saldo_desglose')  # El saldo no se puede modificar manualmente
     
     fieldsets = (
         ('Información Básica', {
@@ -59,7 +59,14 @@ class CajaAdmin(admin.ModelAdmin):
         return obj.turnos.count()
     total_turnos.short_description = 'Total turnos'
     
-    actions = ['recalcular_saldos_accion']
+    def saldo_desglose(self, obj):
+        saldo_calc = obj.calcular_saldo_desde_desglose()
+        if saldo_calc != obj.saldo:
+            return f"{saldo_calc:.2f}€ ⚠️"
+        return f"{saldo_calc:.2f}€ ✓"
+    saldo_desglose.short_description = 'Saldo desde desglose'
+    
+    actions = ['recalcular_saldos_accion', 'recalcular_desglose_accion']
     
     def recalcular_saldos_accion(self, request, queryset):
         """Acción del admin para recalcular saldos de cajas seleccionadas"""
@@ -71,6 +78,17 @@ class CajaAdmin(admin.ModelAdmin):
             f'Saldos recalculados para {queryset.count()} caja(s)'
         )
     recalcular_saldos_accion.short_description = 'Recalcular saldos de cajas seleccionadas'
+    
+    def recalcular_desglose_accion(self, request, queryset):
+        """Acción del admin para recalcular desglose de cajas seleccionadas"""
+        for caja in queryset:
+            caja.recalcular_desglose_completo()
+        
+        self.message_user(
+            request,
+            f'Desglose recalculado para {queryset.count()} caja(s)'
+        )
+    recalcular_desglose_accion.short_description = 'Recalcular desglose de cajas seleccionadas'
     
     def get_readonly_fields(self, request, obj=None):
         """Hace el campo saldo de solo lectura solo para cajas existentes"""
@@ -111,3 +129,26 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('caja', 'turno', 'concepto')
+
+
+@admin.register(DenominacionEuro)
+class DenominacionEuroAdmin(admin.ModelAdmin):
+    list_display = ('valor', 'es_billete', 'activa')
+    list_filter = ('es_billete', 'activa')
+    ordering = ('-valor',)
+
+
+@admin.register(DesgloseCaja)
+class DesgloseCajaAdmin(admin.ModelAdmin):
+    list_display = ('caja', 'denominacion', 'cantidad', 'valor_total')
+    list_filter = ('caja', 'denominacion__es_billete')
+    ordering = ('caja', '-denominacion__valor')
+    readonly_fields = ('valor_total',)
+
+
+@admin.register(MovimientoDinero)
+class MovimientoDineroAdmin(admin.ModelAdmin):
+    list_display = ('movimiento_caja', 'denominacion', 'cantidad_entrada', 'cantidad_salida', 'cantidad_neta', 'valor_neto')
+    list_filter = ('denominacion__es_billete', 'denominacion')
+    ordering = ('-movimiento_caja__fecha',)
+    readonly_fields = ('cantidad_neta', 'valor_neto')
