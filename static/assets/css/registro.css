@@ -1686,6 +1686,116 @@ select.form-control {
     }
 }
 
-/* ...existing code... */
+/* Estilos para mostrar cantidad disponible */
+.available-quantity {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(81, 203, 206, 0.1);
+    border: 1px solid rgba(81, 203, 206, 0.3);
+    color: #51cbce;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+}
+
+.white-content .available-quantity {
+    background: rgba(81, 203, 206, 0.08);
+    border: 1px solid rgba(81, 203, 206, 0.2);
+    color: #3eb8bb;
+}
+
+.available-quantity i {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.available-quantity .quantity-text {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Estado cuando no hay cantidad disponible */
+.available-quantity.no-available {
+    background: rgba(253, 93, 147, 0.1);
+    border-color: rgba(253, 93, 147, 0.3);
+    color: #fd5d93;
+}
+
+.white-content .available-quantity.no-available {
+    background: rgba(253, 93, 147, 0.08);
+    border-color: rgba(253, 93, 147, 0.2);
+    color: #e54576;
+}
+
+/* Input con error por exceder cantidad disponible */
+.money-input.exceeds-available {
+    border-color: #fd5d93 !important;
+    background: rgba(253, 93, 147, 0.05) !important;
+    box-shadow: 0 0 0 2px rgba(253, 93, 147, 0.1) !important;
+}
+
+.white-content .money-input.exceeds-available {
+    background: rgba(253, 93, 147, 0.03) !important;
+}
+
+.money-input.exceeds-available:focus {
+    border-color: #fd5d93 !important;
+    box-shadow: 
+        0 0 0 3px rgba(253, 93, 147, 0.15),
+        0 4px 12px rgba(253, 93, 147, 0.2) !important;
+}
+
+/* Mensajes temporales para validaciones */
+.temp-message {
+    animation: fadeInUp 0.3s ease-out;
+    border-radius: 6px !important;
+    font-size: 0.75rem !important;
+    padding: 6px 10px !important;
+    margin: 8px 0 0 0 !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.temp-message.alert-warning {
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.1) 0%, rgba(253, 93, 147, 0.05) 100%) !important;
+    color: #fd5d93 !important;
+    border-left: 3px solid #fd5d93 !important;
+}
+
+.white-content .temp-message.alert-warning {
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.08) 0%, rgba(253, 93, 147, 0.03) 100%) !important;
+    color: #e54576 !important;
+}
+
+.temp-message.alert-info {
+    background: linear-gradient(135deg, rgba(81, 203, 206, 0.1) 0%, rgba(81, 203, 206, 0.05) 100%) !important;
+    color: #51cbce !important;
+    border-left: 3px solid #51cbce !important;
+}
+
+.white-content .temp-message.alert-info {
+    background: linear-gradient(135deg, rgba(81, 203, 206, 0.08) 0%, rgba(81, 203, 206, 0.03) 100%) !important;
+    color: #3eb8bb !important;
+}
+
+.temp-message i {
+    font-size: 0.7rem;
+    margin-right: 4px;
+    opacity: 0.8;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 

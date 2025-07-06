@@ -285,7 +285,13 @@
                                                 {% for denominacion in denominaciones %}
                                                     {% if denominacion.es_billete %}
                                                         <div class="money-item" data-valor="{{ denominacion.valor }}">
-                                                            <div class="money-label">{{ denominacion.valor }}€</div>
+                                                            <div class="money-label">
+                                                                {{ denominacion.valor }}€
+                                                                <div class="available-quantity" id="available_{{ denominacion.id }}">
+                                                                    <i class="tim-icons icon-bullet-list-67"></i>
+                                                                    <span class="quantity-text">Disponible: --</span>
+                                                                </div>
+                                                            </div>
                                                             <div class="money-inputs">
                                                                 <div class="input-group">
                                                                     <div class="input-group-prepend">
@@ -309,9 +315,11 @@
                                                                            id="salida_{{ denominacion.id }}"
                                                                            placeholder="0" 
                                                                            min="0" 
+                                                                           max="0"
                                                                            data-denominacion="{{ denominacion.id }}"
                                                                            data-valor="{{ denominacion.valor }}"
-                                                                           data-tipo="salida">
+                                                                           data-tipo="salida"
+                                                                           data-available="0">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -330,7 +338,13 @@
                                                 {% for denominacion in denominaciones %}
                                                     {% if not denominacion.es_billete %}
                                                         <div class="money-item" data-valor="{{ denominacion.valor }}">
-                                                            <div class="money-label">{{ denominacion.valor }}€</div>
+                                                            <div class="money-label">
+                                                                {{ denominacion.valor }}€
+                                                                <div class="available-quantity" id="available_{{ denominacion.id }}">
+                                                                    <i class="tim-icons icon-bullet-list-67"></i>
+                                                                    <span class="quantity-text">Disponible: --</span>
+                                                                </div>
+                                                            </div>
                                                             <div class="money-inputs">
                                                                 <div class="input-group">
                                                                     <div class="input-group-prepend">
@@ -354,9 +368,11 @@
                                                                            id="salida_{{ denominacion.id }}"
                                                                            placeholder="0" 
                                                                            min="0" 
+                                                                           max="0"
                                                                            data-denominacion="{{ denominacion.id }}"
                                                                            data-valor="{{ denominacion.valor }}"
-                                                                           data-tipo="salida">
+                                                                           data-tipo="salida"
+                                                                           data-available="0">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -680,11 +696,17 @@
         // Remove file display if exists
         $('.file-display').remove();
         
-        // Limpiar el desglose de dinero
+        // Limpiar el desglose de dinero y validaciones
         clearMoneyBreakdown();
         
         // Reset validación de desglose
         $('#totalNeto').parent().removeClass('border border-warning border-success');
+        
+        // Limpiar mensajes temporales
+        $('.temp-message').remove();
+        
+        // Resetear estilos de validación en inputs
+        $('.money-input').removeClass('exceeds-available');
         
         console.log('Formulario reseteado completamente');
     }
@@ -748,6 +770,9 @@
                     
                     // Actualizar los campos del header con el resumen
                     updateSaldoFromResponse(data.resumen);
+                    
+                    // Actualizar cantidades disponibles en el formulario
+                    updateAvailableQuantities(data.desglose_actual || {});
                     
                     // Mostrar controles si hay movimientos
                     if (data.movimientos && data.movimientos.length > 0) {
@@ -1117,7 +1142,7 @@
                 };
             }
         }
-        
+
         const diferencia = Math.abs(valorCalculado - cantidadMovimiento);
         const tolerance = 0.01; // Tolerancia de 1 céntimo
         
@@ -1140,6 +1165,34 @@
         $('.money-input').on('input', function() {
             calculateMoneyTotals();
             validateMoneyBreakdown();
+        });
+        
+        // Event listeners específicos para validación de entradas y salidas
+        $('.entrada-input').on('input blur', function() {
+            validateEntradaInput(this);
+        });
+        
+        $('.salida-input').on('input blur', function() {
+            validateSalidaInput(this);
+        });
+        
+        // Prevenir pegado de valores negativos
+        $('.money-input').on('paste', function(e) {
+            setTimeout(() => {
+                const value = parseInt($(this).val()) || 0;
+                if (value < 0) {
+                    $(this).val(0);
+                    showTemporaryMessage($(this), 'No se permiten valores negativos', 'warning');
+                }
+                
+                // Validar límites si es salida
+                if ($(this).hasClass('salida-input')) {
+                    validateSalidaInput(this);
+                }
+                
+                calculateMoneyTotals();
+                validateMoneyBreakdown();
+            }, 100);
         });
         
         // Botón para calcular desde total
@@ -1275,6 +1328,8 @@
     
     function clearMoneyBreakdown() {
         $('.money-input').val('');
+        $('.money-input').removeClass('exceeds-available');
+        $('.temp-message').remove();
         calculateMoneyTotals();
     }
     
@@ -1366,5 +1421,117 @@
     // 
     // Las validaciones duplicadas en models.py y views.py han sido eliminadas.
     // =============================================================================
+
+    // =============================================================================
+    // GESTIÓN DE CANTIDADES DISPONIBLES
+    // =============================================================================
+    
+    function updateAvailableQuantities(desgloseActual) {
+        console.log('Actualizando cantidades disponibles:', desgloseActual);
+        
+        // Actualizar todas las denominaciones
+        $('.money-item').each(function() {
+            const denominacionId = $(this).find('.salida-input').data('denominacion');
+            const $availableDisplay = $(this).find('.available-quantity');
+            const $salidaInput = $(this).find('.salida-input');
+            
+            if (desgloseActual[denominacionId]) {
+                const cantidad = desgloseActual[denominacionId].cantidad;
+                
+                // Actualizar el display
+                $availableDisplay.find('.quantity-text').text(`Disponible: ${cantidad}`);
+                $availableDisplay.removeClass('no-available');
+                
+                // Actualizar el max del input de salida
+                $salidaInput.attr('max', cantidad);
+                $salidaInput.data('available', cantidad);
+                
+                // Validar si el valor actual excede lo disponible
+                const currentValue = parseInt($salidaInput.val()) || 0;
+                if (currentValue > cantidad) {
+                    $salidaInput.val(cantidad);
+                    $salidaInput.addClass('exceeds-available');
+                } else {
+                    $salidaInput.removeClass('exceeds-available');
+                }
+            } else {
+                // No hay cantidad disponible
+                $availableDisplay.find('.quantity-text').text('Disponible: 0');
+                $availableDisplay.addClass('no-available');
+                $salidaInput.attr('max', 0);
+                $salidaInput.data('available', 0);
+                $salidaInput.val('');
+                $salidaInput.removeClass('exceeds-available');
+            }
+        });
+        
+        console.log('Cantidades disponibles actualizadas');
+    }
+    
+    function validateSalidaInput(input) {
+        const $input = $(input);
+        const value = parseInt($input.val()) || 0;
+        const available = parseInt($input.data('available')) || 0;
+        
+        // Validar que no sea negativo
+        if (value < 0) {
+            $input.val(0);
+            $input.addClass('exceeds-available');
+            return false;
+        }
+        
+        // Validar que no exceda lo disponible
+        if (value > available) {
+            $input.val(available);
+            $input.addClass('exceeds-available');
+            
+            // Mostrar mensaje temporal
+            showTemporaryMessage($input, `Máximo disponible: ${available}`, 'warning');
+            return false;
+        }
+        
+        $input.removeClass('exceeds-available');
+        return true;
+    }
+    
+    function validateEntradaInput(input) {
+        const $input = $(input);
+        const value = parseInt($input.val()) || 0;
+        
+        // Validar que no sea negativo
+        if (value < 0) {
+            $input.val(0);
+            showTemporaryMessage($input, 'No se permiten valores negativos', 'warning');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function showTemporaryMessage(input, message, type) {
+        const $input = $(input);
+        const $container = $input.closest('.money-item');
+        
+        // Remover mensaje anterior si existe
+        $container.find('.temp-message').remove();
+        
+        // Crear mensaje temporal
+        const $message = $(`
+            <div class="temp-message alert alert-${type === 'warning' ? 'warning' : 'info'} mt-2 mb-0 py-1 px-2" style="font-size: 0.75rem;">
+                <i class="tim-icons icon-alert-circle-exc"></i>
+                ${message}
+            </div>
+        `);
+        
+        // Insertar después del input-group
+        $input.closest('.input-group').after($message);
+        
+        // Remover después de 3 segundos
+        setTimeout(() => {
+            $message.fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 3000);
+    }
 </script>
 {% endblock extrajs %}

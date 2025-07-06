@@ -373,10 +373,20 @@ def registro(request):
                 'saldo_actual': float(caja.saldo)
             }
             
+            # Get current money breakdown for the caja
+            desglose_actual = {}
+            for desglose in caja.obtener_desglose_actual():
+                desglose_actual[desglose.denominacion.id] = {
+                    'cantidad': desglose.cantidad,
+                    'valor': float(desglose.denominacion.valor),
+                    'valor_total': float(desglose.valor_total())
+                }
+            
             return JsonResponse({
                 'success': True,
                 'movimientos': movimientos_data,
-                'resumen': resumen
+                'resumen': resumen,
+                'desglose_actual': desglose_actual
             })
             
         except Exception as e:
