@@ -946,7 +946,7 @@
             alert(`ERROR: El desglose (${totales.neto.toFixed(2)}€) no coincide con la cantidad del movimiento (${cantidadMovimiento.toFixed(2)}€). Diferencia: ${diferencia.toFixed(2)}€. El desglose debe ser exacto.`);
             return;
         }
-        
+
         // Asegurar que el caja_id esté establecido en el formulario
         $('#cajaIdInput').val(cajaId);
         
@@ -1175,12 +1175,22 @@
             return;
         }
         
+        // Verificar si hay un concepto seleccionado para determinar si es gasto o ingreso
+        const conceptoSeleccionado = $('#concepto option:selected');
+        if (!conceptoSeleccionado.val()) {
+            alert('Por favor, primero selecciona un concepto para determinar si es gasto o ingreso.');
+            return;
+        }
+        
+        const esGasto = conceptoSeleccionado.data('es-gasto') === "True";
+        const tipoInput = esGasto ? 'salida' : 'entrada';
+        
         // Limpiar el desglose actual
         clearMoneyBreakdown();
         
-        // Obtener denominaciones ordenadas de mayor a menor
+        // Obtener denominaciones ordenadas de mayor a menor del tipo correspondiente
         const denominaciones = [];
-        $('.money-input[data-tipo="entrada"]').each(function() {
+        $(`.money-input[data-tipo="${tipoInput}"]`).each(function() {
             denominaciones.push({
                 id: $(this).data('denominacion'),
                 valor: parseFloat($(this).data('valor')),
