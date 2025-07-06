@@ -544,3 +544,27 @@ def inicializar_desglose_caja(sender, instance, created, **kwargs):
     """Inicializa el desglose cuando se crea una nueva caja"""
     if created:
         instance.inicializar_desglose()
+
+
+@receiver(post_save, sender=DesgloseCaja)
+def actualizar_saldo_on_desglose_save(sender, instance, created, **kwargs):
+    """Actualiza el saldo de la caja cuando se modifica el desglose"""
+    # Calcular el nuevo saldo basado en el desglose total
+    nuevo_saldo = instance.caja.calcular_saldo_desde_desglose()
+    
+    # Actualizar el saldo de la caja
+    if instance.caja.saldo != nuevo_saldo:
+        instance.caja.saldo = nuevo_saldo
+        instance.caja.save(skip_validation=True)
+
+
+@receiver(post_delete, sender=DesgloseCaja)
+def actualizar_saldo_on_desglose_delete(sender, instance, **kwargs):
+    """Actualiza el saldo de la caja cuando se elimina un desglose"""
+    # Calcular el nuevo saldo basado en el desglose restante
+    nuevo_saldo = instance.caja.calcular_saldo_desde_desglose()
+    
+    # Actualizar el saldo de la caja
+    if instance.caja.saldo != nuevo_saldo:
+        instance.caja.saldo = nuevo_saldo
+        instance.caja.save(skip_validation=True)

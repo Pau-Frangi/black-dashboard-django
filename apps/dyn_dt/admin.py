@@ -147,10 +147,74 @@ class DenominacionEuroAdmin(admin.ModelAdmin):
 
 @admin.register(DesgloseCaja)
 class DesgloseCajaAdmin(admin.ModelAdmin):
-    list_display = ('caja', 'denominacion', 'cantidad', 'valor_total')
+    list_display = ('caja', 'denominacion', 'cantidad', 'valor_total', 'denominacion_tipo')
     list_filter = ('caja', 'denominacion__es_billete')
     ordering = ('caja', '-denominacion__valor')
     readonly_fields = ('valor_total',)
+    search_fields = ('caja__nombre',)
+    
+    def denominacion_tipo(self, obj):
+        return "Billete" if obj.denominacion.es_billete else "Moneda"
+    denominacion_tipo.short_description = 'Tipo'
+    
+    def save_model(self, request, obj, form, change):
+        """Guarda el modelo y muestra mensaje sobre actualización de saldo"""
+        saldo_anterior = obj.caja.saldo
+        super().save_model(request, obj, form, change)
+        
+        # Recargar la caja para obtener el saldo actualizado
+        obj.caja.refresh_from_db()
+        saldo_nuevo = obj.caja.saldo
+        
+        if saldo_anterior != saldo_nuevo:
+            self.message_user(
+                request,
+                f'Desglose guardado. Saldo de {obj.caja.nombre} actualizado de {saldo_anterior:.2f}€ a {saldo_nuevo:.2f}€'
+            )
+        else:
+            self.message_user(request, 'Desglose guardado correctamente')
+    
+    def delete_model(self, request, obj):
+        """Elimina el modelo y muestra mensaje sobre actualización de saldo"""
+        caja_nombre = obj.caja.nombre
+        saldo_anterior = obj.caja.saldo
+        
+        super().delete_model(request, obj)
+        
+        # Recargar la caja para obtener el saldo actualizado
+        obj.caja.refresh_from_db()
+        saldo_nuevo = obj.caja.saldo
+        
+        if saldo_anterior != saldo_nuevo:
+            self.message_user(
+                request,
+                f'Desglose eliminado. Saldo de {caja_nombre} actualizado de {saldo_anterior:.2f}€ a {saldo_nuevo:.2f}€'
+            )
+        else:
+            self.message_user(request, 'Desglose eliminado correctamente')
+    
+    actions = ['recalcular_saldos_desde_desglose']
+    
+    def recalcular_saldos_desde_desglose(self, request, queryset):
+        """Acción para recalcular saldos de cajas basándose en su desglose"""
+        cajas_actualizadas = set()
+        
+        for desglose in queryset:
+            if desglose.caja not in cajas_actualizadas:
+                saldo_anterior = desglose.caja.saldo
+                nuevo_saldo = desglose.caja.calcular_saldo_desde_desglose()
+                
+                if saldo_anterior != nuevo_saldo:
+                    desglose.caja.saldo = nuevo_saldo
+                    desglose.caja.save(skip_validation=True)
+                
+                cajas_actualizadas.add(desglose.caja)
+        
+        self.message_user(
+            request,
+            f'Saldos recalculados para {len(cajas_actualizadas)} caja(s) basándose en su desglose'
+        )
+    recalcular_saldos_desde_desglose.short_description = 'Recalcular saldos desde desglose'
 
 
 @admin.register(MovimientoDinero)
