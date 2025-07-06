@@ -1176,6 +1176,22 @@
             validateSalidaInput(this);
         });
         
+        // Validación adicional en tiempo real para inputs de salida que exceden cantidad
+        $('.salida-input').on('input', function() {
+            const $input = $(this);
+            const value = parseInt($input.val()) || 0;
+            const available = parseInt($input.data('available')) || 0;
+            
+            // Validación visual inmediata sin corregir el valor aún
+            if (value > available && available >= 0) {
+                $input.addClass('exceeds-available');
+                $input.closest('.money-item').addClass('has-error');
+            } else {
+                $input.removeClass('exceeds-available');
+                $input.closest('.money-item').removeClass('has-error');
+            }
+        });
+        
         // Prevenir pegado de valores negativos
         $('.money-input').on('paste', function(e) {
             setTimeout(() => {
@@ -1434,13 +1450,19 @@
             const denominacionId = $(this).find('.salida-input').data('denominacion');
             const $availableDisplay = $(this).find('.available-quantity');
             const $salidaInput = $(this).find('.salida-input');
+            const $moneyItem = $(this);
             
             if (desgloseActual[denominacionId]) {
                 const cantidad = desgloseActual[denominacionId].cantidad;
                 
-                // Actualizar el display
-                $availableDisplay.find('.quantity-text').text(`Disponible: ${cantidad}`);
-                $availableDisplay.removeClass('no-available');
+                // Actualizar el display según la cantidad
+                if (cantidad === 0) {
+                    $availableDisplay.find('.quantity-text').text('Sin unidades');
+                    $availableDisplay.addClass('no-available').removeClass('has-available');
+                } else {
+                    $availableDisplay.find('.quantity-text').text(`Disponible: ${cantidad}`);
+                    $availableDisplay.removeClass('no-available').addClass('has-available');
+                }
                 
                 // Actualizar el max del input de salida
                 $salidaInput.attr('max', cantidad);
@@ -1451,17 +1473,21 @@
                 if (currentValue > cantidad) {
                     $salidaInput.val(cantidad);
                     $salidaInput.addClass('exceeds-available');
+                    $moneyItem.addClass('has-error');
+                    showTemporaryMessage($salidaInput, `Cantidad ajustada al máximo disponible: ${cantidad}`, 'exceeds-warning');
                 } else {
                     $salidaInput.removeClass('exceeds-available');
+                    $moneyItem.removeClass('has-error');
                 }
             } else {
                 // No hay cantidad disponible
-                $availableDisplay.find('.quantity-text').text('Disponible: 0');
-                $availableDisplay.addClass('no-available');
+                $availableDisplay.find('.quantity-text').text('Sin unidades disponibles');
+                $availableDisplay.addClass('no-available').removeClass('has-available');
                 $salidaInput.attr('max', 0);
                 $salidaInput.data('available', 0);
                 $salidaInput.val('');
                 $salidaInput.removeClass('exceeds-available');
+                $moneyItem.removeClass('has-error');
             }
         });
         
@@ -1472,35 +1498,56 @@
         const $input = $(input);
         const value = parseInt($input.val()) || 0;
         const available = parseInt($input.data('available')) || 0;
+        const $moneyItem = $input.closest('.money-item');
+        
+        // Limpiar estados anteriores
+        $input.removeClass('exceeds-available');
+        $moneyItem.removeClass('has-error');
+        $moneyItem.find('.temp-message').remove();
         
         // Validar que no sea negativo
         if (value < 0) {
             $input.val(0);
             $input.addClass('exceeds-available');
+            $moneyItem.addClass('has-error');
+            showTemporaryMessage($input, 'No se permiten valores negativos', 'warning');
             return false;
         }
         
         // Validar que no exceda lo disponible
         if (value > available) {
-            $input.val(available);
             $input.addClass('exceeds-available');
+            $moneyItem.addClass('has-error');
             
-            // Mostrar mensaje temporal
-            showTemporaryMessage($input, `Máximo disponible: ${available}`, 'warning');
+            // Mostrar mensaje temporal más descriptivo
+            if (available === 0) {
+                showTemporaryMessage($input, 'No hay unidades disponibles de esta denominación', 'exceeds-warning');
+                $input.val(0);
+            } else {
+                showTemporaryMessage($input, `Máximo disponible: ${available} unidades`, 'exceeds-warning');
+                $input.val(available);
+            }
             return false;
         }
         
-        $input.removeClass('exceeds-available');
         return true;
     }
     
     function validateEntradaInput(input) {
         const $input = $(input);
         const value = parseInt($input.val()) || 0;
+        const $moneyItem = $input.closest('.money-item');
+        
+        // Limpiar estados anteriores
+        $input.removeClass('exceeds-available');
+        $moneyItem.removeClass('has-error');
+        $moneyItem.find('.temp-message').remove();
         
         // Validar que no sea negativo
         if (value < 0) {
             $input.val(0);
+            $input.addClass('exceeds-available');
+            $moneyItem.addClass('has-error');
             showTemporaryMessage($input, 'No se permiten valores negativos', 'warning');
             return false;
         }
@@ -1515,10 +1562,22 @@
         // Remover mensaje anterior si existe
         $container.find('.temp-message').remove();
         
-        // Crear mensaje temporal
+        // Determinar la clase del mensaje según el tipo
+        let alertClass = 'alert-info';
+        let iconClass = 'tim-icons icon-alert-circle-exc';
+        
+        if (type === 'warning') {
+            alertClass = 'alert-warning';
+            iconClass = 'tim-icons icon-alert-circle-exc';
+        } else if (type === 'exceeds-warning') {
+            alertClass = 'exceeds-warning';
+            iconClass = 'tim-icons icon-simple-remove';
+        }
+        
+        // Crear mensaje temporal mejorado
         const $message = $(`
-            <div class="temp-message alert alert-${type === 'warning' ? 'warning' : 'info'} mt-2 mb-0 py-1 px-2" style="font-size: 0.75rem;">
-                <i class="tim-icons icon-alert-circle-exc"></i>
+            <div class="temp-message alert ${alertClass} mt-2 mb-0" style="font-size: 0.75rem;">
+                <i class="${iconClass}"></i>
                 ${message}
             </div>
         `);
@@ -1526,12 +1585,16 @@
         // Insertar después del input-group
         $input.closest('.input-group').after($message);
         
-        // Remover después de 3 segundos
+        // Efecto de entrada
+        $message.hide().fadeIn(300);
+        
+        // Remover después de 4 segundos (más tiempo para mensajes críticos)
+        const fadeTime = type === 'exceeds-warning' ? 5000 : 3000;
         setTimeout(() => {
             $message.fadeOut(300, function() {
                 $(this).remove();
             });
-        }, 3000);
+        }, fadeTime);
     }
 </script>
 {% endblock extrajs %}

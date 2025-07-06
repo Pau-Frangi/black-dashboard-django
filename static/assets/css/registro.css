@@ -1717,56 +1717,92 @@ select.form-control {
     white-space: nowrap;
 }
 
-/* Estado cuando no hay cantidad disponible */
+/* Estado cuando no hay cantidad disponible (cantidad = 0) */
 .available-quantity.no-available {
-    background: rgba(253, 93, 147, 0.1);
-    border-color: rgba(253, 93, 147, 0.3);
-    color: #fd5d93;
+    background: rgba(253, 93, 147, 0.15) !important;
+    border-color: rgba(253, 93, 147, 0.4) !important;
+    color: #fd5d93 !important;
+    font-weight: 600 !important;
+    animation: pulseRed 1.5s ease-in-out infinite;
 }
 
 .white-content .available-quantity.no-available {
-    background: rgba(253, 93, 147, 0.08);
-    border-color: rgba(253, 93, 147, 0.2);
-    color: #e54576;
+    background: rgba(253, 93, 147, 0.12) !important;
+    border-color: rgba(253, 93, 147, 0.3) !important;
+    color: #e54576 !important;
 }
 
-/* Input con error por exceder cantidad disponible */
+/* Animación de pulso rojo para cantidad cero */
+@keyframes pulseRed {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(253, 93, 147, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 3px rgba(253, 93, 147, 0.1);
+        transform: scale(1.02);
+    }
+}
+
+/* Input con error por exceder cantidad disponible - versión mejorada */
 .money-input.exceeds-available {
     border-color: #fd5d93 !important;
-    background: rgba(253, 93, 147, 0.05) !important;
-    box-shadow: 0 0 0 2px rgba(253, 93, 147, 0.1) !important;
+    background: rgba(253, 93, 147, 0.08) !important;
+    box-shadow: 0 0 0 2px rgba(253, 93, 147, 0.15) !important;
+    animation: shake 0.5s ease-in-out;
 }
 
 .white-content .money-input.exceeds-available {
-    background: rgba(253, 93, 147, 0.03) !important;
+    background: rgba(253, 93, 147, 0.05) !important;
 }
 
 .money-input.exceeds-available:focus {
     border-color: #fd5d93 !important;
     box-shadow: 
-        0 0 0 3px rgba(253, 93, 147, 0.15),
-        0 4px 12px rgba(253, 93, 147, 0.2) !important;
+        0 0 0 3px rgba(253, 93, 147, 0.2),
+        0 4px 12px rgba(253, 93, 147, 0.3) !important;
 }
 
-/* Mensajes temporales para validaciones */
+/* Animación de sacudida para inputs que exceden la cantidad */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+    20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+/* Mensajes temporales para validaciones - versión mejorada */
 .temp-message {
     animation: fadeInUp 0.3s ease-out;
     border-radius: 6px !important;
     font-size: 0.75rem !important;
-    padding: 6px 10px !important;
+    padding: 8px 12px !important;
     margin: 8px 0 0 0 !important;
     border: none !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.temp-message::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: currentColor;
+    opacity: 0.6;
 }
 
 .temp-message.alert-warning {
-    background: linear-gradient(135deg, rgba(253, 93, 147, 0.1) 0%, rgba(253, 93, 147, 0.05) 100%) !important;
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.15) 0%, rgba(253, 93, 147, 0.08) 100%) !important;
     color: #fd5d93 !important;
-    border-left: 3px solid #fd5d93 !important;
+    border-left: 4px solid #fd5d93 !important;
+    font-weight: 600 !important;
 }
 
 .white-content .temp-message.alert-warning {
-    background: linear-gradient(135deg, rgba(253, 93, 147, 0.08) 0%, rgba(253, 93, 147, 0.03) 100%) !important;
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.12) 0%, rgba(253, 93, 147, 0.05) 100%) !important;
     color: #e54576 !important;
 }
 
@@ -1783,8 +1819,32 @@ select.form-control {
 
 .temp-message i {
     font-size: 0.7rem;
-    margin-right: 4px;
-    opacity: 0.8;
+    margin-right: 6px;
+    opacity: 0.9;
+}
+
+/* Mensaje de advertencia específico para cantidad excedida */
+.temp-message.exceeds-warning {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.15) 0%, rgba(255, 149, 0, 0.08) 100%) !important;
+    color: #ff9500 !important;
+    border-left: 4px solid #ff9500 !important;
+    font-weight: 600 !important;
+    animation: fadeInUp 0.3s ease-out, pulseWarning 2s ease-in-out 3;
+}
+
+.white-content .temp-message.exceeds-warning {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.12) 0%, rgba(255, 149, 0, 0.05) 100%) !important;
+    color: #e68500 !important;
+}
+
+/* Animación de pulso para mensajes de advertencia críticos */
+@keyframes pulseWarning {
+    0%, 100% {
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    }
+    50% {
+        box-shadow: 0 5px 15px rgba(255, 149, 0, 0.3);
+    }
 }
 
 @keyframes fadeInUp {
@@ -1796,6 +1856,37 @@ select.form-control {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Estilo especial para el contenedor del input cuando hay error */
+.money-item.has-error {
+    background: rgba(253, 93, 147, 0.02);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid rgba(253, 93, 147, 0.2);
+    transition: all 0.3s ease;
+}
+
+.white-content .money-item.has-error {
+    background: rgba(253, 93, 147, 0.01);
+    border-color: rgba(253, 93, 147, 0.15);
+}
+
+/* Icono de alerta para cantidades excedidas */
+.money-input.exceeds-available + .input-group-append::after {
+    content: '⚠️';
+    position: absolute;
+    right: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.9rem;
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(-50%) scale(1); }
+    50% { transform: translateY(-50%) scale(1.1); }
 }
 
 
