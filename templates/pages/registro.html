@@ -920,30 +920,13 @@
             return;
         }
         
-        // Validar que el desglose esté completo y sea correcto
-        const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
-        const totales = calculateMoneyTotals();
+        // =============================================================================
+        // VALIDACIÓN COMPLETA DEL DESGLOSE ANTES DEL ENVÍO
+        // =============================================================================
         
-        // Verificar que hay al menos una entrada en el desglose
-        let tieneDesglose = false;
-        $('.money-input').each(function() {
-            if (parseInt($(this).val()) > 0) {
-                tieneDesglose = true;
-                return false; // break
-            }
-        });
-        
-        if (!tieneDesglose) {
-            alert('ERROR: El desglose de billetes y monedas es obligatorio. Por favor, especifica la cantidad exacta de cada denominación que entra y sale de la caja.');
-            return;
-        }
-        
-        // Verificar que el total neto coincida exactamente con la cantidad
-        const diferencia = Math.abs(totales.neto - cantidadMovimiento);
-        const tolerance = 0.01; // Tolerancia de 1 céntimo
-        
-        if (diferencia > tolerance) {
-            alert(`ERROR: El desglose (${totales.neto.toFixed(2)}€) no coincide con la cantidad del movimiento (${cantidadMovimiento.toFixed(2)}€). Diferencia: ${diferencia.toFixed(2)}€. El desglose debe ser exacto.`);
+        const validationResult = validateCompleteMoneyBreakdown();
+        if (!validationResult.valid) {
+            alert(validationResult.error);
             return;
         }
 
@@ -1085,6 +1068,72 @@
         }
     }
     
+    function validateCompleteMoneyBreakdown() {
+        
+        const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
+        
+        if (cantidadMovimiento <= 0) {
+            return {
+                valid: false,
+                error: 'Por favor, ingresa una cantidad válida para el movimiento.'
+            };
+        }
+        
+        // Verificar que hay al menos una entrada en el desglose
+        let tieneDesglose = false;
+        $('.money-input').each(function() {
+            if (parseInt($(this).val()) > 0) {
+                tieneDesglose = true;
+                return false; // break
+            }
+        });
+        
+        if (!tieneDesglose) {
+            return {
+                valid: false,
+                error: 'ERROR: El desglose de billetes y monedas es obligatorio. Por favor, especifica la cantidad exacta de cada denominación que entra y sale de la caja.'
+            };
+        }
+        
+        // Verificar que los totales coincidan
+        const totales = calculateMoneyTotals();
+        let valorCalculado = totales.neto;
+        const esGasto = $('#concepto option:selected').data('es-gasto') === "True";
+
+        
+        if (esGasto) {
+            if (valorCalculado > 0) {
+                return {
+                    valid: false,
+                    error: 'ERROR: El desglose no puede ser positivo para un gasto. Por favor, verifica las cantidades.'
+                };
+            }
+            valorCalculado = -valorCalculado; // Invertir el valor para gastos
+        } else {
+            if (valorCalculado < 0) {
+                return {
+                    valid: false,
+                    error: 'ERROR: El desglose no puede ser negativo para un ingreso. Por favor, verifica las cantidades.'
+                };
+            }
+        }
+        
+        const diferencia = Math.abs(valorCalculado - cantidadMovimiento);
+        const tolerance = 0.01; // Tolerancia de 1 céntimo
+        
+        if (diferencia > tolerance) {
+            return {
+                valid: false,
+                error: `ERROR: El desglose (${totales.neto.toFixed(2)}€) no coincide con la cantidad del movimiento (${cantidadMovimiento.toFixed(2)}€). Diferencia: ${diferencia.toFixed(2)}€. El desglose debe ser exacto.`
+            };
+        }
+        
+        return {
+            valid: true,
+            error: null
+        };
+    }
+    
     // Funciones para el desglose de billetes y monedas
     function initializeMoneyBreakdown() {
         // Event listeners para los inputs de dinero
@@ -1148,6 +1197,9 @@
     }
     
     function validateMoneyBreakdown() {
+        // VALIDACIÓN PRINCIPAL DEL DESGLOSE
+        // Esta función verifica que el desglose coincida exactamente con la cantidad del movimiento
+        
         const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
         const totales = calculateMoneyTotals();
         
@@ -1160,11 +1212,16 @@
         
         if (cantidadMovimiento > 0) {
             if (diferencia <= tolerance) {
+                // Coincide exactamente - mostrar como correcto
                 $totalNeto.addClass('border border-success');
             } else {
+                // No coincide - mostrar como error
                 $totalNeto.addClass('border border-warning');
             }
         }
+        
+        // Retornar si la validación es correcta (será usado en el submit del formulario)
+        return diferencia <= tolerance;
     }
     
     function calculateFromTotal() {
@@ -1298,5 +1355,16 @@
             $('#searchResultsInfo i').removeClass().addClass('tim-icons icon-check-2');
         }
     }
+
+    // =============================================================================
+    // RESUMEN DE VALIDACIONES CENTRALIZADAS
+    // =============================================================================
+    // Todas las validaciones del desglose de dinero están centralizadas en este archivo:
+    // - validateCompleteMoneyBreakdown(): Validación completa para submit del formulario
+    // - validateMoneyBreakdown(): Validación visual en tiempo real
+    // - calculateMoneyTotals(): Cálculo de totales para validaciones
+    // 
+    // Las validaciones duplicadas en models.py y views.py han sido eliminadas.
+    // =============================================================================
 </script>
 {% endblock extrajs %}

@@ -316,35 +316,7 @@ class MovimientoCaja(models.Model):
             if self.archivo_justificante.size > 10 * 1024 * 1024:
                 raise ValidationError("El archivo no puede superar los 10MB")
     
-    def validar_desglose_obligatorio(self):
-        """
-        Valida que el movimiento tenga un desglose completo de billetes y monedas
-        y que el total coincida exactamente con la cantidad del movimiento
-        """
-        # Solo validar si el movimiento ya tiene ID (ya está guardado)
-        if not self.pk:
-            return
-            
-        movimientos_dinero = self.movimientos_dinero.all()
-        
-        if not movimientos_dinero.exists():
-            raise ValidationError(
-                "Todos los movimientos deben tener un desglose detallado de billetes y monedas. "
-                "Por favor, especifica la cantidad exacta de cada denominación."
-            )
-        
-        # Calcular el total del desglose
-        total_desglose = Decimal('0.00')
-        for mov_dinero in movimientos_dinero:
-            total_desglose += mov_dinero.valor_neto()
-        
-        # Verificar que coincida exactamente con la cantidad del movimiento
-        if abs(total_desglose - self.cantidad) > Decimal('0.01'):
-            raise ValidationError(
-                f"El desglose de dinero ({total_desglose:.2f}€) no coincide con la cantidad del movimiento ({self.cantidad:.2f}€). "
-                f"La diferencia es de {abs(total_desglose - self.cantidad):.2f}€. "
-                "El desglose debe ser exacto."
-            )
+
 
     def save(self, *args, **kwargs):
         """Valida los datos antes de guardar"""
