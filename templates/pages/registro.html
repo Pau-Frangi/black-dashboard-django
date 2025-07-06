@@ -704,6 +704,7 @@
         
         // Limpiar mensajes temporales
         $('.temp-message').remove();
+        $('.calculation-message').remove(); // Limpiar mensajes de cálculo
         
         // Resetear estilos de validación en inputs
         $('.money-input').removeClass('exceeds-available');
@@ -1314,39 +1315,458 @@
         // Limpiar el desglose actual
         clearMoneyBreakdown();
         
-        // Obtener denominaciones ordenadas de mayor a menor del tipo correspondiente
+        // Obtener denominaciones disponibles ordenadas de mayor a menor
         const denominaciones = [];
         $(`.money-input[data-tipo="${tipoInput}"]`).each(function() {
-            denominaciones.push({
-                id: $(this).data('denominacion'),
-                valor: parseFloat($(this).data('valor')),
-                elemento: $(this)
-            });
+            const cantidadDisponible = esGasto ? 
+                (parseInt($(this).data('available')) || 0) : 
+                999999; // Para ingresos, no hay límite
+            
+            if (cantidadDisponible > 0) {
+                denominaciones.push({
+                    id: $(this).data('denominacion'),
+                    valor: parseFloat($(this).data('valor')),
+                    elemento: $(this),
+                    disponible: cantidadDisponible
+                });
+            }
         });
         
         denominaciones.sort((a, b) => b.valor - a.valor);
         
-        let remainingAmount = cantidadMovimiento;
+        // Calcular el total disponible para gastos
+        let totalDisponible = 0;
+        if (esGasto) {
+            denominaciones.forEach(denom => {
+                totalDisponible += denom.valor * denom.disponible;
+            });
+        }
         
-        // Calcular automáticamente la distribución
+        let remainingAmount = cantidadMovimiento;
+        let cantidadDistribuida = 0;
+        const distribucion = [];
+        
+        // Calcular automáticamente la distribución respetando cantidades disponibles
         denominaciones.forEach(denom => {
-            if (remainingAmount >= denom.valor) {
-                const cantidad = Math.floor(remainingAmount / denom.valor);
-                denom.elemento.val(cantidad);
-                remainingAmount -= cantidad * denom.valor;
-                remainingAmount = Math.round(remainingAmount * 100) / 100; // Evitar errores de punto flotante
+            if (remainingAmount >= denom.valor && denom.disponible > 0) {
+                const cantidadIdeal = Math.floor(remainingAmount / denom.valor);
+                const cantidadUsada = Math.min(cantidadIdeal, denom.disponible);
+                
+                if (cantidadUsada > 0) {
+                    denom.elemento.val(cantidadUsada);
+                    const valorUsado = cantidadUsada * denom.valor;
+                    remainingAmount -= valorUsado;
+                    cantidadDistribuida += valorUsado;
+                    remainingAmount = Math.round(remainingAmount * 100) / 100; // Evitar errores de punto flotante
+                    
+                    distribucion.push({
+                        valor: denom.valor,
+                        cantidad: cantidadUsada,
+                        total: valorUsado
+                    });
+                }
             }
         });
         
+        // SI ES GASTO Y NO SE PUEDE HACER EXACTO, INTENTAR CON CAMBIO
+        if (esGasto && remainingAmount > 0.01 && totalDisponible >= cantidadMovimiento) {
+            console.log('Intentando calcular con cambio...');
+            
+            // Limpiar el desglose previo
+            clearMoneyBreakdown();
+            
+            // Intentar encontrar una combinación que permita dar el vuelto
+            const resultadoConCambio = calculateWithChange(cantidadMovimiento, denominaciones);
+            
+            if (resultadoConCambio.success) {
+                // Aplicar la distribución calculada (salidas)
+                resultadoConCambio.distribucion.forEach(item => {
+                    const elemento = denominaciones.find(d => d.valor === item.valor)?.elemento;
+                    if (elemento) {
+                        elemento.val(item.cantidad);
+                    }
+                });
+                
+                // AGREGAR EL CAMBIO COMO ENTRADA
+                if (resultadoConCambio.cambio > 0.01) {
+                    addChangeAsIncome(resultadoConCambio.cambio);
+                }
+                
+                calculateMoneyTotals();
+                validateMoneyBreakdown();
+                
+                // Mostrar mensaje de éxito con información del cambio
+                showCalculationWithChange(resultadoConCambio);
+                return;
+            }
+        }
+        
         calculateMoneyTotals();
         validateMoneyBreakdown();
+        
+        // Verificar si se pudo alcanzar la cantidad exacta
+        if (remainingAmount > 0.01) { // Tolerancia de 1 céntimo
+            const porcentajeAlcanzado = ((cantidadDistribuida / cantidadMovimiento) * 100).toFixed(1);
+            
+            if (esGasto && totalDisponible < cantidadMovimiento) {
+                // No hay suficiente dinero total en la caja
+                let mensaje = `❌ No hay suficiente dinero en la caja para realizar este gasto.\n\n`;
+                mensaje += `💰 Total disponible en caja: ${totalDisponible.toFixed(2)}€\n`;
+                mensaje += `💸 Cantidad del gasto: ${cantidadMovimiento.toFixed(2)}€\n`;
+                mensaje += `📉 Faltan: ${(cantidadMovimiento - totalDisponible).toFixed(2)}€\n\n`;
+                mensaje += `💡 Sugerencias:\n`;
+                mensaje += `• Añade más dinero a la caja\n`;
+                mensaje += `• Reduce la cantidad del gasto\n`;
+                mensaje += `• Realiza el gasto en varias transacciones`;
+                
+                alert(mensaje);
+                showInsufficientFunds(totalDisponible, cantidadMovimiento);
+            } else {
+                // Hay dinero suficiente pero no se puede hacer exacto
+                let mensaje = `⚠️ No se puede alcanzar la cantidad exacta de ${cantidadMovimiento.toFixed(2)}€ con las denominaciones disponibles en la caja.\n\n`;
+                mensaje += `💰 Cantidad distribuida: ${cantidadDistribuida.toFixed(2)}€ (${porcentajeAlcanzado}%)\n`;
+                mensaje += `📉 Cantidad faltante: ${remainingAmount.toFixed(2)}€\n\n`;
+                
+                if (distribucion.length > 0) {
+                    mensaje += `📊 Distribución calculada:\n`;
+                    distribucion.forEach(item => {
+                        mensaje += `• ${item.cantidad} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
+                    });
+                    mensaje += '\n';
+                }
+                
+                if (esGasto) {
+                    mensaje += `💡 Sugerencias:\n`;
+                    mensaje += `• Verifica que hay suficientes billetes/monedas en la caja\n`;
+                    mensaje += `• Considera realizar el gasto en varias transacciones\n`;
+                    mensaje += `• Ajusta la cantidad del movimiento a ${cantidadDistribuida.toFixed(2)}€`;
+                } else {
+                    mensaje += `💡 Nota: Para ingresos, siempre puedes especificar manualmente las denominaciones exactas que ingresan.`;
+                }
+                
+                alert(mensaje);
+                
+                // Opcional: resaltar visualmente que el cálculo está incompleto
+                $('#totalNeto').parent().removeClass('border-success').addClass('border border-warning');
+                
+                // Mostrar mensaje temporal en la interfaz
+                showCalculationWarning(cantidadDistribuida, remainingAmount, cantidadMovimiento);
+            }
+        } else {
+            // Cálculo exitoso
+            const mensaje = `✅ Cantidad distribuida correctamente: ${cantidadMovimiento.toFixed(2)}€\n\n📊 Distribución:\n`;
+            let detalleDistribucion = '';
+            distribucion.forEach(item => {
+                detalleDistribucion += `• ${item.cantidad} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
+            });
+            
+            console.log(mensaje + detalleDistribucion);
+            
+            // Mostrar mensaje de éxito temporal
+            showCalculationSuccess(cantidadMovimiento);
+        }
     }
     
     function clearMoneyBreakdown() {
         $('.money-input').val('');
         $('.money-input').removeClass('exceeds-available');
         $('.temp-message').remove();
+        $('.calculation-message').remove(); // Limpiar todos los tipos de mensajes de cálculo
+        $('#totalNeto').parent().removeClass('border border-warning border-success'); // Resetear estilos de validación
         calculateMoneyTotals();
+    }
+    
+    function showCalculationWarning(cantidadDistribuida, cantidadFaltante, cantidadTotal) {
+        // Remover mensajes anteriores
+        $('.calculation-message').remove();
+        
+        const porcentaje = ((cantidadDistribuida / cantidadTotal) * 100).toFixed(1);
+        
+        const $message = $(`
+            <div class="calculation-message alert alert-warning mt-3 mb-0" style="border-left: 4px solid #f39c12;">
+                <div class="d-flex align-items-start">
+                    <i class="tim-icons icon-alert-circle-exc mr-3 mt-1" style="color: #f39c12; font-size: 1.2rem;"></i>
+                    <div>
+                        <h6 class="mb-2">⚠️ Distribución incompleta</h6>
+                        <p class="mb-2">
+                            <strong>Distribuido:</strong> ${cantidadDistribuida.toFixed(2)}€ (${porcentaje}%) <br>
+                            <strong>Faltante:</strong> ${cantidadFaltante.toFixed(2)}€
+                        </p>
+                        <small class="text-muted">
+                            No hay suficientes denominaciones disponibles en la caja para alcanzar la cantidad exacta.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `);
+        
+        $('#desgloseDineroSection').append($message);
+        
+        // Auto-remover después de 10 segundos
+        setTimeout(() => {
+            $message.fadeOut(500, function() {
+                $(this).remove();
+            });
+        }, 10000);
+    }
+    
+    function showCalculationSuccess(cantidadTotal) {
+        // Remover mensajes anteriores
+        $('.calculation-message').remove();
+        
+        const $message = $(`
+            <div class="calculation-message alert alert-success mt-3 mb-0" style="border-left: 4px solid #00d4aa;">
+                <div class="d-flex align-items-center">
+                    <i class="tim-icons icon-check-2 mr-3" style="color: #00d4aa; font-size: 1.2rem;"></i>
+                    <div>
+                        <strong>✅ Distribución completada correctamente</strong>
+                        <br>
+                        <small class="text-muted">Cantidad total: ${cantidadTotal.toFixed(2)}€</small>
+                    </div>
+                </div>
+            </div>
+        `);
+        
+        $('#desgloseDineroSection').append($message);
+        
+        // Auto-remover después de 5 segundos
+        setTimeout(() => {
+            $message.fadeOut(500, function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+    
+    function calculateWithChange(cantidadObjetivo, denominacionesDisponibles) {
+        // Esta función intenta encontrar una combinación que permita pagar con cambio
+        console.log('Calculando con cambio para:', cantidadObjetivo);
+        
+        // Ordenar denominaciones de mayor a menor
+        const denomsOrdenadas = [...denominacionesDisponibles].sort((a, b) => b.valor - a.valor);
+        
+        // Intentar con diferentes estrategias empezando por billetes grandes
+        for (let estrategia = 0; estrategia < 3; estrategia++) {
+            const resultado = tryPaymentStrategy(cantidadObjetivo, denomsOrdenadas, estrategia);
+            if (resultado.success) {
+                return resultado;
+            }
+        }
+        
+        return { success: false };
+    }
+    
+    function tryPaymentStrategy(cantidadObjetivo, denominaciones, estrategia) {
+        let mejorResultado = { success: false, exceso: Infinity };
+        
+        // Estrategia 0: Usar billetes grandes primero
+        // Estrategia 1: Usar combinaciones medias
+        // Estrategia 2: Probar todas las combinaciones posibles (limitada)
+        
+        function buscarCombinacion(indice, acumulado, distribucionActual) {
+            if (indice >= denominaciones.length) {
+                if (acumulado >= cantidadObjetivo) {
+                    const exceso = acumulado - cantidadObjetivo;
+                    if (exceso < mejorResultado.exceso) {
+                        mejorResultado = {
+                            success: true,
+                            exceso: exceso,
+                            totalPagado: acumulado,
+                            distribucion: [...distribucionActual],
+                            cambio: exceso
+                        };
+                    }
+                }
+                return;
+            }
+            
+            const denom = denominaciones[indice];
+            const maxCantidad = Math.min(denom.disponible, 
+                estrategia === 0 ? Math.ceil((cantidadObjetivo * 1.5) / denom.valor) : denom.disponible
+            );
+            
+            // Probar diferentes cantidades de esta denominación
+            for (let cantidad = 0; cantidad <= maxCantidad; cantidad++) {
+                const nuevoAcumulado = acumulado + (cantidad * denom.valor);
+                
+                // Poda: si ya excedemos mucho, no seguir
+                if (nuevoAcumulado > cantidadObjetivo * 2) break;
+                
+                if (cantidad > 0) {
+                    distribucionActual.push({
+                        valor: denom.valor,
+                        cantidad: cantidad,
+                        total: cantidad * denom.valor
+                    });
+                }
+                
+                buscarCombinacion(indice + 1, nuevoAcumulado, distribucionActual);
+                
+                if (cantidad > 0) {
+                    distribucionActual.pop();
+                }
+                
+                // Si encontramos una solución perfecta en estrategia 0, parar
+                if (estrategia === 0 && mejorResultado.success && mejorResultado.exceso < 0.01) {
+                    break;
+                }
+            }
+        }
+        
+        buscarCombinacion(0, 0, []);
+        return mejorResultado;
+    }
+    
+    function showCalculationWithChange(resultado) {
+        // Remover mensajes anteriores
+        $('.calculation-message').remove();
+        
+        const $message = $(`
+            <div class="calculation-message alert alert-info mt-3 mb-0" style="border-left: 4px solid #17a2b8;">
+                <div class="d-flex align-items-start">
+                    <i class="tim-icons icon-coins mr-3 mt-1" style="color: #17a2b8; font-size: 1.2rem;"></i>
+                    <div>
+                        <h6 class="mb-2">💰 Pago calculado con cambio</h6>
+                        <p class="mb-2">
+                            <strong>Gasto real:</strong> ${(resultado.totalPagado - resultado.cambio).toFixed(2)}€<br>
+                            <strong>Total pagado (salida):</strong> ${resultado.totalPagado.toFixed(2)}€<br>
+                            <strong>Cambio recibido (entrada):</strong> <span class="text-success">+${resultado.cambio.toFixed(2)}€</span>
+                        </p>
+                        <div class="mb-2">
+                            <strong>Distribución de salida:</strong><br>
+                            ${resultado.distribucion.map(item => 
+                                `<small>• ${item.cantidad} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€</small>`
+                            ).join('<br>')}<br>
+                            <strong>Cambio añadido automáticamente como entrada</strong>
+                        </div>
+                        <small class="text-muted">
+                            <i class="tim-icons icon-bulb-63"></i>
+                            El desglose refleja el movimiento completo: salida del pago y entrada del cambio.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `);
+        
+        $('#desgloseDineroSection').append($message);
+        
+        // Auto-remover después de 12 segundos (más tiempo por ser más información)
+        setTimeout(() => {
+            $message.fadeOut(500, function() {
+                $(this).remove();
+            });
+        }, 12000);
+        
+        // También mostrar un alert más detallado
+        let alertMsg = `💰 Pago calculado con cambio - Desglose completo\n\n`;
+        alertMsg += `💸 Gasto real: ${(resultado.totalPagado - resultado.cambio).toFixed(2)}€\n`;
+        alertMsg += `💵 Total pagado (SALIDA): ${resultado.totalPagado.toFixed(2)}€\n`;
+        alertMsg += `💚 Cambio recibido (ENTRADA): +${resultado.cambio.toFixed(2)}€\n\n`;
+        alertMsg += `📊 Distribución de salida:\n`;
+        resultado.distribucion.forEach(item => {
+            alertMsg += `• ${item.cantidad} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
+        });
+        alertMsg += `\n� El cambio se ha añadido automáticamente como entrada en el desglose.\n`;
+        alertMsg += `📝 El total neto coincidirá exactamente con el gasto real de ${(resultado.totalPagado - resultado.cambio).toFixed(2)}€`;
+        
+        alert(alertMsg);
+    }
+    
+    function showInsufficientFunds(totalDisponible, cantidadRequerida) {
+        // Remover mensajes anteriores
+        $('.calculation-message').remove();
+        
+        const faltante = cantidadRequerida - totalDisponible;
+        
+        const $message = $(`
+            <div class="calculation-message alert alert-danger mt-3 mb-0" style="border-left: 4px solid #dc3545;">
+                <div class="d-flex align-items-start">
+                    <i class="tim-icons icon-simple-remove mr-3 mt-1" style="color: #dc3545; font-size: 1.2rem;"></i>
+                    <div>
+                        <h6 class="mb-2">❌ Fondos insuficientes</h6>
+                        <p class="mb-2">
+                            <strong>Disponible en caja:</strong> ${totalDisponible.toFixed(2)}€<br>
+                            <strong>Cantidad requerida:</strong> ${cantidadRequerida.toFixed(2)}€<br>
+                            <strong>Faltante:</strong> <span class="text-danger">${faltante.toFixed(2)}€</span>
+                        </p>
+                        <small class="text-muted">
+                            <i class="tim-icons icon-alert-circle-exc"></i>
+                            No hay suficiente dinero en la caja para realizar este gasto.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `);
+        
+        $('#desgloseDineroSection').append($message);
+        
+        // Auto-remover después de 8 segundos
+        setTimeout(() => {
+            $message.fadeOut(500, function() {
+                $(this).remove();
+            });
+        }, 8000);
+    }
+    
+    function addChangeAsIncome(cantidadCambio) {
+        console.log('Añadiendo cambio como entrada:', cantidadCambio);
+        
+        // Obtener todas las denominaciones de entrada ordenadas de mayor a menor
+        const denominacionesEntrada = [];
+        $('.entrada-input').each(function() {
+            denominacionesEntrada.push({
+                valor: parseFloat($(this).data('valor')),
+                elemento: $(this)
+            });
+        });
+        
+        denominacionesEntrada.sort((a, b) => b.valor - a.valor);
+        
+        let remainingChange = cantidadCambio;
+        const distribucionCambio = [];
+        
+        // Distribuir el cambio usando denominaciones grandes primero
+        denominacionesEntrada.forEach(denom => {
+            if (remainingChange >= denom.valor) {
+                const cantidad = Math.floor(remainingChange / denom.valor);
+                if (cantidad > 0) {
+                    // Obtener el valor actual del input y sumarle la nueva cantidad
+                    const valorActual = parseInt(denom.elemento.val()) || 0;
+                    const nuevaCanidad = valorActual + cantidad;
+                    
+                    denom.elemento.val(nuevaCanidad);
+                    
+                    const valorUsado = cantidad * denom.valor;
+                    remainingChange -= valorUsado;
+                    remainingChange = Math.round(remainingChange * 100) / 100; // Evitar errores de punto flotante
+                    
+                    distribucionCambio.push({
+                        valor: denom.valor,
+                        cantidad: cantidad,
+                        total: valorUsado
+                    });
+                }
+            }
+        });
+        
+        // Si queda algo residual (centimos), añadirlo a la denominación más pequeña disponible
+        if (remainingChange > 0.001) {
+            console.warn('Cambio residual no distribuido:', remainingChange);
+            // Buscar la denominación más pequeña para el residual
+            const denomMenor = denominacionesEntrada[denominacionesEntrada.length - 1];
+            if (denomMenor && denomMenor.valor <= remainingChange * 2) {
+                const valorActual = parseInt(denomMenor.elemento.val()) || 0;
+                denomMenor.elemento.val(valorActual + 1);
+                distribucionCambio.push({
+                    valor: denomMenor.valor,
+                    cantidad: 1,
+                    total: denomMenor.valor,
+                    nota: 'Ajuste por redondeo'
+                });
+            }
+        }
+        
+        console.log('Distribución del cambio:', distribucionCambio);
+        return distribucionCambio;
     }
     
     // Actualizar el ready function para inicializar el desglose
