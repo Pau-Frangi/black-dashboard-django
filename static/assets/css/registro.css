@@ -1355,96 +1355,211 @@ select.form-control {
     color: #1d253b;
 }
 
+/* Contenedor principal mejorado */
 .money-inputs {
     flex: 1;
-    margin-left: 15px;
+    margin-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
+/* Input principal mejorado con diseño minimalista */
 .money-input {
-    background: linear-gradient(135deg, #27293d 0%, #2a2d42 100%) !important;
-    border: 1px solid rgba(52, 70, 117, 0.5) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 2px solid transparent !important;
+    border-radius: 8px !important;
     color: #fff !important;
-    font-size: 0.85rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
     text-align: center !important;
-    padding: 8px !important;
+    padding: 12px 16px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    backdrop-filter: blur(10px) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    position: relative !important;
+    outline: none !important;
 }
 
+/* Modo claro */
 .white-content .money-input {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%) !important;
-    border: 1px solid rgba(29, 37, 59, 0.3) !important;
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 2px solid rgba(29, 37, 59, 0.08) !important;
     color: #1d253b !important;
+    box-shadow: 0 2px 8px rgba(29, 37, 59, 0.06) !important;
 }
 
+/* Estados de focus mejorados */
 .money-input:focus {
     border-color: #51cbce !important;
-    box-shadow: 0 0 0 0.2rem rgba(81, 203, 206, 0.25) !important;
+    background: rgba(81, 203, 206, 0.08) !important;
+    box-shadow: 
+        0 0 0 3px rgba(81, 203, 206, 0.1),
+        0 4px 12px rgba(81, 203, 206, 0.15) !important;
+    transform: translateY(-1px) !important;
 }
 
+.white-content .money-input:focus {
+    background: rgba(81, 203, 206, 0.05) !important;
+    box-shadow: 
+        0 0 0 3px rgba(81, 203, 206, 0.12),
+        0 4px 12px rgba(81, 203, 206, 0.18) !important;
+}
+
+/* Estados hover sutiles */
+.money-input:hover:not(:focus) {
+    border-color: rgba(81, 203, 206, 0.3) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    transform: translateY(-0.5px) !important;
+}
+
+.white-content .money-input:hover:not(:focus) {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(81, 203, 206, 0.2) !important;
+}
+
+/* Placeholders mejorados */
 .money-input::placeholder {
-    color: rgba(156, 163, 175, 0.7) !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-weight: 400 !important;
+    font-size: 0.85rem !important;
 }
 
 .white-content .money-input::placeholder {
-    color: rgba(29, 37, 59, 0.5) !important;
+    color: rgba(29, 37, 59, 0.4) !important;
 }
 
-/* Estilos para los totales del desglose */
+/* Input group styling específico para money inputs mejorado */
+.money-inputs .input-group {
+    margin-bottom: 4px;
+    position: relative;
+}
+
+.money-inputs .input-group-text {
+    background: linear-gradient(135deg, #51cbce 0%, #3eb8bb 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    padding: 12px 14px !important;
+    border-radius: 8px 0 0 8px !important;
+    min-width: 50px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 8px rgba(81, 203, 206, 0.2) !important;
+    transition: all 0.3s ease !important;
+}
+
+.white-content .money-inputs .input-group-text {
+    background: linear-gradient(135deg, #51cbce 0%, #3eb8bb 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px rgba(81, 203, 206, 0.25) !important;
+}
+
+/* Hover en input-group-text */
+.money-inputs .input-group:hover .input-group-text {
+    background: linear-gradient(135deg, #3eb8bb 0%, #2da5a8 100%) !important;
+    box-shadow: 0 4px 12px rgba(81, 203, 206, 0.3) !important;
+}
+
+/* Ajustes para input dentro del input-group */
+.money-inputs .input-group .money-input {
+    border-radius: 0 8px 8px 0 !important;
+    border-left: none !important;
+    margin-left: -1px !important;
+}
+
+/* Estilos modernos para los totales del desglose */
 .desglose-totals {
-    background: linear-gradient(135deg, rgba(39, 41, 61, 0.3) 0%, rgba(42, 45, 66, 0.3) 100%);
-    border: 1px solid rgba(52, 70, 117, 0.4);
-    border-radius: 10px;
-    padding: 20px;
-    margin-top: 20px;
+    background: rgba(255, 255, 255, 0.02) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    margin-top: 24px !important;
+    backdrop-filter: blur(20px) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
 }
 
 .white-content .desglose-totals {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 249, 255, 0.6) 100%);
-    border: 1px solid rgba(29, 37, 59, 0.3);
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(29, 37, 59, 0.08) !important;
+    box-shadow: 0 8px 32px rgba(29, 37, 59, 0.06) !important;
 }
 
 .total-box {
-    text-align: center;
-    padding: 15px;
-    border-radius: 8px;
-    transition: all 0.3s ease;
+    text-align: center !important;
+    padding: 20px 16px !important;
+    border-radius: 12px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 2px solid transparent !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.total-box:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.white-content .total-box:hover {
+    box-shadow: 0 8px 25px rgba(29, 37, 59, 0.1) !important;
 }
 
 .total-entrada {
-    background: linear-gradient(135deg, rgba(39, 194, 76, 0.1) 0%, rgba(39, 194, 76, 0.05) 100%);
-    border: 1px solid rgba(39, 194, 76, 0.3);
+    background: rgba(39, 194, 76, 0.08) !important;
+    border-color: rgba(39, 194, 76, 0.2) !important;
+}
+
+.total-entrada:hover {
+    background: rgba(39, 194, 76, 0.12) !important;
+    border-color: rgba(39, 194, 76, 0.3) !important;
 }
 
 .total-salida {
-    background: linear-gradient(135deg, rgba(253, 93, 147, 0.1) 0%, rgba(253, 93, 147, 0.05) 100%);
-    border: 1px solid rgba(253, 93, 147, 0.3);
+    background: rgba(253, 93, 147, 0.08) !important;
+    border-color: rgba(253, 93, 147, 0.2) !important;
+}
+
+.total-salida:hover {
+    background: rgba(253, 93, 147, 0.12) !important;
+    border-color: rgba(253, 93, 147, 0.3) !important;
 }
 
 .total-neto {
-    background: linear-gradient(135deg, rgba(81, 203, 206, 0.1) 0%, rgba(81, 203, 206, 0.05) 100%);
-    border: 1px solid rgba(81, 203, 206, 0.3);
+    background: rgba(81, 203, 206, 0.08) !important;
+    border-color: rgba(81, 203, 206, 0.2) !important;
+}
+
+.total-neto:hover {
+    background: rgba(81, 203, 206, 0.12) !important;
+    border-color: rgba(81, 203, 206, 0.3) !important;
 }
 
 .total-label {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 5px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 0.75rem !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    margin-bottom: 8px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    line-height: 1.2 !important;
 }
 
 .white-content .total-label {
-    color: rgba(29, 37, 59, 0.7);
+    color: rgba(29, 37, 59, 0.6) !important;
 }
 
 .total-value {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #fff;
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
 }
 
 .white-content .total-value {
-    color: #1d253b;
+    color: #1d253b !important;
 }
 
 .total-entrada .total-value {
@@ -1459,17 +1574,34 @@ select.form-control {
     color: #51cbce !important;
 }
 
+/* Botones de acciones del desglose mejorados */
 .desglose-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
+    display: flex !important;
+    gap: 12px !important;
+    justify-content: center !important;
+    margin-top: 20px !important;
 }
 
 .desglose-actions .btn {
-    padding: 8px 16px;
-    font-size: 0.8rem;
-    border-radius: 6px;
-    transition: all 0.3s ease;
+    padding: 10px 20px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    border: 2px solid transparent !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.desglose-actions .btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.white-content .desglose-actions .btn:hover {
+    box-shadow: 0 6px 20px rgba(29, 37, 59, 0.1) !important;
 }
 
 /* Input group styling específico para money inputs */
@@ -1487,7 +1619,7 @@ select.form-control {
     color: #fff !important;
 }
 
-/* Responsive para el desglose de dinero */
+/* Responsive mejorado para el desglose de dinero */
 @media (max-width: 768px) {
     .desglose-dinero-section {
         padding: 20px 15px;
@@ -1496,25 +1628,61 @@ select.form-control {
     .money-item {
         flex-direction: column;
         align-items: stretch;
-        gap: 10px;
+        gap: 12px;
+        margin-bottom: 16px;
     }
     
     .money-label {
         min-width: auto;
         text-align: left;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
     }
     
     .money-inputs {
         margin-left: 0;
+        gap: 6px;
+    }
+    
+    .money-input {
+        font-size: 0.85rem !important;
+        padding: 10px 14px !important;
+    }
+    
+    .money-inputs .input-group-text {
+        font-size: 0.75rem !important;
+        padding: 10px 12px !important;
+        min-width: 45px !important;
+    }
+    
+    .desglose-totals {
+        padding: 20px 16px !important;
+        margin-top: 20px !important;
+    }
+    
+    .total-box {
+        padding: 16px 12px !important;
+        margin-bottom: 12px;
+    }
+    
+    .total-value {
+        font-size: 1.1rem !important;
+    }
+    
+    .total-label {
+        font-size: 0.7rem !important;
+        margin-bottom: 6px !important;
     }
     
     .desglose-actions {
         flex-direction: column;
+        gap: 8px !important;
     }
     
     .desglose-actions .btn {
         width: 100%;
+        padding: 12px 16px !important;
+        font-size: 0.8rem !important;
     }
 }
 
