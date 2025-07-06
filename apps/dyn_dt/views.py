@@ -418,11 +418,15 @@ def registro(request):
                 # Get the concepto to check if it's a gasto
                 concepto = get_object_or_404(Concepto, id=request.POST.get('concepto'))
                 
+                # Convert cantidad to Decimal to avoid precision issues
+                from decimal import Decimal
+                cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
+                
                 movimiento = MovimientoCaja(
                     caja=caja,
                     turno_id=request.POST.get('turno'),
                     concepto=concepto,
-                    cantidad=float(request.POST.get('cantidad')),
+                    cantidad=cantidad_decimal,
                     fecha=fecha_datetime,
                     descripcion=request.POST.get('descripcion') or None
                 )
