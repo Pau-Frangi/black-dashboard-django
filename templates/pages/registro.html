@@ -155,7 +155,7 @@
 
 <!-- Modal para añadir movimiento -->
 <div class="modal fade" id="addMovementModal" tabindex="-1" aria-labelledby="addMovementModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addMovementModalLabel">
@@ -251,6 +251,12 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <textarea class="form-control" name="descripcion" id="descripcion" 
+                                  rows="3" placeholder="Descripción detallada del movimiento" required></textarea>
                     </div>
                     
                     <!-- Sección de desglose de billetes y monedas -->
@@ -401,12 +407,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="descripcion" class="form-label">Descripción</label>
-                        <textarea class="form-control" name="descripcion" id="descripcion" 
-                                  rows="3" placeholder="Descripción detallada del movimiento" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
