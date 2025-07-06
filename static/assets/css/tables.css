@@ -498,46 +498,131 @@
   background-color: #1d253b;
 }
 
-/* Alert styles for light mode */
+/* ==============================================
+   ESTILOS MEJORADOS PARA ALERTS EN MODO CLARO
+   ============================================== */
+
+/* Base styles para alerts en modo claro */
 .white-content .alert {
   border-width: 1px;
   border-style: solid;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  margin-bottom: 16px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
 
+.white-content .alert::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, currentColor 0%, transparent 100%);
+  opacity: 0.6;
+}
+
+.white-content .alert:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Tipos específicos de alerts para modo claro */
 .white-content .alert-primary {
-  background-color: rgba(81, 203, 206, 0.1);
-  border-color: rgba(81, 203, 206, 0.3);
-  color: #3a9a9d;
+  background: linear-gradient(135deg, rgba(81, 203, 206, 0.12) 0%, rgba(81, 203, 206, 0.06) 100%);
+  border-color: rgba(81, 203, 206, 0.25);
+  color: #2a8a8d;
+  border-left: 4px solid #51cbce;
 }
 
 .white-content .alert-secondary {
-  background-color: rgba(133, 144, 162, 0.1);
-  border-color: rgba(133, 144, 162, 0.3);
-  color: #6c7985;
+  background: linear-gradient(135deg, rgba(133, 144, 162, 0.12) 0%, rgba(133, 144, 162, 0.06) 100%);
+  border-color: rgba(133, 144, 162, 0.25);
+  color: #5a6470;
+  border-left: 4px solid #8590a2;
 }
 
 .white-content .alert-success {
-  background-color: rgba(39, 194, 76, 0.1);
-  border-color: rgba(39, 194, 76, 0.3);
-  color: #218838;
+  background: linear-gradient(135deg, rgba(39, 194, 76, 0.12) 0%, rgba(39, 194, 76, 0.06) 100%);
+  border-color: rgba(39, 194, 76, 0.25);
+  color: #1e7e34;
+  border-left: 4px solid #27c24c;
 }
 
 .white-content .alert-danger {
-  background-color: rgba(253, 93, 147, 0.1);
-  border-color: rgba(253, 93, 147, 0.3);
-  color: #c82333;
+  background: linear-gradient(135deg, rgba(253, 93, 147, 0.12) 0%, rgba(253, 93, 147, 0.06) 100%);
+  border-color: rgba(253, 93, 147, 0.25);
+  color: #a71e34;
+  border-left: 4px solid #fd5d93;
 }
 
 .white-content .alert-warning {
-  background-color: rgba(255, 149, 0, 0.1);
-  border-color: rgba(255, 149, 0, 0.3);
-  color: #e67e22;
+  background: linear-gradient(135deg, rgba(255, 149, 0, 0.12) 0%, rgba(255, 149, 0, 0.06) 100%);
+  border-color: rgba(255, 149, 0, 0.25);
+  color: #cc7a00;
+  border-left: 4px solid #ff9500;
 }
 
 .white-content .alert-info {
-  background-color: rgba(81, 203, 206, 0.1);
-  border-color: rgba(81, 203, 206, 0.3);
-  color: #3a9a9d;
+  background: linear-gradient(135deg, rgba(29, 140, 248, 0.12) 0%, rgba(29, 140, 248, 0.06) 100%);
+  border-color: rgba(29, 140, 248, 0.25);
+  color: #1772c2;
+  border-left: 4px solid #1d8cf8;
+}
+
+/* Alert con iconos en modo claro */
+.white-content .alert i {
+  margin-right: 8px;
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+
+/* Alert dismissible mejorado para modo claro */
+.white-content .alert-dismissible .close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: currentColor;
+  opacity: 0.6;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.white-content .alert-dismissible .close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.05);
+  transform: scale(1.1);
+}
+
+/* Alert con animaciones para modo claro */
+.white-content .alert.fade-in {
+  animation: alertFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes alertFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Button outline styles for light mode */

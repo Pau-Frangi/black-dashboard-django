@@ -1770,92 +1770,277 @@ select.form-control {
     20%, 40%, 60%, 80% { transform: translateX(3px); }
 }
 
-/* Mensajes temporales para validaciones - versión mejorada */
-.temp-message {
-    animation: fadeInUp 0.3s ease-out;
-    border-radius: 6px !important;
-    font-size: 0.75rem !important;
-    padding: 8px 12px !important;
-    margin: 8px 0 0 0 !important;
+/* ==============================================
+   ALERTS Y MENSAJES TEMPORALES - VERSIÓN MEJORADA
+   ============================================== */
+
+/* Base styles para todos los mensajes temporales y alerts */
+.temp-message, 
+.alert-enhanced {
+    animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    padding: 12px 16px !important;
+    margin: 10px 0 !important;
     border: none !important;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
     position: relative;
     overflow: hidden;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
 }
 
-.temp-message::before {
+.temp-message:hover,
+.alert-enhanced:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 3px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Línea superior decorativa */
+.temp-message::before,
+.alert-enhanced::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 2px;
-    background: currentColor;
-    opacity: 0.6;
+    height: 3px;
+    background: linear-gradient(90deg, currentColor 0%, transparent 100%);
+    opacity: 0.8;
+    animation: slideIn 0.6s ease-out;
 }
 
-.temp-message.alert-warning {
+@keyframes slideIn {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+
+/* Estilos para diferentes tipos de alerts */
+
+/* Alert Success */
+.temp-message.alert-success,
+.alert-enhanced.alert-success {
+    background: linear-gradient(135deg, rgba(39, 194, 76, 0.15) 0%, rgba(39, 194, 76, 0.08) 100%) !important;
+    color: #27c24c !important;
+    border-left: 4px solid #27c24c !important;
+}
+
+.white-content .temp-message.alert-success,
+.white-content .alert-enhanced.alert-success {
+    background: linear-gradient(135deg, rgba(39, 194, 76, 0.12) 0%, rgba(39, 194, 76, 0.05) 100%) !important;
+    color: #1e7e34 !important;
+}
+
+/* Alert Warning */
+.temp-message.alert-warning,
+.alert-enhanced.alert-warning {
     background: linear-gradient(135deg, rgba(253, 93, 147, 0.15) 0%, rgba(253, 93, 147, 0.08) 100%) !important;
     color: #fd5d93 !important;
     border-left: 4px solid #fd5d93 !important;
-    font-weight: 600 !important;
 }
 
-.white-content .temp-message.alert-warning {
+.white-content .temp-message.alert-warning,
+.white-content .alert-enhanced.alert-warning {
     background: linear-gradient(135deg, rgba(253, 93, 147, 0.12) 0%, rgba(253, 93, 147, 0.05) 100%) !important;
     color: #e54576 !important;
 }
 
-.temp-message.alert-info {
-    background: linear-gradient(135deg, rgba(81, 203, 206, 0.1) 0%, rgba(81, 203, 206, 0.05) 100%) !important;
-    color: #51cbce !important;
-    border-left: 3px solid #51cbce !important;
+/* Alert Danger */
+.temp-message.alert-danger,
+.alert-enhanced.alert-danger {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.08) 100%) !important;
+    color: #dc3545 !important;
+    border-left: 4px solid #dc3545 !important;
 }
 
-.white-content .temp-message.alert-info {
-    background: linear-gradient(135deg, rgba(81, 203, 206, 0.08) 0%, rgba(81, 203, 206, 0.03) 100%) !important;
+.white-content .temp-message.alert-danger,
+.white-content .alert-enhanced.alert-danger {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(220, 53, 69, 0.05) 100%) !important;
+    color: #c82333 !important;
+}
+
+/* Alert Info */
+.temp-message.alert-info,
+.alert-enhanced.alert-info {
+    background: linear-gradient(135deg, rgba(81, 203, 206, 0.15) 0%, rgba(81, 203, 206, 0.08) 100%) !important;
+    color: #51cbce !important;
+    border-left: 4px solid #51cbce !important;
+}
+
+.white-content .temp-message.alert-info,
+.white-content .alert-enhanced.alert-info {
+    background: linear-gradient(135deg, rgba(81, 203, 206, 0.12) 0%, rgba(81, 203, 206, 0.05) 100%) !important;
     color: #3eb8bb !important;
 }
 
-.temp-message i {
-    font-size: 0.7rem;
-    margin-right: 6px;
+/* Alert Primary */
+.temp-message.alert-primary,
+.alert-enhanced.alert-primary {
+    background: linear-gradient(135deg, rgba(226, 74, 202, 0.15) 0%, rgba(226, 74, 202, 0.08) 100%) !important;
+    color: #e24aca !important;
+    border-left: 4px solid #e24aca !important;
+}
+
+.white-content .temp-message.alert-primary,
+.white-content .alert-enhanced.alert-primary {
+    background: linear-gradient(135deg, rgba(226, 74, 202, 0.12) 0%, rgba(226, 74, 202, 0.05) 100%) !important;
+    color: #b23a81 !important;
+}
+
+/* Alert con iconos */
+.temp-message i,
+.alert-enhanced i {
+    font-size: 0.9rem;
+    margin-right: 8px;
     opacity: 0.9;
+    flex-shrink: 0;
 }
 
 /* Mensaje de advertencia específico para cantidad excedida */
-.temp-message.exceeds-warning {
-    background: linear-gradient(135deg, rgba(255, 149, 0, 0.15) 0%, rgba(255, 149, 0, 0.08) 100%) !important;
+.temp-message.exceeds-warning,
+.alert-enhanced.exceeds-warning {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.18) 0%, rgba(255, 149, 0, 0.10) 100%) !important;
     color: #ff9500 !important;
     border-left: 4px solid #ff9500 !important;
     font-weight: 600 !important;
-    animation: fadeInUp 0.3s ease-out, pulseWarning 2s ease-in-out 3;
+    animation: fadeInUp 0.4s ease-out, pulseWarning 2s ease-in-out 3;
 }
 
-.white-content .temp-message.exceeds-warning {
-    background: linear-gradient(135deg, rgba(255, 149, 0, 0.12) 0%, rgba(255, 149, 0, 0.05) 100%) !important;
+.white-content .temp-message.exceeds-warning,
+.white-content .alert-enhanced.exceeds-warning {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.15) 0%, rgba(255, 149, 0, 0.08) 100%) !important;
     color: #e68500 !important;
 }
 
-/* Animación de pulso para mensajes de advertencia críticos */
+/* Estados de carga y procesamiento */
+.temp-message.alert-loading,
+.alert-enhanced.alert-loading {
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.15) 0%, rgba(108, 117, 125, 0.08) 100%) !important;
+    color: #6c757d !important;
+    border-left: 4px solid #6c757d !important;
+}
+
+.temp-message.alert-loading::after,
+.alert-enhanced.alert-loading::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Animaciones mejoradas */
 @keyframes pulseWarning {
     0%, 100% {
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
     }
     50% {
-        box-shadow: 0 5px 15px rgba(255, 149, 0, 0.3);
+        box-shadow: 0 6px 25px rgba(255, 149, 0, 0.25), 0 4px 12px rgba(255, 149, 0, 0.15);
     }
 }
 
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(15px) scale(0.95);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+}
+
+/* Clase para animar la salida */
+.temp-message.fade-out,
+.alert-enhanced.fade-out {
+    animation: fadeOut 0.3s ease-in forwards;
+}
+
+/* Alert con botón de cerrar mejorado */
+.temp-message .close,
+.alert-enhanced .close {
+    background: none;
+    border: none;
+    color: currentColor;
+    opacity: 0.7;
+    padding: 0;
+    margin-left: auto;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.temp-message .close:hover,
+.alert-enhanced .close:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+/* Responsividad mejorada */
+@media (max-width: 768px) {
+    .temp-message,
+    .alert-enhanced {
+        font-size: 0.75rem !important;
+        padding: 10px 14px !important;
+        margin: 8px 0 !important;
+    }
+    
+    .temp-message i,
+    .alert-enhanced i {
+        font-size: 0.8rem;
+        margin-right: 6px;
+    }
+}
+
+/* Contenedor para múltiples alerts */
+.alerts-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.alerts-container .temp-message,
+.alerts-container .alert-enhanced {
+    pointer-events: auto;
+    margin-bottom: 10px;
+}
+
+/* Adaptaciones para el modo blanco */
+.white-content .alerts-container {
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
 }
 
 /* Estilo especial para el contenedor del input cuando hay error */

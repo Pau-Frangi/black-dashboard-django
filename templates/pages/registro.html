@@ -5,6 +5,7 @@
 
 {% block extrastyle %}
 <link href="{% static 'assets/css/registro.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/css/alerts-enhanced.css' %}" rel="stylesheet" />
 {% endblock extrastyle %}
 
 {% block content %}
@@ -514,7 +515,7 @@
             // Validate file size (10MB max)
             const maxSize = 10 * 1024 * 1024; // 10MB in bytes
             if (file.size > maxSize) {
-                alert('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
+                showError('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.', {floating: true});
                 $(input).val('');
                 return;
             }
@@ -522,7 +523,7 @@
             // Validate file type
             const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp'];
             if (!allowedTypes.includes(file.type)) {
-                alert('Tipo de archivo no permitido. Solo se permiten archivos PDF, JPG, PNG, GIF y BMP.');
+                showError('Tipo de archivo no permitido. Solo se permiten archivos PDF, JPG, PNG, GIF y BMP.', {floating: true});
                 $(input).val('');
                 return;
             }
@@ -659,7 +660,7 @@
         const cajaId = $('#cajaSelect').val();
         
         if (!cajaId) {
-            alert('Por favor selecciona una caja antes de añadir un movimiento');
+            showWarning('Por favor selecciona una caja antes de añadir un movimiento');
             return false;
         }
         
@@ -800,7 +801,7 @@
                     }
                 } else {
                     console.error('Error loading movements:', data.error);
-                    alert('Error: ' + data.error);
+                    showError('Error: ' + data.error);
                 }
             },
             error: function(xhr, status, error) {
@@ -812,10 +813,10 @@
                 
                 if (xhr.status === 302 || xhr.status === 403) {
                     // Problemas de autenticación
-                    alert('Sesión expirada. Por favor, inicia sesión nuevamente.');
+                    showError('Sesión expirada. Por favor, inicia sesión nuevamente.');
                     window.location.href = '/accounts/login/';
                 } else {
-                    alert('Error al cargar los movimientos: ' + error);
+                    showError('Error al cargar los movimientos: ' + error);
                 }
             }
         });
@@ -921,14 +922,14 @@
                 console.log('Respuesta eliminar:', data);
                 if (data.success) {
                     loadMovimientos(); // Reload the table
-                    alert('Movimiento eliminado correctamente');
+                    showSuccess('Movimiento eliminado correctamente', {floating: true});
                 } else {
-                    alert('Error: ' + data.error);
+                    showError('Error: ' + data.error, {floating: true});
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Error al eliminar:', error);
-                alert('Error al eliminar el movimiento: ' + error);
+                showError('Error al eliminar el movimiento: ' + error, {floating: true});
             }
         });
     }
@@ -942,7 +943,7 @@
         // Verificar que hay una caja seleccionada
         const cajaId = $('#cajaSelect').val();
         if (!cajaId) {
-            alert('Por favor selecciona una caja antes de añadir un movimiento');
+            showWarning('Por favor selecciona una caja antes de añadir un movimiento', {floating: true});
             return;
         }
         
@@ -952,7 +953,7 @@
         
         const validationResult = validateCompleteMoneyBreakdown();
         if (!validationResult.valid) {
-            alert(validationResult.error);
+            showError(validationResult.error, {floating: true});
             return;
         }
 
@@ -981,15 +982,15 @@
                     // Recargar los movimientos para obtener el saldo actualizado
                     loadMovimientos(); // Esto actualizará tanto la tabla como los campos del header
                     
-                    alert('Movimiento añadido correctamente');
+                    showSuccess('Movimiento añadido correctamente');
                 } else {
-                    alert('Error: ' + data.error);
+                    showError('Error: ' + data.error);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Error al guardar:', error);
                 console.error('Response:', xhr.responseText);
-                alert('Error al guardar el movimiento: ' + error);
+                showError('Error al guardar el movimiento: ' + error);
             }
         });
     });
@@ -1298,14 +1299,14 @@
         const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
         
         if (cantidadMovimiento <= 0) {
-            alert('Por favor, primero ingresa la cantidad total del movimiento.');
+            showWarning('Por favor, primero ingresa la cantidad total del movimiento.');
             return;
         }
         
         // Verificar si hay un concepto seleccionado para determinar si es gasto o ingreso
         const conceptoSeleccionado = $('#concepto option:selected');
         if (!conceptoSeleccionado.val()) {
-            alert('Por favor, primero selecciona un concepto para determinar si es gasto o ingreso.');
+            showWarning('Por favor, primero selecciona un concepto para determinar si es gasto o ingreso.');
             return;
         }
         
@@ -1419,7 +1420,7 @@
                 mensaje += `• Reduce la cantidad del gasto\n`;
                 mensaje += `• Realiza el gasto en varias transacciones`;
                 
-                alert(mensaje);
+                showWarning(mensaje);
                 showInsufficientFunds(totalDisponible, cantidadMovimiento);
             } else {
                 // Hay dinero suficiente pero no se puede hacer exacto
@@ -1444,7 +1445,7 @@
                     mensaje += `💡 Nota: Para ingresos, siempre puedes especificar manualmente las denominaciones exactas que ingresan.`;
                 }
                 
-                alert(mensaje);
+                showWarning(mensaje);
                 
                 // Opcional: resaltar visualmente que el cálculo está incompleto
                 $('#totalNeto').parent().removeClass('border-success').addClass('border border-warning');
@@ -1483,9 +1484,9 @@
         const porcentaje = ((cantidadDistribuida / cantidadTotal) * 100).toFixed(1);
         
         const $message = $(`
-            <div class="calculation-message alert alert-warning mt-3 mb-0" style="border-left: 4px solid #f39c12;">
+            <div class="calculation-message alert alert-warning alert-enhanced fade-in mt-3 mb-0">
                 <div class="d-flex align-items-start">
-                    <i class="tim-icons icon-alert-circle-exc mr-3 mt-1" style="color: #f39c12; font-size: 1.2rem;"></i>
+                    <i class="tim-icons icon-alert-circle-exc mr-3 mt-1"></i>
                     <div>
                         <h6 class="mb-2">⚠️ Distribución incompleta</h6>
                         <p class="mb-2">
@@ -1515,9 +1516,9 @@
         $('.calculation-message').remove();
         
         const $message = $(`
-            <div class="calculation-message alert alert-success mt-3 mb-0" style="border-left: 4px solid #00d4aa;">
+            <div class="calculation-message alert alert-success alert-enhanced fade-in mt-3 mb-0">
                 <div class="d-flex align-items-center">
-                    <i class="tim-icons icon-check-2 mr-3" style="color: #00d4aa; font-size: 1.2rem;"></i>
+                    <i class="tim-icons icon-check-2 mr-3"></i>
                     <div>
                         <strong>✅ Distribución completada correctamente</strong>
                         <br>
@@ -1621,9 +1622,9 @@
         $('.calculation-message').remove();
         
         const $message = $(`
-            <div class="calculation-message alert alert-info mt-3 mb-0" style="border-left: 4px solid #17a2b8;">
+            <div class="calculation-message alert alert-info alert-enhanced fade-in mt-3 mb-0">
                 <div class="d-flex align-items-start">
-                    <i class="tim-icons icon-coins mr-3 mt-1" style="color: #17a2b8; font-size: 1.2rem;"></i>
+                    <i class="tim-icons icon-coins mr-3 mt-1"></i>
                     <div>
                         <h6 class="mb-2">💰 Pago calculado con cambio</h6>
                         <p class="mb-2">
@@ -1668,7 +1669,7 @@
         alertMsg += `\n� El cambio se ha añadido automáticamente como entrada en el desglose.\n`;
         alertMsg += `📝 El total neto coincidirá exactamente con el gasto real de ${(resultado.totalPagado - resultado.cambio).toFixed(2)}€`;
         
-        alert(alertMsg);
+        showInfo(alertMsg);
     }
     
     function showInsufficientFunds(totalDisponible, cantidadRequerida) {
@@ -1678,9 +1679,9 @@
         const faltante = cantidadRequerida - totalDisponible;
         
         const $message = $(`
-            <div class="calculation-message alert alert-danger mt-3 mb-0" style="border-left: 4px solid #dc3545;">
+            <div class="calculation-message alert alert-danger alert-enhanced fade-in mt-3 mb-0">
                 <div class="d-flex align-items-start">
-                    <i class="tim-icons icon-simple-remove mr-3 mt-1" style="color: #dc3545; font-size: 1.2rem;"></i>
+                    <i class="tim-icons icon-simple-remove mr-3 mt-1"></i>
                     <div>
                         <h6 class="mb-2">❌ Fondos insuficientes</h6>
                         <p class="mb-2">
@@ -1996,7 +1997,7 @@
         
         // Crear mensaje temporal mejorado
         const $message = $(`
-            <div class="temp-message alert ${alertClass} mt-2 mb-0" style="font-size: 0.75rem;">
+            <div class="temp-message alert alert-enhanced ${alertClass} fade-in mt-2 mb-0" style="font-size: 0.75rem;">
                 <i class="${iconClass}"></i>
                 ${message}
             </div>
@@ -2016,5 +2017,151 @@
             });
         }, fadeTime);
     }
+
+    // ==============================================
+    // SISTEMA DE ALERTAS MEJORADO
+    // ==============================================
+
+    /**
+     * Crea un contenedor para alertas flotantes si no existe
+     */
+    function ensureAlertsContainer() {
+        if (!$('.alerts-container').length) {
+            $('body').append('<div class="alerts-container"></div>');
+        }
+    }
+
+    /**
+     * Muestra una alerta mejorada con animaciones y estilos consistentes
+     * @param {string} message - Mensaje a mostrar
+     * @param {string} type - Tipo: success, warning, danger, info, primary
+     * @param {object} options - Opciones adicionales
+     */
+    function showEnhancedAlert(message, type = 'info', options = {}) {
+        ensureAlertsContainer();
+        
+        const defaults = {
+            duration: 4000,
+            closable: true,
+            icon: true,
+            floating: false,
+            container: null
+        };
+        
+        const opts = {...defaults, ...options};
+        
+        // Iconos por tipo
+        const icons = {
+            success: 'icon-check-2',
+            warning: 'icon-alert-circle-exc',
+            danger: 'icon-simple-remove',
+            info: 'icon-bell-55',
+            primary: 'icon-app'
+        };
+        
+        // Crear elemento de alerta
+        const alertId = 'alert-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const iconHtml = opts.icon ? `<i class="tim-icons ${icons[type] || icons.info}"></i>` : '';
+        const closeHtml = opts.closable ? 
+            `<button type="button" class="close" onclick="closeEnhancedAlert('${alertId}')">
+                <span>&times;</span>
+            </button>` : '';
+        
+        const alertHtml = `
+            <div id="${alertId}" class="alert alert-${type} alert-enhanced fade-in ${opts.closable ? 'alert-dismissible' : ''}" role="alert">
+                ${iconHtml}
+                <span class="alert-message">${message}</span>
+                ${closeHtml}
+            </div>
+        `;
+        
+        // Insertar alerta
+        const $alert = $(alertHtml);
+        
+        if (opts.floating) {
+            $('.alerts-container').prepend($alert);
+        } else if (opts.container) {
+            $(opts.container).prepend($alert);
+        } else {
+            $('.alerts-container').prepend($alert);
+        }
+        
+        // Auto-remover si se especifica duración
+        if (opts.duration > 0) {
+            setTimeout(() => {
+                closeEnhancedAlert(alertId);
+            }, opts.duration);
+        }
+        
+        return alertId;
+    }
+
+    /**
+     * Cierra una alerta específica con animación
+     */
+    function closeEnhancedAlert(alertId) {
+        const $alert = $(`#${alertId}`);
+        if ($alert.length) {
+            $alert.removeClass('fade-in').addClass('fade-out');
+            setTimeout(() => {
+                $alert.remove();
+            }, 300);
+        }
+    }
+
+    /**
+     * Reemplaza alert() nativo con versión mejorada
+     */
+    function enhancedAlert(message, type = 'info') {
+        return showEnhancedAlert(message, type, {
+            floating: true,
+            duration: 5000
+        });
+    }
+
+    /**
+     * Muestra alerta de éxito
+     */
+    function showSuccess(message, options = {}) {
+        return showEnhancedAlert(message, 'success', options);
+    }
+
+    /**
+     * Muestra alerta de advertencia
+     */
+    function showWarning(message, options = {}) {
+        return showEnhancedAlert(message, 'warning', options);
+    }
+
+    /**
+     * Muestra alerta de error
+     */
+    function showError(message, options = {}) {
+        return showEnhancedAlert(message, 'danger', options);
+    }
+
+    /**
+     * Muestra alerta de información
+     */
+    function showInfo(message, options = {}) {
+        return showEnhancedAlert(message, 'info', options);
+    }
+
+    /**
+     * Cierra todas las alertas flotantes
+     */
+    function closeAllAlerts() {
+        $('.alerts-container .alert').each(function() {
+            const alertId = $(this).attr('id');
+            if (alertId) {
+                closeEnhancedAlert(alertId);
+            }
+        });
+    }
+
+    // Inicializar contenedor de alertas al cargar la página
+    $(document).ready(function() {
+        ensureAlertsContainer();
+    });
 </script>
 {% endblock extrajs %}

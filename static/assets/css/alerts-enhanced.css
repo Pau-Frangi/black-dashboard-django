@@ -1,0 +1,395 @@
+/* ==============================================
+   ESTILOS MEJORADOS PARA ALERTS - SISTEMA COMPLETO
+   ============================================== */
+
+/* Base styles para todos los alerts */
+.alert {
+    border: 0 !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    padding: 12px 16px !important;
+    margin-bottom: 16px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Línea superior decorativa */
+.alert::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, currentColor 0%, transparent 100%);
+    opacity: 0.8;
+    animation: slideInAlert 0.6s ease-out;
+}
+
+/* Hover effect */
+.alert:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 3px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Estilos para alerts mejorados con clase específica */
+.alert-enhanced {
+    border-left: 4px solid currentColor !important;
+    font-weight: 500;
+}
+
+/* Success alerts */
+.alert-success {
+    background: linear-gradient(135deg, rgba(0, 242, 195, 0.95) 0%, rgba(0, 191, 154, 0.9) 100%) !important;
+    color: #fff !important;
+}
+
+.alert-success i {
+    color: #00f2c3 !important;
+}
+
+/* Warning alerts */
+.alert-warning {
+    background: linear-gradient(135deg, rgba(255, 141, 114, 0.95) 0%, rgba(255, 100, 63, 0.9) 100%) !important;
+    color: #fff !important;
+}
+
+.alert-warning i {
+    color: #ff8d72 !important;
+}
+
+/* Danger alerts */
+.alert-danger {
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.95) 0%, rgba(236, 37, 13, 0.9) 100%) !important;
+    color: #fff !important;
+}
+
+.alert-danger i {
+    color: #fd5d93 !important;
+}
+
+/* Info alerts */
+.alert-info {
+    background: linear-gradient(135deg, rgba(29, 140, 248, 0.95) 0%, rgba(7, 114, 219, 0.9) 100%) !important;
+    color: #fff !important;
+}
+
+.alert-info i {
+    color: #1d8cf8 !important;
+}
+
+/* Primary alerts */
+.alert-primary {
+    background: linear-gradient(135deg, rgba(226, 74, 202, 0.95) 0%, rgba(186, 84, 245, 0.9) 100%) !important;
+    color: #fff !important;
+}
+
+.alert-primary i {
+    color: #e14eca !important;
+}
+
+/* Iconos dentro de alerts */
+.alert i.tim-icons,
+.alert i.fa {
+    font-size: 1rem;
+    margin-right: 8px;
+    opacity: 0.9;
+    vertical-align: middle;
+}
+
+/* Botón de cierre mejorado */
+.alert .close {
+    color: #fff !important;
+    opacity: 0.7 !important;
+    text-shadow: none !important;
+    line-height: 0;
+    outline: 0 !important;
+    background: none !important;
+    border: none !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+}
+
+.alert .close:hover,
+.alert .close:focus {
+    color: #fff !important;
+    opacity: 1 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.alert .close span {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+/* Alert dismissible específico */
+.alert-dismissible {
+    padding-right: 50px !important;
+}
+
+/* Mensajes temporales específicos */
+.temp-message {
+    font-size: 0.75rem !important;
+    padding: 10px 14px !important;
+    margin: 8px 0 !important;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.temp-message i {
+    font-size: 0.85rem !important;
+    margin-right: 6px !important;
+    flex-shrink: 0;
+}
+
+/* Mensajes de cálculo específicos */
+.calculation-message {
+    margin-top: 12px !important;
+    margin-bottom: 0 !important;
+}
+
+.calculation-message h6 {
+    color: inherit !important;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.calculation-message p {
+    color: rgba(255, 255, 255, 0.9) !important;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+}
+
+.calculation-message small {
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 0.7rem;
+}
+
+/* Animaciones */
+@keyframes slideInAlert {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+
+@keyframes iconPulse {
+    0%, 100% { 
+        opacity: 0.9; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 1; 
+        transform: scale(1.05);
+    }
+}
+
+@keyframes alertFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes alertFadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+}
+
+/* Clases de animación */
+.alert.fade-in {
+    animation: alertFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.alert.fade-out {
+    animation: alertFadeOut 0.3s ease-in forwards;
+}
+
+/* Contenedor para alertas flotantes */
+.alerts-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.alerts-container .alert {
+    pointer-events: auto;
+    margin-bottom: 10px;
+    animation: alertFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Iconos con animación de pulso para alerts importantes */
+.alert.alert-with-icon span[data-notify="icon"] {
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+/* Estados especiales */
+.alert.exceeds-warning {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.18) 0%, rgba(255, 149, 0, 0.10) 100%) !important;
+    color: #ff9500 !important;
+    border-left: 4px solid #ff9500 !important;
+    font-weight: 600 !important;
+    animation: alertFadeIn 0.4s ease-out, iconPulse 2s ease-in-out 3;
+}
+
+.alert.alert-loading {
+    background: linear-gradient(135deg, rgba(29, 140, 248, 0.15) 0%, rgba(29, 140, 248, 0.08) 100%) !important;
+    color: #1d8cf8 !important;
+    border-left: 4px solid #1d8cf8 !important;
+}
+
+/* ==============================================
+   ESTILOS PARA MODO CLARO (WHITE CONTENT)
+   ============================================== */
+
+.white-content .alert {
+    color: #1d253b !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+}
+
+.white-content .alert-primary {
+    background: linear-gradient(135deg, rgba(81, 203, 206, 0.12) 0%, rgba(81, 203, 206, 0.06) 100%) !important;
+    border-color: rgba(81, 203, 206, 0.25) !important;
+    color: #1772c2 !important;
+    border-left: 4px solid #51cbce !important;
+}
+
+.white-content .alert-success {
+    background: linear-gradient(135deg, rgba(39, 194, 76, 0.12) 0%, rgba(39, 194, 76, 0.06) 100%) !important;
+    border-color: rgba(39, 194, 76, 0.25) !important;
+    color: #1e7e34 !important;
+    border-left: 4px solid #27c24c !important;
+}
+
+.white-content .alert-danger {
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.12) 0%, rgba(253, 93, 147, 0.06) 100%) !important;
+    border-color: rgba(253, 93, 147, 0.25) !important;
+    color: #a71e34 !important;
+    border-left: 4px solid #fd5d93 !important;
+}
+
+.white-content .alert-warning {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.12) 0%, rgba(255, 149, 0, 0.06) 100%) !important;
+    border-color: rgba(255, 149, 0, 0.25) !important;
+    color: #cc7a00 !important;
+    border-left: 4px solid #ff9500 !important;
+}
+
+.white-content .alert-info {
+    background: linear-gradient(135deg, rgba(29, 140, 248, 0.12) 0%, rgba(29, 140, 248, 0.06) 100%) !important;
+    border-color: rgba(29, 140, 248, 0.25) !important;
+    color: #1772c2 !important;
+    border-left: 4px solid #1d8cf8 !important;
+}
+
+.white-content .alert i {
+    margin-right: 8px;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.white-content .alert .close {
+    color: currentColor !important;
+    opacity: 0.6 !important;
+}
+
+.white-content .alert .close:hover {
+    opacity: 1 !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ==============================================
+   RESPONSIVIDAD
+   ============================================== */
+
+@media (max-width: 768px) {
+    .alerts-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .alert {
+        font-size: 0.75rem !important;
+        padding: 10px 14px !important;
+        margin: 8px 0 !important;
+    }
+    
+    .alert i {
+        font-size: 0.8rem !important;
+        margin-right: 6px !important;
+    }
+
+    .calculation-message h6 {
+        font-size: 0.8rem;
+    }
+
+    .calculation-message p {
+        font-size: 0.75rem;
+    }
+
+    .calculation-message small {
+        font-size: 0.65rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .alert .close {
+        top: 12px;
+        right: 12px;
+        transform: none;
+    }
+    
+    .alert .close:hover,
+    .alert .close:focus {
+        transform: scale(1.1);
+    }
+}
+
+/* ==============================================
+   PRINT STYLES
+   ============================================== */
+
+@media print {
+    .alert {
+        box-shadow: none !important;
+        background: #f8f9fa !important;
+        color: #212529 !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    
+    .alerts-container {
+        display: none !important;
+    }
+}
