@@ -14,7 +14,7 @@ from django.views import View
 from django.db import models
 from pprint import pp 
 
-from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Caja, MovimientoCaja, Turno, Concepto, DenominacionEuro, MovimientoDinero
+from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Caja, MovimientoCaja, MovimientoBanco, Turno, Concepto, DenominacionEuro, MovimientoDinero
 from apps.dyn_dt.utils import user_filter
 from apps.dyn_dt.forms import MovimientoCajaForm, DesgloseDineroForm
 
@@ -341,14 +341,19 @@ def registro(request):
         
         try:
             caja = get_object_or_404(Caja, id=caja_id)
-            # Ordenar por ID descendente (más recientes primero) como orden por defecto
-            movimientos = MovimientoCaja.objects.filter(caja=caja).order_by('-id')
+            
+            # Get both cash and bank movements
+            movimientos_caja = MovimientoCaja.objects.filter(caja=caja).order_by('-id')
+            movimientos_banco = MovimientoBanco.objects.filter(caja=caja).order_by('-id')
             
             # Prepare movements data for JSON response
             movimientos_data = []
-            for mov in movimientos:
+            
+            # Add cash movements
+            for mov in movimientos_caja:
                 movimientos_data.append({
                     'id': mov.id,
+                    'tipo': 'caja',
                     'fecha': mov.fecha.strftime('%Y-%m-%d'),
                     'fecha_completa': mov.fecha.strftime('%Y-%m-%d %H:%M:%S'),
                     'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
@@ -363,9 +368,33 @@ def registro(request):
                     'descripcion': mov.descripcion or ''
                 })
             
-            # Calculate summary
-            total_ingresos = sum(mov.cantidad for mov in movimientos if not mov.es_gasto())
-            total_gastos = sum(mov.cantidad for mov in movimientos if mov.es_gasto())
+            # Add bank movements
+            for mov in movimientos_banco:
+                movimientos_data.append({
+                    'id': mov.id,
+                    'tipo': 'banco',
+                    'fecha': mov.fecha.strftime('%Y-%m-%d'),
+                    'fecha_completa': mov.fecha.strftime('%Y-%m-%d %H:%M:%S'),
+                    'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                    'datetime_iso': mov.fecha.isoformat(),
+                    'turno': str(mov.turno),
+                    'concepto': str(mov.concepto),
+                    'cantidad': float(mov.cantidad),
+                    'es_gasto': mov.es_gasto(),
+                    'justificante': mov.justificante or '',
+                    'tiene_archivo': bool(mov.archivo_justificante),
+                    'archivo_url': mov.archivo_justificante.url if mov.archivo_justificante else None,
+                    'descripcion': mov.descripcion or '',
+                    'referencia_bancaria': getattr(mov, 'referencia_bancaria', '') or ''
+                })
+            
+            # Sort all movements by date (most recent first)
+            movimientos_data.sort(key=lambda x: x['datetime_iso'], reverse=True)
+            
+            # Calculate summary (include both cash and bank movements)
+            all_movimientos = list(movimientos_caja) + list(movimientos_banco)
+            total_ingresos = sum(mov.cantidad for mov in all_movimientos if not mov.es_gasto())
+            total_gastos = sum(mov.cantidad for mov in all_movimientos if mov.es_gasto())
             
             resumen = {
                 'total_ingresos': float(total_ingresos),
@@ -406,6 +435,9 @@ def registro(request):
                 if not caja.activa:
                     return JsonResponse({'success': False, 'error': 'No se pueden añadir movimientos a una caja inactiva'})
                 
+                # Get tipo_operacion to determine movement type
+                tipo_operacion = request.POST.get('tipo_operacion')
+                
                 # Create movement
                 fecha_str = request.POST.get('fecha')
                 hora_str = request.POST.get('hora', '12:00')
@@ -422,43 +454,63 @@ def registro(request):
                 from decimal import Decimal
                 cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
                 
-                movimiento = MovimientoCaja(
-                    caja=caja,
-                    turno_id=request.POST.get('turno'),
-                    concepto=concepto,
-                    cantidad=cantidad_decimal,
-                    fecha=fecha_datetime,
-                    descripcion=request.POST.get('descripcion') or None
-                )
-                
-                # Only set justificante fields if the concepto is a gasto
-                if concepto.es_gasto:
-                    movimiento.justificante = request.POST.get('justificante') or None
-                    # Handle file upload only for gastos
-                    if 'archivo_justificante' in request.FILES:
-                        movimiento.archivo_justificante = request.FILES['archivo_justificante']
+                if tipo_operacion == 'transferencia':
+                    # Create MovimientoBanco for bank transfers
+                    movimiento = MovimientoBanco(
+                        caja=caja,
+                        turno_id=request.POST.get('turno'),
+                        concepto=concepto,
+                        cantidad=cantidad_decimal,
+                        fecha=fecha_datetime,
+                        descripcion=request.POST.get('descripcion') or None,
+                        referencia_bancaria=request.POST.get('referencia_bancaria') or None
+                    )
+                    
+                    # Set justificante fields for bank movements (both gastos and ingresos can have justificante)
+                    movimiento.justificante = request.POST.get('justificante_banco') or None
+                    if 'archivo_justificante_banco' in request.FILES:
+                        movimiento.archivo_justificante = request.FILES['archivo_justificante_banco']
+                    
                 else:
-                    # For ingresos, ensure justificante fields are None
-                    movimiento.justificante = None
-                    movimiento.archivo_justificante = None
+                    # Create MovimientoCaja for cash movements (efectivo)
+                    movimiento = MovimientoCaja(
+                        caja=caja,
+                        turno_id=request.POST.get('turno'),
+                        concepto=concepto,
+                        cantidad=cantidad_decimal,
+                        fecha=fecha_datetime,
+                        descripcion=request.POST.get('descripcion') or None
+                    )
+                    
+                    # Only set justificante fields if the concepto is a gasto
+                    if concepto.es_gasto:
+                        movimiento.justificante = request.POST.get('justificante') or None
+                        # Handle file upload only for gastos
+                        if 'archivo_justificante' in request.FILES:
+                            movimiento.archivo_justificante = request.FILES['archivo_justificante']
+                    else:
+                        # For ingresos, ensure justificante fields are None
+                        movimiento.justificante = None
+                        movimiento.archivo_justificante = None
                 
                 # Validate and save
                 movimiento.full_clean()
                 movimiento.save()
                 
-                # Procesar desglose de dinero
-                desglose_form = DesgloseDineroForm(request.POST)
-                if desglose_form.is_valid():
-                    movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
-                    
-                    # Crear los movimientos de dinero
-                    for mov_data in movimientos_dinero_data:
-                        MovimientoDinero.objects.create(
-                            movimiento_caja=movimiento,
-                            denominacion=mov_data['denominacion'],
-                            cantidad_entrada=mov_data['cantidad_entrada'],
-                            cantidad_salida=mov_data['cantidad_salida']
-                        )
+                # Only process money breakdown for cash movements (MovimientoCaja)
+                if tipo_operacion == 'efectivo' and isinstance(movimiento, MovimientoCaja):
+                    desglose_form = DesgloseDineroForm(request.POST)
+                    if desglose_form.is_valid():
+                        movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
+                        
+                        # Crear los movimientos de dinero
+                        for mov_data in movimientos_dinero_data:
+                            MovimientoDinero.objects.create(
+                                movimiento_caja=movimiento,
+                                denominacion=mov_data['denominacion'],
+                                cantidad_entrada=mov_data['cantidad_entrada'],
+                                cantidad_salida=mov_data['cantidad_salida']
+                            )
                 
                 return JsonResponse({'success': True, 'message': 'Movimiento añadido correctamente'})
                 
@@ -468,7 +520,13 @@ def registro(request):
         elif action == 'delete':
             try:
                 movimiento_id = request.POST.get('movimiento_id')
-                movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
+                tipo_movimiento = request.POST.get('tipo_movimiento', 'caja')  # Default to caja for compatibility
+                
+                if tipo_movimiento == 'banco':
+                    movimiento = get_object_or_404(MovimientoBanco, id=movimiento_id)
+                else:
+                    movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
+                
                 movimiento.delete()
                 
                 return JsonResponse({'success': True, 'message': 'Movimiento eliminado correctamente'})

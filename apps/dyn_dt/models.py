@@ -114,12 +114,29 @@ class Caja(models.Model):
         help_text="Marca si esta caja está actualmente en uso"
     )
 
+    saldo_caja = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name="Saldo de caja (efectivo)",
+        help_text="Saldo de los movimientos en efectivo. Se actualiza automáticamente."
+    )
+
+    saldo_banco = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name="Saldo bancario",
+        help_text="Saldo de los movimientos bancarios. Se actualiza automáticamente."
+    )
+
+    # Campo legacy para compatibilidad
     saldo = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0,
-        verbose_name="Saldo inicial/actual",
-        help_text="Solo se puede modificar al crear la caja. Después se actualiza automáticamente con los movimientos."
+        verbose_name="Saldo total",
+        help_text="Suma del saldo de caja y banco. Se calcula automáticamente."
     )
 
     observaciones = models.TextField(
@@ -129,40 +146,82 @@ class Caja(models.Model):
     )
 
     def clean(self):
-        """Validación que evita modificar el saldo de una caja existente"""
+        """Validación que evita modificar los saldos de una caja existente"""
         if self.pk:  # La caja ya existe
-            # Obtener el saldo original de la base de datos
+            # Obtener los saldos originales de la base de datos
             try:
                 original = Caja.objects.get(pk=self.pk)
-                if self.saldo != original.saldo:
+                if (self.saldo_caja != original.saldo_caja or 
+                    self.saldo_banco != original.saldo_banco or 
+                    self.saldo != original.saldo):
                     raise ValidationError({
-                        'saldo': 'No se puede modificar el saldo de una caja existente. '
-                                'El saldo se actualiza automáticamente con los movimientos.'
+                        'saldo_caja': 'No se puede modificar el saldo de caja de una caja existente. '
+                                     'El saldo se actualiza automáticamente con los movimientos.',
+                        'saldo_banco': 'No se puede modificar el saldo bancario de una caja existente. '
+                                      'El saldo se actualiza automáticamente con los movimientos.',
+                        'saldo': 'No se puede modificar el saldo total de una caja existente. '
+                                'El saldo se calcula automáticamente.'
                     })
             except Caja.DoesNotExist:
                 pass
 
     def save(self, *args, **kwargs):
         """Guarda la caja con validaciones"""
+        # Calcular el saldo total antes de guardar
+        if not kwargs.get('skip_validation', False):
+            self.saldo = self.saldo_caja + self.saldo_banco
+        
         # Solo ejecutar validaciones si no es una operación de recálculo automático
         if not kwargs.pop('skip_validation', False):
             self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} ({self.año}) - Saldo: {self.saldo:.2f}€"
+        return f"{self.nombre} ({self.año}) - Efectivo: {self.saldo_caja:.2f}€ | Banco: {self.saldo_banco:.2f}€ | Total: {self.saldo:.2f}€"
 
-    def recalcular_saldo(self):
+    def recalcular_saldo_caja(self):
         """
-        Recalcula el saldo de la caja basándose en todos sus movimientos.
-        Útil para corregir inconsistencias en el saldo.
+        Recalcula el saldo de efectivo basándose en todos los movimientos de caja.
         """
         total = Decimal('0.00')
         for movimiento in self.movimientos.all():
             total += movimiento.cantidad_real()
         
-        self.saldo = total
-        self.save(skip_validation=True)  # Saltamos la validación para el recálculo automático
+        self.saldo_caja = total
+        self.saldo = self.saldo_caja + self.saldo_banco
+        self.save(skip_validation=True)
+        return self.saldo_caja
+
+    def recalcular_saldo_banco(self):
+        """
+        Recalcula el saldo bancario basándose en todos los movimientos de banco.
+        """
+        total = Decimal('0.00')
+        for movimiento in self.movimientos_banco.all():
+            total += movimiento.cantidad_real()
+        
+        self.saldo_banco = total
+        self.saldo = self.saldo_caja + self.saldo_banco
+        self.save(skip_validation=True)
+        return self.saldo_banco
+
+    def recalcular_saldo(self):
+        """
+        Recalcula ambos saldos de la caja basándose en todos sus movimientos.
+        Útil para corregir inconsistencias en los saldos.
+        """
+        total_caja = Decimal('0.00')
+        for movimiento in self.movimientos.all():
+            total_caja += movimiento.cantidad_real()
+        
+        total_banco = Decimal('0.00')
+        for movimiento in self.movimientos_banco.all():
+            total_banco += movimiento.cantidad_real()
+        
+        self.saldo_caja = total_caja
+        self.saldo_banco = total_banco
+        self.saldo = self.saldo_caja + self.saldo_banco
+        self.save(skip_validation=True)
         return self.saldo
 
     def inicializar_desglose(self):
@@ -345,6 +404,124 @@ class MovimientoCaja(models.Model):
         ordering = ['-fecha']
 
 
+class MovimientoBanco(models.Model):
+    """
+    Representa un movimiento bancario (transferencias, cheques, domiciliaciones, etc.)
+    Tiene los mismos campos que MovimientoCaja pero sin desglose de billetes/monedas
+    """
+    caja = models.ForeignKey(
+        Caja,
+        on_delete=models.CASCADE,
+        verbose_name="Caja",
+        related_name="movimientos_banco"
+    )
+
+    turno = models.ForeignKey(
+        Turno,
+        on_delete=models.CASCADE,
+        verbose_name="Turno",
+        related_name="movimientos_banco"
+    )
+
+    concepto = models.ForeignKey(
+        Concepto,
+        on_delete=models.PROTECT,
+        verbose_name="Concepto"
+    )
+
+    cantidad = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Cantidad (€)"
+    )
+
+    fecha = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha y hora del movimiento"
+    )
+
+    justificante = models.CharField(
+        max_length=5,
+        blank=True,
+        null=True,
+        verbose_name="Nº Justificante"
+    )
+
+    archivo_justificante = models.FileField(
+        upload_to='justificantes_banco/',
+        blank=True,
+        null=True,
+        verbose_name="Archivo justificante",
+        help_text="Sube un PDF o imagen del justificante (opcional)"
+    )
+
+    descripcion = models.TextField(
+        verbose_name="Descripción",
+        help_text="Descripción detallada del movimiento bancario"
+    )
+
+    # Campos específicos para movimientos bancarios
+    referencia_bancaria = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name="Referencia bancaria",
+        help_text="Número de referencia de la operación bancaria"
+    )
+
+    def clean(self):
+        """Validación de datos antes de guardar"""
+        if self.cantidad <= 0:
+            raise ValidationError("La cantidad debe ser positiva")
+        
+        if not self.caja.activa:
+            raise ValidationError("No se pueden añadir movimientos a una caja inactiva")
+        
+        # Para movimientos bancarios, tanto gastos como ingresos pueden tener justificante
+        # No se aplica la restricción de justificante solo para gastos
+        
+        # Validar archivo justificante si se proporciona
+        if self.archivo_justificante:
+            import os
+            ext = os.path.splitext(self.archivo_justificante.name)[1].lower()
+            valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp']
+            if ext not in valid_extensions:
+                raise ValidationError(
+                    f"El archivo debe ser una imagen (JPG, PNG, GIF, BMP) o un PDF. "
+                    f"Extensión recibida: {ext}"
+                )
+            
+            # Limitar tamaño de archivo a 10MB
+            if self.archivo_justificante.size > 10 * 1024 * 1024:
+                raise ValidationError("El archivo no puede superar los 10MB")
+
+    def save(self, *args, **kwargs):
+        """Valida los datos antes de guardar"""
+        self.full_clean()  # Ejecuta las validaciones
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Elimina el movimiento"""
+        super().delete(*args, **kwargs)
+
+    def es_gasto(self):
+        """Determina si el movimiento es un gasto"""
+        return self.concepto.es_gasto
+
+    def cantidad_real(self):
+        """Devuelve la cantidad con signo correcto para cálculos de saldo"""
+        return -self.cantidad if self.es_gasto() else self.cantidad
+
+    def __str__(self):
+        signo = "-" if self.es_gasto() else "+"
+        return f"{self.fecha.strftime('%Y-%m-%d %H:%M')} | {self.caja.nombre} | {self.turno} | {signo}{self.cantidad:.2f}€ | {self.concepto}"
+
+    class Meta:
+        verbose_name = "Movimiento de banco"
+        verbose_name_plural = "Movimientos de banco"
+        ordering = ['-fecha']
+
+
 
 
 
@@ -465,17 +642,18 @@ class MovimientoDinero(models.Model):
 
 # Señales Django para actualizar el saldo de la caja automáticamente
 @receiver(post_save, sender=MovimientoCaja)
-def actualizar_saldo_on_save(sender, instance, created, **kwargs):
-    """Actualiza el saldo de la caja cuando se crea un movimiento"""
+def actualizar_saldo_caja_on_save(sender, instance, created, **kwargs):
+    """Actualiza el saldo de caja cuando se crea un movimiento de caja"""
     if created:
-        # Actualizar saldo
-        instance.caja.saldo += instance.cantidad_real()
+        # Actualizar saldo de caja
+        instance.caja.saldo_caja += instance.cantidad_real()
+        instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
         instance.caja.save(skip_validation=True)
 
 
 @receiver(pre_delete, sender=MovimientoCaja)
-def actualizar_saldo_on_delete(sender, instance, **kwargs):
-    """Actualiza el saldo de la caja cuando se elimina un movimiento"""
+def actualizar_saldo_caja_on_delete(sender, instance, **kwargs):
+    """Actualiza el saldo de caja cuando se elimina un movimiento de caja"""
     # Revertir el movimiento del desglose antes de eliminar
     for mov_dinero in instance.movimientos_dinero.all():
         desglose = DesgloseCaja.objects.filter(
@@ -490,8 +668,28 @@ def actualizar_saldo_on_delete(sender, instance, **kwargs):
                 desglose.cantidad = 0
             desglose.save()
     
-    # Actualizar saldo
-    instance.caja.saldo -= instance.cantidad_real()
+    # Actualizar saldo de caja
+    instance.caja.saldo_caja -= instance.cantidad_real()
+    instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
+    instance.caja.save(skip_validation=True)
+
+
+@receiver(post_save, sender=MovimientoBanco)
+def actualizar_saldo_banco_on_save(sender, instance, created, **kwargs):
+    """Actualiza el saldo bancario cuando se crea un movimiento de banco"""
+    if created:
+        # Actualizar saldo bancario
+        instance.caja.saldo_banco += instance.cantidad_real()
+        instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
+        instance.caja.save(skip_validation=True)
+
+
+@receiver(pre_delete, sender=MovimientoBanco)
+def actualizar_saldo_banco_on_delete(sender, instance, **kwargs):
+    """Actualiza el saldo bancario cuando se elimina un movimiento de banco"""
+    # Actualizar saldo bancario
+    instance.caja.saldo_banco -= instance.cantidad_real()
+    instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
     instance.caja.save(skip_validation=True)
 
 
@@ -520,23 +718,25 @@ def inicializar_desglose_caja(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=DesgloseCaja)
 def actualizar_saldo_on_desglose_save(sender, instance, created, **kwargs):
-    """Actualiza el saldo de la caja cuando se modifica el desglose"""
+    """Actualiza el saldo de caja cuando se modifica el desglose"""
     # Calcular el nuevo saldo basado en el desglose total
-    nuevo_saldo = instance.caja.calcular_saldo_desde_desglose()
+    nuevo_saldo_caja = instance.caja.calcular_saldo_desde_desglose()
     
-    # Actualizar el saldo de la caja
-    if instance.caja.saldo != nuevo_saldo:
-        instance.caja.saldo = nuevo_saldo
+    # Actualizar el saldo de caja
+    if instance.caja.saldo_caja != nuevo_saldo_caja:
+        instance.caja.saldo_caja = nuevo_saldo_caja
+        instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
         instance.caja.save(skip_validation=True)
 
 
 @receiver(post_delete, sender=DesgloseCaja)
 def actualizar_saldo_on_desglose_delete(sender, instance, **kwargs):
-    """Actualiza el saldo de la caja cuando se elimina un desglose"""
+    """Actualiza el saldo de caja cuando se elimina un desglose"""
     # Calcular el nuevo saldo basado en el desglose restante
-    nuevo_saldo = instance.caja.calcular_saldo_desde_desglose()
+    nuevo_saldo_caja = instance.caja.calcular_saldo_desde_desglose()
     
-    # Actualizar el saldo de la caja
-    if instance.caja.saldo != nuevo_saldo:
-        instance.caja.saldo = nuevo_saldo
+    # Actualizar el saldo de caja
+    if instance.caja.saldo_caja != nuevo_saldo_caja:
+        instance.caja.saldo_caja = nuevo_saldo_caja
+        instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
         instance.caja.save(skip_validation=True)

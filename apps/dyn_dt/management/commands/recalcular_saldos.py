@@ -44,32 +44,65 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             for caja in cajas:
-                saldo_actual = caja.saldo
-                saldo_calculado = sum(
+                # Calcular saldos por separado
+                saldo_caja_actual = caja.saldo_caja
+                saldo_banco_actual = caja.saldo_banco
+                saldo_total_actual = caja.saldo
+                
+                saldo_caja_calculado = sum(
                     mov.cantidad_real() for mov in caja.movimientos.all()
                 )
+                saldo_banco_calculado = sum(
+                    mov.cantidad_real() for mov in caja.movimientos_banco.all()
+                )
+                saldo_total_calculado = saldo_caja_calculado + saldo_banco_calculado
                 
-                if saldo_actual != saldo_calculado:
+                # Verificar inconsistencias
+                inconsistencia_caja = saldo_caja_actual != saldo_caja_calculado
+                inconsistencia_banco = saldo_banco_actual != saldo_banco_calculado
+                inconsistencia_total = saldo_total_actual != saldo_total_calculado
+                
+                if inconsistencia_caja or inconsistencia_banco or inconsistencia_total:
                     inconsistencias += 1
                     self.stdout.write(
                         self.style.WARNING(
-                            f'Caja "{caja.nombre}": '
-                            f'Saldo actual: {saldo_actual}€, '
-                            f'Saldo calculado: {saldo_calculado}€'
+                            f'Caja "{caja.nombre}": INCONSISTENCIAS DETECTADAS'
                         )
                     )
                     
+                    if inconsistencia_caja:
+                        self.stdout.write(
+                            f'  Saldo caja: {saldo_caja_actual}€ (actual) vs {saldo_caja_calculado}€ (calculado)'
+                        )
+                    
+                    if inconsistencia_banco:
+                        self.stdout.write(
+                            f'  Saldo banco: {saldo_banco_actual}€ (actual) vs {saldo_banco_calculado}€ (calculado)'
+                        )
+                    
+                    if inconsistencia_total:
+                        self.stdout.write(
+                            f'  Saldo total: {saldo_total_actual}€ (actual) vs {saldo_total_calculado}€ (calculado)'
+                        )
+                    
                     if not verificar_solo:
-                        caja.saldo = saldo_calculado
+                        caja.saldo_caja = saldo_caja_calculado
+                        caja.saldo_banco = saldo_banco_calculado
+                        caja.saldo = saldo_total_calculado
                         caja.save(skip_validation=True)  # Saltamos validación para el recálculo
                         correcciones += 1
                         self.stdout.write(
-                            self.style.SUCCESS(f'✓ Corregido a {saldo_calculado}€')
+                            self.style.SUCCESS(
+                                f'  ✓ Corregido -> Caja: {saldo_caja_calculado}€, '
+                                f'Banco: {saldo_banco_calculado}€, '
+                                f'Total: {saldo_total_calculado}€'
+                            )
                         )
                 else:
                     self.stdout.write(
                         self.style.SUCCESS(
-                            f'Caja "{caja.nombre}": ✓ Saldo correcto ({saldo_actual}€)'
+                            f'Caja "{caja.nombre}": ✓ Saldo correcto '
+                            f'(Caja: {saldo_caja_actual}€, Banco: {saldo_banco_actual}€, Total: {saldo_total_actual}€)'
                         )
                     )
 

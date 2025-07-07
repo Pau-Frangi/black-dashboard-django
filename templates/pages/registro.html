@@ -120,6 +120,26 @@
                         </div>
                     </div>
 
+                    <!-- Controles de filtrado -->
+                    <div class="row mb-3" id="filterControls" style="display: none;">
+                        <div class="col-md-6">
+                            <div class="btn-group" role="group" aria-label="Filtros de tipo">
+                                <button type="button" class="btn btn-outline-info btn-sm" id="filterTipo" data-filter="todos">
+                                    <i class="tim-icons icon-atom"></i>
+                                    <span id="filterTipoText">Todos</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 d-flex justify-content-end">
+                            <div class="btn-group" role="group" aria-label="Filtros de ingreso/gasto">
+                                <button type="button" class="btn btn-outline-success btn-sm" id="filterIngresosGastos" data-filter="todos">
+                                    <i class="tim-icons icon-chart-pie-36"></i>
+                                    <span id="filterIngresosGastosText">Todos</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Tabla de Movimientos -->
                     <div id="movimientosContainer" style="display: none;">
                         <div class="table-responsive">
@@ -128,6 +148,7 @@
                                     <tr>
                                         <th>Fecha y Hora</th>
                                         <th>Turno</th>
+                                        <th>Tipo</th>
                                         <th>Concepto</th>
                                         <th>Descripción</th>
                                         <th>Cantidad</th>
@@ -171,6 +192,33 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <input type="hidden" name="caja_id" id="cajaIdInput">
+                    
+                    <!-- Tipo de Operación -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="tipo_operacion" class="form-label">
+                                    <i class="tim-icons icon-money-coins mr-2"></i>
+                                    Tipo de Operación
+                                </label>
+                                <select class="form-control" name="tipo_operacion" id="tipo_operacion" required>
+                                    <option value="">-- Selecciona el tipo de operación --</option>
+                                    <option value="efectivo">
+                                        <i class="tim-icons icon-coins"></i>
+                                        Efectivo (Caja)
+                                    </option>
+                                    <option value="transferencia">
+                                        <i class="tim-icons icon-credit-card"></i>
+                                        Transferencia/Banco
+                                    </option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="tim-icons icon-bulb-63"></i>
+                                    Efectivo: movimientos con billetes y monedas físicas. Transferencia: operaciones bancarias.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="row">
                         <div class="col-md-6">
@@ -226,39 +274,41 @@
                         </div>
                     </div>
                     
-                    <!-- Campos de justificante condicionales - Solo para gastos -->
-                    <div class="justificante-fields" id="justificanteFields" style="display: none;">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="justificante" class="form-label">Nº Justificante</label>
-                                    <input type="text" class="form-control" name="justificante" id="justificante" 
-                                           maxlength="5" placeholder="12345">
-                                    <small class="form-text text-muted">
-                                        <i class="tim-icons icon-paper"></i>
-                                        Número de justificante para el gasto
-                                    </small>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="archivo_justificante" class="form-label">Archivo Justificante</label>
-                                    <input type="file" class="form-control" name="archivo_justificante" id="archivo_justificante" 
-                                           accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp">
-                                    <small class="form-text text-muted">
-                                        <i class="tim-icons icon-cloud-upload-94"></i>
-                                        PDF, JPG, PNG, GIF, BMP (máx. 10MB)
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
                     <div class="form-group">
                         <label for="descripcion" class="form-label">Descripción</label>
                         <textarea class="form-control" name="descripcion" id="descripcion" 
                                   rows="3" placeholder="Descripción detallada del movimiento" required></textarea>
                     </div>
+                    
+                    <!-- Campos específicos para movimientos de CAJA (efectivo) -->
+                    <div class="campos-efectivo" id="camposEfectivo" style="display: none;">
+                        <!-- Campos de justificante condicionales - Solo para gastos -->
+                        <div class="justificante-fields" id="justificanteFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="justificante" class="form-label">Nº Justificante</label>
+                                        <input type="text" class="form-control" name="justificante" id="justificante" 
+                                               maxlength="5" placeholder="12345">
+                                        <small class="form-text text-muted">
+                                            <i class="tim-icons icon-paper"></i>
+                                            Número de justificante para el gasto
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="archivo_justificante" class="form-label">Archivo Justificante de Factura</label>
+                                        <input type="file" class="form-control" name="archivo_justificante" id="archivo_justificante" 
+                                               accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp">
+                                        <small class="form-text text-muted">
+                                            <i class="tim-icons icon-cloud-upload-94"></i>
+                                            PDF, JPG, PNG, GIF, BMP (máx. 10MB)
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     
                     <!-- Sección de desglose de billetes y monedas -->
                     <div class="desglose-dinero-section" id="desgloseDineroSection">
@@ -425,6 +475,44 @@
                             </div>
                         </div>
                     </div>
+                    </div> <!-- End campos-efectivo -->
+                    
+                    <!-- Campos específicos para movimientos de BANCO (transferencias) -->
+                    <div class="campos-banco" id="camposBanco" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="referencia_bancaria" class="form-label">
+                                        <i class="tim-icons icon-notes mr-2"></i>
+                                        Referencia Bancaria
+                                    </label>
+                                    <input type="text" class="form-control" name="referencia_bancaria" id="referencia_bancaria" 
+                                           maxlength="50" placeholder="Referencia de la operación bancaria">
+                                    <small class="form-text text-muted">
+                                        <i class="tim-icons icon-bulb-63"></i>
+                                        Número de referencia o identificador de la operación
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campos de justificante para movimientos bancarios - Para gastos e ingresos -->
+                        <div class="justificante-fields-banco" id="justificanteFieldsBanco" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="archivo_justificante_banco" class="form-label">Archivo Justificante</label>
+                                        <input type="file" class="form-control" name="archivo_justificante_banco" id="archivo_justificante_banco" 
+                                               accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp">
+                                        <small class="form-text text-muted">
+                                            <i class="tim-icons icon-cloud-upload-94"></i>
+                                            PDF, JPG, PNG, GIF, BMP (máx. 10MB)
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- End campos-banco -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
@@ -456,6 +544,9 @@
         // Initialize page
         updateSaldoDisplay();
         
+        // Initialize money breakdown
+        initializeMoneyBreakdown();
+        
         // Load movements if a caja is already selected
         if ($('#cajaSelect').val()) {
             console.log('Caja ya seleccionada, cargando movimientos...');
@@ -466,42 +557,50 @@
         $('#archivo_justificante').on('change', function() {
             handleFileUpload(this);
         });
+        
+        // File upload handler for bank justificante
+        $('#archivo_justificante_banco').on('change', function() {
+            handleFileUpload(this);
+        });
 
         // Search functionality
         $('#movementsSearch').on('input', function() {
             const searchTerm = $(this).val().toLowerCase().trim();
             
             if (searchTerm === '') {
-                // Si no hay búsqueda, mostrar todos los movimientos
                 $('#clearSearch').hide();
-                filteredMovimientos = [...currentMovimientos];
-                displayMovimientos(filteredMovimientos);
-                updateSearchResults(filteredMovimientos.length, false);
             } else {
-                // Filtrar movimientos
                 $('#clearSearch').show();
-                filteredMovimientos = currentMovimientos.filter(mov => {
-                    return mov.concepto.toLowerCase().includes(searchTerm) ||
-                           mov.cantidad.toString().includes(searchTerm) ||
-                           (mov.justificante && mov.justificante.toLowerCase().includes(searchTerm)) ||
-                           (mov.descripcion && mov.descripcion.toLowerCase().includes(searchTerm)) ||
-                           mov.turno.toLowerCase().includes(searchTerm);
-                });
-                
-                displayMovimientos(filteredMovimientos);
-                updateSearchResults(filteredMovimientos.length, true);
             }
+            
+            applyFilters();
         });
 
         // Clear search
         $('#clearSearch').on('click', function() {
             $('#movementsSearch').val('');
             $(this).hide();
-            filteredMovimientos = [...currentMovimientos];
-            displayMovimientos(filteredMovimientos);
-            updateSearchResults(filteredMovimientos.length, false);
+            applyFilters();
+        });
+        
+        // Event listener para el campo cantidad para validar desglose
+        $('#cantidad').on('input', function() {
+            validateMoneyBreakdown();
+        });
+        
+        // Event listeners para los filtros
+        $('#filterTipo').on('click', function() {
+            toggleTipoFilter();
+        });
+        
+        $('#filterIngresosGastos').on('click', function() {
+            toggleIngresosGastosFilter();
         });
     });
+
+    // Variables globales para los filtros
+    let currentTipoFilter = 'todos'; // 'todos', 'efectivo', 'banco'
+    let currentIngresosGastosFilter = 'todos'; // 'todos', 'ingresos', 'gastos'
 
     // Function to handle file upload display
     function handleFileUpload(input) {
@@ -620,41 +719,14 @@
         console.log('Actualizando saldo display:', saldo, 'tipo:', typeof saldo);
         
         if (saldo !== undefined && saldo !== null && saldo !== '') {
-            // Convertir a número si es necesario
-            const saldoNum = parseFloat(saldo);
-            if (!isNaN(saldoNum)) {
-                $('#saldoActual').text(saldoNum.toFixed(2) + '€');
-            } else {
-                console.warn('Saldo no es un número válido:', saldo);
-                $('#saldoActual').text('0.00€');
-            }
-            // Limpiar los totales hasta que se carguen los movimientos
-            $('#totalIngresosHeader').text('--');
-            $('#totalGastosHeader').text('--');
+            // Solo mostrar un placeholder mientras se cargan los movimientos
+            // Los totales reales se actualizarán cuando se muestren los movimientos
+            updateTotalsDisplay(0, 0, 0);
         } else {
-            $('#saldoActual').text('--');
-            $('#totalIngresosHeader').text('--');
-            $('#totalGastosHeader').text('--');
+            updateTotalsDisplay(0, 0, 0);
         }
     }
 
-    function updateSaldoFromResponse(resumen) {
-        console.log('Actualizando valores desde respuesta:', resumen);
-        
-        if (resumen) {
-            const totalIngresos = parseFloat(resumen.total_ingresos) || 0;
-            const totalGastos = parseFloat(resumen.total_gastos) || 0;
-            const saldoActual = parseFloat(resumen.saldo_actual) || 0;
-            
-            $('#totalIngresosHeader').text(totalIngresos.toFixed(2) + '€');
-            $('#totalGastosHeader').text(totalGastos.toFixed(2) + '€');
-            $('#saldoActual').text(saldoActual.toFixed(2) + '€');
-            
-            // También actualizar el data attribute para futuras referencias
-            $('#cajaSelect option:selected').data('saldo', saldoActual);
-        }
-    }
-    
     function prepareModal() {
         console.log('Preparando modal');
         const cajaId = $('#cajaSelect').val();
@@ -687,12 +759,19 @@
         // Reset concept field styles
         $('#concepto').removeClass('border-success border-warning');
         
-        // Hide justificante fields
+        // Hide all conditional fields and sections
         $('#justificanteFields').hide();
+        $('#justificanteFieldsBanco').hide();
+        $('#camposEfectivo').hide();
+        $('#camposBanco').hide();
         
-        // Clear justificante values
+        // Clear all form values
         $('#justificante').val('');
         $('#archivo_justificante').val('');
+        $('#justificante_banco').val('');
+        $('#archivo_justificante_banco').val('');
+        $('#referencia_bancaria').val('');
+        $('#tipo_operacion_banco').val(''); // Reset to default
         
         // Remove file display if exists
         $('.file-display').remove();
@@ -724,12 +803,11 @@
             $('#movimientosContainer').hide();
             $('#sortControls').hide();
             $('#searchSection').hide();
+            $('#filterControls').hide();
             $('#addMovementSection').hide();
             $('#noCajaMessage').show();
             // Limpiar los campos del header
-            $('#totalIngresosHeader').text('--');
-            $('#totalGastosHeader').text('--');
-            $('#saldoActual').text('--');
+            updateTotalsDisplay(0, 0, 0);
             currentMovimientos = [];
             filteredMovimientos = [];
             return;
@@ -763,15 +841,18 @@
                     currentMovimientos = data.movimientos;
                     filteredMovimientos = [...currentMovimientos];
                     
+                    // Resetear filtros
+                    currentTipoFilter = 'todos';
+                    currentIngresosGastosFilter = 'todos';
+                    
                     // Limpiar búsqueda
                     $('#movementsSearch').val('');
                     $('#clearSearch').hide();
                     
                     displayMovimientos(data.movimientos);
-                    updateResumen(data.resumen);
                     
-                    // Actualizar los campos del header con el resumen
-                    updateSaldoFromResponse(data.resumen);
+                    // No llamar updateResumen aquí porque displayMovimientos ya actualiza los totales
+                    // basándose en los movimientos filtrados
                     
                     // Actualizar cantidades disponibles en el formulario
                     updateAvailableQuantities(data.desglose_actual || {});
@@ -780,11 +861,15 @@
                     if (data.movimientos && data.movimientos.length > 0) {
                         $('#sortControls').show();
                         $('#searchSection').show();
+                        $('#filterControls').show();
                         updateSortButtons();
+                        updateTipoFilterButton();
+                        updateIngresosGastosFilterButton();
                         updateSearchResults(data.movimientos.length, false);
                     } else {
                         $('#sortControls').hide();
                         $('#searchSection').hide();
+                        $('#filterControls').hide();
                     }
                     
                     // Asegurarse de que el contenedor se muestre
@@ -840,7 +925,7 @@
             console.log('No hay movimientos, mostrando mensaje');
             tbody.append(`
                 <tr>
-                    <td colspan="7" class="text-center text-muted">
+                    <td colspan="8" class="text-center text-muted">
                         No hay movimientos registrados para esta caja
                     </td>
                 </tr>
@@ -857,17 +942,29 @@
             const cantidadClass = mov.es_gasto ? 'text-danger' : 'text-success';
             const cantidadSign = mov.es_gasto ? '-' : '+';
             
+            // Determinar el tipo de movimiento y su badge
+            const tipoMovimiento = mov.tipo || 'caja';
+            const tipoBadge = tipoMovimiento === 'banco' ? 
+                '<span class="badge badge-info"><i class="tim-icons icon-credit-card"></i> Banco</span>' : 
+                '<span class="badge badge-secondary"><i class="tim-icons icon-coins"></i> Efectivo</span>';
+            
+            // Badge para ingreso/gasto
+            const ingresoGastoBadge = mov.es_gasto ? 
+                '<span class="badge badge-danger"><i class="tim-icons icon-simple-remove"></i> Gasto</span>' : 
+                '<span class="badge badge-success"><i class="tim-icons icon-simple-add"></i> Ingreso</span>';
+            
             const row = `
-                <tr>
+                <tr data-tipo="${tipoMovimiento}" data-es-gasto="${mov.es_gasto}">
                     <td>
                         <div class="d-flex flex-column">
                             <strong>${fechaDisplay}</strong>
                         </div>
                     </td>
                     <td>${mov.turno}</td>
+                    <td>${tipoBadge}</td>
                     <td>
                         ${mov.concepto}
-                        ${mov.es_gasto ? '<span class="badge badge-danger ml-1">Gasto</span>' : '<span class="badge badge-success ml-1">Ingreso</span>'}
+                        ${ingresoGastoBadge}
                     </td>
                     <td>${mov.descripcion || '-'}</td>
                     <td class="${cantidadClass}">
@@ -875,7 +972,7 @@
                     </td>
                     <td>${mov.justificante || '-'}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMovimiento(${mov.id})">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMovimiento(${mov.id}, '${tipoMovimiento}')">
                             <i class="tim-icons icon-simple-remove"></i>
                         </button>
                     </td>
@@ -887,6 +984,10 @@
         
         console.log('Terminé de añadir filas. Total filas ahora:', tbody.find('tr').length);
         console.log('HTML del tbody:', tbody.html());
+        
+        // Actualizar los totales basándose en los movimientos mostrados
+        updateTotalsFromVisibleMovements();
+        
         console.log('=== fin displayMovimientos ===');
     }
 
@@ -903,12 +1004,89 @@
         $('#saldoResumen').text(saldoActual.toFixed(2) + '€');
     }
 
-    function deleteMovimiento(movimientoId) {
+    /**
+     * Actualiza los totales basándose en los movimientos filtrados/visibles
+     */
+    function updateTotalsFromVisibleMovements() {
+        if (!filteredMovimientos || filteredMovimientos.length === 0) {
+            // Si no hay movimientos filtrados, mostrar ceros
+            updateTotalsDisplay(0, 0, 0);
+            return;
+        }
+
+        let totalIngresos = 0;
+        let totalGastos = 0;
+
+        // Calcular totales basándose en los movimientos filtrados
+        filteredMovimientos.forEach(mov => {
+            const cantidad = parseFloat(mov.cantidad) || 0;
+            if (mov.es_gasto) {
+                totalGastos += cantidad;
+            } else {
+                totalIngresos += cantidad;
+            }
+        });
+
+        // Obtener el saldo de la caja seleccionada (saldo base)
+        const selectedOption = $('#cajaSelect option:selected');
+        const saldoBase = parseFloat(selectedOption.data('saldo')) || 0;
+        
+        // El saldo mostrado debe ser: saldo_base + ingresos_filtrados - gastos_filtrados
+        // Pero esto no sería correcto porque el saldo base ya incluye todos los movimientos
+        // Por eso vamos a calcular el saldo como: ingresos_filtrados - gastos_filtrados
+        const saldoFiltrado = totalIngresos - totalGastos;
+
+        console.log('Totales calculados desde movimientos filtrados:', {
+            ingresos: totalIngresos,
+            gastos: totalGastos,
+            saldo: saldoFiltrado,
+            movimientos: filteredMovimientos.length
+        });
+
+        updateTotalsDisplay(totalIngresos, totalGastos, saldoFiltrado);
+    }
+
+    /**
+     * Actualiza la visualización de los totales en el header
+     */
+    function updateTotalsDisplay(ingresos, gastos, saldo) {
+        $('#totalIngresosHeader').text(ingresos.toFixed(2) + '€');
+        $('#totalGastosHeader').text(gastos.toFixed(2) + '€');
+        $('#saldoActual').text(saldo.toFixed(2) + '€');
+
+        // Actualizar colores del saldo según el valor
+        const $saldoElement = $('#saldoActual');
+        $saldoElement.removeClass('text-success text-danger text-warning');
+        
+        if (saldo > 0) {
+            $saldoElement.addClass('text-success');
+        } else if (saldo < 0) {
+            $saldoElement.addClass('text-danger');
+        } else {
+            $saldoElement.addClass('text-warning');
+        }
+
+        // Indicar si los totales están filtrados
+        const isFiltered = currentTipoFilter !== 'todos' || 
+                          currentIngresosGastosFilter !== 'todos' || 
+                          $('#movementsSearch').val().trim() !== '';
+        
+        const $totalsSection = $('.totals-section');
+        if (isFiltered) {
+            $totalsSection.attr('title', 'Totales calculados sobre movimientos filtrados');
+            $totalsSection.addClass('filtered-totals');
+        } else {
+            $totalsSection.attr('title', 'Totales de todos los movimientos');
+            $totalsSection.removeClass('filtered-totals');
+        }
+    }
+
+    function deleteMovimiento(movimientoId, tipoMovimiento = 'caja') {
         if (!confirm('¿Estás seguro de que quieres eliminar este movimiento?')) {
             return;
         }
 
-        console.log('Eliminando movimiento ID:', movimientoId);
+        console.log('Eliminando movimiento ID:', movimientoId, 'Tipo:', tipoMovimiento);
 
         $.ajax({
             url: '{% url "registro" %}',
@@ -916,6 +1094,7 @@
             data: {
                 'action': 'delete',
                 'movimiento_id': movimientoId,
+                'tipo_movimiento': tipoMovimiento,
                 'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
             },
             success: function(data) {
@@ -947,25 +1126,40 @@
             return;
         }
         
+        // Verificar que se ha seleccionado un tipo de operación
+        const tipoOperacion = $('#tipo_operacion').val();
+        if (!tipoOperacion) {
+            showWarning('Por favor selecciona el tipo de operación', {floating: true});
+            return;
+        }
+        
         // =============================================================================
-        // VALIDACIÓN COMPLETA DEL DESGLOSE ANTES DEL ENVÍO
+        // VALIDACIÓN ESPECÍFICA SEGÚN EL TIPO DE OPERACIÓN
         // =============================================================================
         
-        const validationResult = validateCompleteMoneyBreakdown();
-        if (!validationResult.valid) {
-            showError(validationResult.error, {floating: true});
-            return;
+        if (tipoOperacion === 'efectivo') {
+            // Solo validar desglose para movimientos de efectivo
+            const validationResult = validateCompleteMoneyBreakdown();
+            if (!validationResult.valid) {
+                showError(validationResult.error, {floating: true});
+                return;
+            }
+            console.log('Desglose de efectivo validado correctamente');
+        } else if (tipoOperacion === 'transferencia') {
+            // Para transferencias, no hay validaciones adicionales requeridas
+            console.log('Datos bancarios validados correctamente');
         }
 
         // Asegurar que el caja_id esté establecido en el formulario
         $('#cajaIdInput').val(cajaId);
         
         console.log('Caja ID:', cajaId);
-        console.log('Desglose validado correctamente');
+        console.log('Tipo de operación:', tipoOperacion);
         
         // Create FormData object to handle file upload
         const formData = new FormData(this);
         formData.append('action', 'add');
+        formData.append('tipo_operacion', tipoOperacion);
         
         $.ajax({
             url: '{% url "registro" %}',
@@ -1002,34 +1196,102 @@
         
         console.log('Concepto seleccionado:', selectedOption.text(), 'Es gasto:', esGasto);
         
-        if (esGasto) {
-            // Es un gasto - mostrar campos de justificante
-            $(this).removeClass('border-success').addClass('border-warning');
-            $('#justificanteFields').removeClass('d-none').addClass('show').show();
-            console.log('Mostrando campos de justificante para gasto');
-        } else if (selectedOption.val()) {
-            // Es un ingreso - ocultar campos de justificante
-            $(this).removeClass('border-warning').addClass('border-success');
-            $('#justificanteFields').removeClass('show');
-            setTimeout(() => {
+        // Get current operation type to determine which justificante fields to show
+        const tipoOperacion = $('#tipo_operacion').val();
+        
+        if (selectedOption.val()) {
+            // Hay concepto seleccionado
+            if (esGasto) {
+                $(this).removeClass('border-success').addClass('border-warning');
+            } else {
+                $(this).removeClass('border-warning').addClass('border-success');
+            }
+            
+            // Mostrar campos según tipo de operación
+            if (tipoOperacion === 'efectivo') {
+                // Para efectivo: solo gastos necesitan justificante
+                if (esGasto) {
+                    $('#justificanteFields').removeClass('d-none').addClass('show').show();
+                } else {
+                    $('#justificanteFields').removeClass('show').hide();
+                }
+                $('#justificanteFieldsBanco').hide();
+            } else if (tipoOperacion === 'transferencia') {
+                // Para transferencias: SIEMPRE mostrar justificante (ingreso o gasto)
+                $('#justificanteFieldsBanco').removeClass('d-none').addClass('show').show();
                 $('#justificanteFields').hide();
-            }, 400); // Esperar a que termine la animación
-            // Limpiar valores de justificante
-            $('#justificante').val('');
-            $('#archivo_justificante').val('');
-            $('.file-display').remove(); // Remove file display
-            console.log('Ocultando campos de justificante para ingreso');
+                
+                // Actualizar las etiquetas según si es gasto o ingreso
+                updateBankJustificanteLabels(esGasto);
+            }
+            
+            console.log('Campos de justificante actualizados para:', esGasto ? 'gasto' : 'ingreso');
         } else {
             // No hay selección - ocultar campos y resetear estilos
             $(this).removeClass('border-success border-warning');
-            $('#justificanteFields').removeClass('show');
-            setTimeout(() => {
-                $('#justificanteFields').hide();
-            }, 400); // Esperar a que termine la animación
-            $('#justificante').val('');
-            $('#archivo_justificante').val('');
+            $('#justificanteFields, #justificanteFieldsBanco').removeClass('show').hide();
+            $('#justificante, #justificante_banco').val('');
+            $('#archivo_justificante, #archivo_justificante_banco').val('');
             $('.file-display').remove(); // Remove file display
             console.log('Sin selección - ocultando campos');
+        }
+    });
+
+    // Handle tipo de operacion changes
+    $('#tipo_operacion').on('change', function() {
+        const tipoOperacion = $(this).val();
+        console.log('Tipo de operación seleccionado:', tipoOperacion);
+        
+        if (tipoOperacion === 'efectivo') {
+            // Mostrar campos de efectivo y ocultar campos de banco
+            $('#camposEfectivo').show();
+            $('#camposBanco').hide();
+            
+            // Si hay un concepto seleccionado, aplicar lógica de justificante para efectivo
+            const concepto = $('#concepto').find('option:selected');
+            const esGasto = concepto.data('es-gasto') === "True";
+            if (concepto.val()) {
+                // Para efectivo: solo gastos necesitan justificante
+                if (esGasto) {
+                    $('#justificanteFields').show();
+                } else {
+                    $('#justificanteFields').hide();
+                }
+                $('#justificanteFieldsBanco').hide();
+            }
+            
+        } else if (tipoOperacion === 'transferencia') {
+            // Mostrar campos de banco y ocultar campos de efectivo
+            $('#camposBanco').show();
+            $('#camposEfectivo').hide();
+            
+            // Si hay un concepto seleccionado, SIEMPRE mostrar justificante bancario
+            const concepto = $('#concepto').find('option:selected');
+            const esGasto = concepto.data('es-gasto') === "True";
+            if (concepto.val()) {
+                $('#justificanteFieldsBanco').show();
+                $('#justificanteFields').hide();
+                
+                // Actualizar las etiquetas según si es gasto o ingreso
+                updateBankJustificanteLabels(esGasto);
+            }
+            
+        } else {
+            // Sin selección - ocultar todos los campos específicos
+            $('#camposEfectivo').hide();
+            $('#camposBanco').hide();
+        }
+        
+        // Limpiar los campos del tipo no seleccionado
+        if (tipoOperacion === 'efectivo') {
+            $('#justificante_banco, #referencia_bancaria').val();
+            $('#archivo_justificante_banco').val('');
+        } else if (tipoOperacion === 'transferencia') {
+            $('#justificante').val('');
+            $('#archivo_justificante').val('');
+            // Limpiar también campos de desglose de dinero
+            $('.money-input').val('');
+            calculateMoneyTotals();
         }
     });
 
@@ -1683,19 +1945,6 @@
                 <div class="d-flex align-items-start">
                     <i class="tim-icons icon-simple-remove mr-3 mt-1"></i>
                     <div>
-                        <h6 class="mb-2">❌ Fondos insuficientes</h6>
-                        <p class="mb-2">
-                            <strong>Disponible en caja:</strong> ${totalDisponible.toFixed(2)}€<br>
-                            <strong>Cantidad requerida:</strong> ${cantidadRequerida.toFixed(2)}€<br>
-                            <strong>Faltante:</strong> <span class="text-danger">${faltante.toFixed(2)}€</span>
-                        </p>
-                        <small class="text-muted">
-                            <i class="tim-icons icon-alert-circle-exc"></i>
-                            No hay suficiente dinero en la caja para realizar este gasto.
-                        </small>
-                    </div>
-                </div>
-            </div>
         `);
         
         $('#desgloseDineroSection').append($message);
@@ -2163,5 +2412,175 @@
     $(document).ready(function() {
         ensureAlertsContainer();
     });
+    
+    // Function to update bank justificante labels based on expense/income
+    function updateBankJustificanteLabels(esGasto) {
+        const labelText = esGasto ? 'Justificante de Factura' : 'Justificante de Pago';
+        const helpText = esGasto ? 'Número de justificante de la factura/gasto' : 'Número de justificante del pago/ingreso';
+        
+        // Update label text
+        $('label[for="justificante_banco"]').text(labelText);
+        $('label[for="archivo_justificante_banco"]').text(`Archivo ${labelText}`);
+        
+        // Update help text
+        $('#justificante_banco').next('small').find('i').next().text(helpText);
+        
+        console.log('Etiquetas de justificante bancario actualizadas para:', esGasto ? 'gasto' : 'ingreso');
+    }
+
+    // =============================================================================
+    // FUNCIONES DE FILTRADO
+    // =============================================================================
+
+    /**
+     * Alternar filtro de tipo de operación (efectivo/banco/todos)
+     */
+    function toggleTipoFilter() {
+        const states = ['todos', 'efectivo', 'banco'];
+        const currentIndex = states.indexOf(currentTipoFilter);
+        const nextIndex = (currentIndex + 1) % states.length;
+        currentTipoFilter = states[nextIndex];
+        
+        updateTipoFilterButton();
+        applyFilters();
+    }
+
+    /**
+     * Alternar filtro de ingresos/gastos (todos/ingresos/gastos)
+     */
+    function toggleIngresosGastosFilter() {
+        const states = ['todos', 'ingresos', 'gastos'];
+        const currentIndex = states.indexOf(currentIngresosGastosFilter);
+        const nextIndex = (currentIndex + 1) % states.length;
+        currentIngresosGastosFilter = states[nextIndex];
+        
+        updateIngresosGastosFilterButton();
+        applyFilters();
+    }
+
+    /**
+     * Actualizar el botón de filtro de tipo
+     */
+    function updateTipoFilterButton() {
+        const $button = $('#filterTipo');
+        const $text = $('#filterTipoText');
+        const $icon = $button.find('i');
+        
+        // Resetear clases
+        $button.removeClass('btn-outline-info btn-info btn-outline-secondary btn-secondary');
+        
+        switch (currentTipoFilter) {
+            case 'efectivo':
+                $button.addClass('btn-secondary');
+                $icon.removeClass().addClass('tim-icons icon-coins');
+                $text.text('Efectivo');
+                break;
+            case 'banco':
+                $button.addClass('btn-info');
+                $icon.removeClass().addClass('tim-icons icon-credit-card');
+                $text.text('Banco');
+                break;
+            default:
+                $button.addClass('btn-outline-info');
+                $icon.removeClass().addClass('tim-icons icon-atom');
+                $text.text('Todos');
+                break;
+        }
+    }
+
+    /**
+     * Actualizar el botón de filtro de ingresos/gastos
+     */
+    function updateIngresosGastosFilterButton() {
+        const $button = $('#filterIngresosGastos');
+        const $text = $('#filterIngresosGastosText');
+        const $icon = $button.find('i');
+        
+        // Resetear clases
+        $button.removeClass('btn-outline-success btn-success btn-outline-danger btn-danger');
+        
+        switch (currentIngresosGastosFilter) {
+            case 'ingresos':
+                $button.addClass('btn-success');
+                $icon.removeClass().addClass('tim-icons icon-simple-add');
+                $text.text('Ingresos');
+                break;
+            case 'gastos':
+                $button.addClass('btn-danger');
+                $icon.removeClass().addClass('tim-icons icon-simple-remove');
+                $text.text('Gastos');
+                break;
+            default:
+                $button.addClass('btn-outline-success');
+                $icon.removeClass().addClass('tim-icons icon-chart-pie-36');
+                $text.text('Todos');
+                break;
+        }
+    }
+
+    /**
+     * Aplicar todos los filtros activos
+     */
+    function applyFilters() {
+        if (!currentMovimientos || currentMovimientos.length === 0) {
+            return;
+        }
+
+        let filtered = [...currentMovimientos];
+
+        // Aplicar filtro de búsqueda si existe
+        const searchTerm = $('#movementsSearch').val().toLowerCase().trim();
+        if (searchTerm !== '') {
+            filtered = filtered.filter(mov => {
+                return mov.concepto.toLowerCase().includes(searchTerm) ||
+                       mov.cantidad.toString().includes(searchTerm) ||
+                       (mov.justificante && mov.justificante.toLowerCase().includes(searchTerm)) ||
+                       (mov.descripcion && mov.descripcion.toLowerCase().includes(searchTerm)) ||
+                       mov.turno.toLowerCase().includes(searchTerm);
+            });
+        }
+
+        // Aplicar filtro de tipo
+        if (currentTipoFilter !== 'todos') {
+            filtered = filtered.filter(mov => {
+                const tipoMovimiento = mov.tipo || 'caja';
+                if (currentTipoFilter === 'efectivo') {
+                    return tipoMovimiento === 'caja';
+                } else if (currentTipoFilter === 'banco') {
+                    return tipoMovimiento === 'banco';
+                }
+                return true;
+            });
+        }
+
+        // Aplicar filtro de ingresos/gastos
+        if (currentIngresosGastosFilter !== 'todos') {
+            filtered = filtered.filter(mov => {
+                if (currentIngresosGastosFilter === 'ingresos') {
+                    return !mov.es_gasto;
+                } else if (currentIngresosGastosFilter === 'gastos') {
+                    return mov.es_gasto;
+                }
+                return true;
+            });
+        }
+
+        filteredMovimientos = filtered;
+        displayMovimientos(filteredMovimientos);
+        updateSearchResults(filteredMovimientos.length, searchTerm !== '' || currentTipoFilter !== 'todos' || currentIngresosGastosFilter !== 'todos');
+    }
+
+    /**
+     * Resetear todos los filtros
+     */
+    function resetFilters() {
+        currentTipoFilter = 'todos';
+        currentIngresosGastosFilter = 'todos';
+        updateTipoFilterButton();
+        updateIngresosGastosFilterButton();
+        $('#movementsSearch').val('');
+        $('#clearSearch').hide();
+        applyFilters();
+    }
 </script>
 {% endblock extrajs %}

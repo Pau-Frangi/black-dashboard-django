@@ -30,20 +30,20 @@ class ConceptoAdmin(admin.ModelAdmin):
 
 @admin.register(Caja)
 class CajaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'año', 'saldo', 'saldo_desglose', 'activa', 'total_movimientos', 'total_turnos')
+    list_display = ('nombre', 'año', 'saldo_caja', 'saldo_banco', 'saldo', 'saldo_desglose', 'activa', 'total_movimientos_caja', 'total_movimientos_banco', 'total_turnos')
     list_filter = ('año', 'activa')
     search_fields = ('nombre',)
     ordering = ('-año', 'nombre')
-    readonly_fields = ('saldo', 'saldo_desglose')  # El saldo no se puede modificar manualmente
+    readonly_fields = ('saldo_caja', 'saldo_banco', 'saldo', 'saldo_desglose')  # Los saldos no se pueden modificar manualmente
     
     fieldsets = (
         ('Información Básica', {
             'fields': ('nombre', 'año', 'activa')
         }),
-        ('Saldo', {
-            'fields': ('saldo',),
-            'description': 'El saldo se actualiza automáticamente con los movimientos. '
-                          'Solo se puede establecer al crear la caja.'
+        ('Saldos', {
+            'fields': ('saldo_caja', 'saldo_banco', 'saldo'),
+            'description': 'Los saldos se actualizan automáticamente con los movimientos. '
+                          'Solo se pueden establecer al crear la caja.'
         }),
         ('Observaciones', {
             'fields': ('observaciones',),
@@ -51,9 +51,13 @@ class CajaAdmin(admin.ModelAdmin):
         }),
     )
     
-    def total_movimientos(self, obj):
+    def total_movimientos_caja(self, obj):
         return obj.movimientos.count()
-    total_movimientos.short_description = 'Total movimientos'
+    total_movimientos_caja.short_description = 'Mov. Caja'
+    
+    def total_movimientos_banco(self, obj):
+        return obj.movimientos_banco.count()
+    total_movimientos_banco.short_description = 'Mov. Banco'
     
     def total_turnos(self, obj):
         return obj.turnos.count()
@@ -61,7 +65,7 @@ class CajaAdmin(admin.ModelAdmin):
     
     def saldo_desglose(self, obj):
         saldo_calc = obj.calcular_saldo_desde_desglose()
-        if saldo_calc != obj.saldo:
+        if saldo_calc != obj.saldo_caja:
             return f"{saldo_calc:.2f}€ ⚠️"
         return f"{saldo_calc:.2f}€ ✓"
     saldo_desglose.short_description = 'Saldo desde desglose'
@@ -91,10 +95,10 @@ class CajaAdmin(admin.ModelAdmin):
     recalcular_desglose_accion.short_description = 'Recalcular desglose de cajas seleccionadas'
     
     def get_readonly_fields(self, request, obj=None):
-        """Hace el campo saldo de solo lectura solo para cajas existentes"""
+        """Hace los campos de saldo de solo lectura solo para cajas existentes"""
         if obj:  # Editando una caja existente
-            return self.readonly_fields + ('saldo',)
-        return self.readonly_fields  # Al crear, se permite establecer saldo inicial
+            return self.readonly_fields
+        return ('saldo_desglose',)  # Al crear, se permite establecer saldos iniciales
 
 
 @admin.register(MovimientoCaja)
@@ -133,9 +137,37 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
             return f"✅ ({count})"
         return "❌ Sin desglose"
     tiene_desglose.short_description = 'Desglose'
+
+
+@admin.register(MovimientoBanco)
+class MovimientoBancoAdmin(admin.ModelAdmin):
+    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'referencia_bancaria', 'justificante_display', 'tiene_archivo')
+    list_filter = ('fecha', 'caja', 'turno', 'concepto__es_gasto')
+    search_fields = ('descripcion', 'justificante', 'referencia_bancaria')
+    ordering = ('-fecha',)
+    date_hierarchy = 'fecha'
     
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('caja', 'turno', 'concepto')
+    def fecha_display(self, obj):
+        return obj.fecha.strftime('%d/%m/%Y %H:%M')
+    fecha_display.short_description = 'Fecha y Hora'
+    
+    def cantidad_display(self, obj):
+        signo = "-" if obj.es_gasto() else "+"
+        return f"{signo}{obj.cantidad:.2f}€"
+    cantidad_display.short_description = 'Cantidad'
+    
+    def justificante_display(self, obj):
+        if obj.es_gasto():
+            return obj.justificante or "Sin justificante"
+        return "N/A (Ingreso)"
+    justificante_display.short_description = 'Justificante'
+    
+    def tiene_archivo(self, obj):
+        if obj.es_gasto():
+            return "Sí" if obj.archivo_justificante else "No"
+        return "N/A"
+    tiene_archivo.short_description = 'Archivo'
+    tiene_archivo.boolean = False
 
 
 @admin.register(DenominacionEuro)

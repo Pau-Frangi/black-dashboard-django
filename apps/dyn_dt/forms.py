@@ -1,5 +1,5 @@
 from django import forms
-from .models import Concepto, Turno, Caja, MovimientoCaja, DenominacionEuro, MovimientoDinero
+from .models import Concepto, Turno, Caja, MovimientoCaja, MovimientoBanco, DenominacionEuro, MovimientoDinero
 from datetime import date, datetime
 import os
 
@@ -231,6 +231,136 @@ class MovimientoCajaForm(forms.ModelForm):
             # Para ingresos, limpiar campos de justificante
             cleaned_data['justificante'] = None
             cleaned_data['archivo_justificante'] = None
+        
+        return cleaned_data
+
+
+class MovimientoBancoForm(forms.ModelForm):
+    """Form for creating and editing MovimientoBanco instances."""
+    
+    fecha_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        }),
+        label='Fecha'
+    )
+    
+    fecha_time = forms.TimeField(
+        widget=forms.TimeInput(attrs={
+            'class': 'form-control',
+            'type': 'time'
+        }),
+        label='Hora'
+    )
+    
+    class Meta:
+        model = MovimientoBanco
+        fields = [
+            'caja', 'turno', 'concepto', 'cantidad', 'descripcion',
+            'justificante', 'archivo_justificante', 'referencia_bancaria'
+        ]
+        widgets = {
+            'caja': forms.Select(attrs={'class': 'form-select'}),
+            'turno': forms.Select(attrs={'class': 'form-select'}),
+            'concepto': forms.Select(attrs={'class': 'form-select'}),
+            'cantidad': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0.01'
+            }),
+            'descripcion': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3
+            }),
+            'justificante': forms.TextInput(attrs={
+                'class': 'form-control',
+                'maxlength': '5'
+            }),
+            'archivo_justificante': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.jpg,.jpeg,.png,.gif,.bmp'
+            }),
+            'referencia_bancaria': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Referencia de la operación bancaria'
+            })
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Filter only active cajas
+        self.fields['caja'].queryset = Caja.objects.filter(activa=True)
+        
+        # Filter turnos based on selected caja
+        if 'caja' in self.data:
+            try:
+                caja_id = int(self.data.get('caja'))
+                self.fields['turno'].queryset = Turno.objects.filter(caja_id=caja_id)
+            except (ValueError, TypeError):
+                self.fields['turno'].queryset = Turno.objects.none()
+        elif self.instance.pk and self.instance.caja:
+            self.fields['turno'].queryset = Turno.objects.filter(caja=self.instance.caja)
+        else:
+            self.fields['turno'].queryset = Turno.objects.none()
+        
+        # Set default values
+        if not self.instance.pk:
+            from datetime import datetime
+            now = datetime.now()
+            self.fields['fecha_date'].initial = now.date()
+            self.fields['fecha_time'].initial = now.time()
+        else:
+            self.fields['fecha_date'].initial = self.instance.fecha.date()
+            self.fields['fecha_time'].initial = self.instance.fecha.time()
+    
+    def clean_archivo_justificante(self):
+        """Validate uploaded file"""
+        archivo = self.cleaned_data.get('archivo_justificante')
+        
+        if archivo:
+            ext = os.path.splitext(archivo.name)[1].lower()
+            valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp']
+            
+            if ext not in valid_extensions:
+                raise forms.ValidationError(
+                    f"El archivo debe ser una imagen (JPG, PNG, GIF, BMP) o un PDF. "
+                    f"Extensión recibida: {ext}"
+                )
+            
+            # Limitar tamaño de archivo a 10MB
+            if archivo.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("El archivo no puede superar los 10MB")
+        
+        return archivo
+    
+    def clean(self):
+        """Validación adicional para campos de justificante"""
+        cleaned_data = super().clean()
+        concepto = cleaned_data.get('concepto')
+        justificante = cleaned_data.get('justificante')
+        archivo_justificante = cleaned_data.get('archivo_justificante')
+        
+        # Validar campos de justificante según el tipo de concepto
+        if concepto:
+            if not concepto.es_gasto:
+                # Para ingresos, no debe haber justificante
+                if justificante or archivo_justificante:
+                    raise forms.ValidationError(
+                        "Los campos de justificante solo se pueden usar para gastos, no para ingresos."
+                    )
+        
+        # Combinar fecha y hora
+        fecha_date = cleaned_data.get('fecha_date')
+        fecha_time = cleaned_data.get('fecha_time')
+        
+        if fecha_date and fecha_time:
+            from datetime import datetime
+            from django.utils import timezone
+            
+            fecha_datetime = datetime.combine(fecha_date, fecha_time)
+            cleaned_data['fecha'] = timezone.make_aware(fecha_datetime)
         
         return cleaned_data
 
