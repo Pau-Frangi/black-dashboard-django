@@ -736,6 +736,15 @@
             return false;
         }
         
+        // Clear editing mode for new movements
+        editingMovimiento = null;
+        
+        // Update modal title for new movement
+        $('#addMovementModalLabel').html(`
+            <i class="tim-icons icon-simple-add"></i>
+            Añadir Nuevo Movimiento
+        `);
+        
         // Establecer el caja_id en el formulario
         $('#cajaIdInput').val(cajaId);
         console.log('Caja ID establecido en modal:', cajaId);
@@ -752,9 +761,15 @@
         // Reset form fields
         $('#addMovementForm')[0].reset();
         
-        // Reset date and time to current values
-        $('#fecha').val('{% now "Y-m-d" %}');
-        $('#hora').val('{% now "H:i" %}');
+        // Reset date and time to current values (only for new movements)
+        if (!editingMovimiento) {
+            $('#fecha').val('{% now "Y-m-d" %}');
+            $('#hora').val('{% now "H:i" %}');
+        }
+        
+        // Re-enable fields that might have been disabled during editing
+        $('#tipo_operacion').prop('disabled', false).removeClass('disabled-field');
+        $('#concepto').prop('disabled', false).removeClass('disabled-field');
         
         // Reset concept field styles
         $('#concepto').removeClass('border-success border-warning');
@@ -972,9 +987,14 @@
                     </td>
                     <td>${mov.justificante || '-'}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMovimiento(${mov.id}, '${tipoMovimiento}')">
-                            <i class="tim-icons icon-simple-remove"></i>
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editMovimiento(${mov.id}, '${tipoMovimiento}')" title="Editar movimiento">
+                                <i class="tim-icons icon-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMovimiento(${mov.id}, '${tipoMovimiento}')" title="Eliminar movimiento">
+                                <i class="tim-icons icon-simple-remove"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -1138,13 +1158,15 @@
         // =============================================================================
         
         if (tipoOperacion === 'efectivo') {
-            // Solo validar desglose para movimientos de efectivo
-            const validationResult = validateCompleteMoneyBreakdown();
-            if (!validationResult.valid) {
-                showError(validationResult.error, {floating: true});
-                return;
+            // Solo validar desglose para movimientos de efectivo (y solo para nuevos movimientos)
+            if (!editingMovimiento) {
+                const validationResult = validateCompleteMoneyBreakdown();
+                if (!validationResult.valid) {
+                    showError(validationResult.error, {floating: true});
+                    return;
+                }
+                console.log('Desglose de efectivo validado correctamente');
             }
-            console.log('Desglose de efectivo validado correctamente');
         } else if (tipoOperacion === 'transferencia') {
             // Para transferencias, no hay validaciones adicionales requeridas
             console.log('Datos bancarios validados correctamente');
@@ -1158,7 +1180,16 @@
         
         // Create FormData object to handle file upload
         const formData = new FormData(this);
-        formData.append('action', 'add');
+        
+        // Determine action based on editing state
+        if (editingMovimiento) {
+            formData.append('action', 'edit');
+            formData.append('movimiento_id', editingMovimiento.id);
+            formData.append('tipo_movimiento', editingMovimiento.tipo);
+        } else {
+            formData.append('action', 'add');
+        }
+        
         formData.append('tipo_operacion', tipoOperacion);
         
         $.ajax({
@@ -1171,12 +1202,17 @@
                 console.log('Respuesta guardar:', data);
                 if (data.success) {
                     $('#addMovementModal').modal('hide');
+                    
+                    // Clear editing state
+                    editingMovimiento = null;
+                    
                     resetModalForm(); // Usar la función de reset más completa
                     
                     // Recargar los movimientos para obtener el saldo actualizado
                     loadMovimientos(); // Esto actualizará tanto la tabla como los campos del header
                     
-                    showSuccess('Movimiento añadido correctamente');
+                    const message = editingMovimiento ? 'Movimiento actualizado correctamente' : 'Movimiento añadido correctamente';
+                    showSuccess(message);
                 } else {
                     showError('Error: ' + data.error);
                 }
@@ -1945,6 +1981,18 @@
                 <div class="d-flex align-items-start">
                     <i class="tim-icons icon-simple-remove mr-3 mt-1"></i>
                     <div>
+                        <h6 class="mb-2">❌ Fondos insuficientes</h6>
+                        <p class="mb-2">
+                            <strong>Total disponible:</strong> ${totalDisponible.toFixed(2)}€<br>
+                            <strong>Cantidad requerida:</strong> ${cantidadRequerida.toFixed(2)}€<br>
+                            <strong>Faltante:</strong> ${faltante.toFixed(2)}€
+                        </p>
+                        <small class="text-muted">
+                            No hay suficiente dinero en la caja para realizar esta operación.
+                        </small>
+                    </div>
+                </div>
+            </div>
         `);
         
         $('#desgloseDineroSection').append($message);
@@ -2581,6 +2629,248 @@
         $('#movementsSearch').val('');
         $('#clearSearch').hide();
         applyFilters();
+    }
+
+    // Global variable to track if we're editing
+    let editingMovimiento = null;
+
+    function editMovimiento(movimientoId, tipoMovimiento) {
+        console.log('Editando movimiento:', movimientoId, 'tipo:', tipoMovimiento);
+        
+        const cajaId = $('#cajaSelect').val();
+        if (!cajaId) {
+            showWarning('Por favor selecciona una caja antes de editar un movimiento');
+            return;
+        }
+        
+        // Find the movement in our current data
+        const movimiento = currentMovimientos.find(mov => mov.id === movimientoId && mov.tipo === tipoMovimiento);
+        
+        if (!movimiento) {
+            showError('No se pudo encontrar el movimiento a editar');
+            return;
+        }
+        
+        // Set editing mode
+        editingMovimiento = {
+            id: movimientoId,
+            tipo: tipoMovimiento,
+            data: movimiento
+        };
+        
+        // Prepare modal for editing
+        prepareModalForEdit(movimiento);
+        
+        // Show the modal
+        $('#addMovementModal').modal('show');
+    }
+
+    function prepareModalForEdit(movimiento) {
+        console.log('Preparando modal para edición:', movimiento);
+        
+        // Update modal title
+        $('#addMovementModalLabel').html(`
+            <i class="tim-icons icon-pencil"></i>
+            Editar Movimiento
+        `);
+        
+        // Reset form first
+        resetModalForm();
+        
+        // Set caja ID
+        $('#cajaIdInput').val($('#cajaSelect').val());
+        
+        // Parse fecha from movimiento
+        const fecha = new Date(movimiento.datetime_iso);
+        const fechaStr = fecha.toISOString().split('T')[0];
+        const horaStr = fecha.toTimeString().slice(0, 5);
+        
+        // Populate basic fields
+        $('#fecha').val(fechaStr);
+        $('#hora').val(horaStr);
+        $('#cantidad').val(movimiento.cantidad);
+        $('#descripcion').val(movimiento.descripcion);
+        
+        // Set operation type based on movement type
+        const tipoOperacion = movimiento.tipo === 'banco' ? 'transferencia' : 'efectivo';
+        $('#tipo_operacion').val(tipoOperacion);
+        
+        // Disable operation type field (not allowed to change)
+        $('#tipo_operacion').prop('disabled', true);
+        $('#tipo_operacion').addClass('disabled-field');
+        
+        // Load turnos for the selected caja and then set the turno
+        loadTurnosForCaja($('#cajaSelect').val(), function() {
+            // Find and select the correct turno by ID
+            if (movimiento.turno_id) {
+                $('#turno').val(movimiento.turno_id);
+                console.log('Turno preseleccionado por ID:', movimiento.turno_id, '(' + movimiento.turno + ')');
+            } else {
+                // Fallback: search by text if ID not available
+                let turnoEncontrado = false;
+                $('#turno option').each(function() {
+                    if ($(this).text().trim() === movimiento.turno) {
+                        $('#turno').val($(this).val());
+                        turnoEncontrado = true;
+                        console.log('Turno preseleccionado por texto:', movimiento.turno);
+                        return false; // break
+                    }
+                });
+                
+                if (!turnoEncontrado) {
+                    console.warn('No se encontró el turno:', movimiento.turno);
+                }
+            }
+        });
+        
+        // Find and select the correct concepto by ID
+        if (movimiento.concepto_id) {
+            $('#concepto').val(movimiento.concepto_id);
+            console.log('Concepto preseleccionado por ID:', movimiento.concepto_id, '(' + movimiento.concepto + ')');
+            
+            // Disable concept field (not allowed to change)
+            $('#concepto').prop('disabled', true);
+            $('#concepto').addClass('disabled-field');
+            
+            // Trigger change event to show/hide justificante fields
+            $('#concepto').trigger('change');
+        } else {
+            // Fallback: search by text if ID not available
+            let conceptoEncontrado = false;
+            $('#concepto option').each(function() {
+                const conceptoText = $(this).text().replace(/\s*\([^)]*\)/, '').trim(); // Remove (Gasto)/(Ingreso) suffix
+                if (conceptoText === movimiento.concepto) {
+                    $('#concepto').val($(this).val());
+                    conceptoEncontrado = true;
+                    console.log('Concepto preseleccionado por texto:', movimiento.concepto);
+                    
+                    // Disable concept field (not allowed to change)
+                    $('#concepto').prop('disabled', true);
+                    $('#concepto').addClass('disabled-field');
+                    
+                    // Trigger change event to show/hide justificante fields
+                    $('#concepto').trigger('change');
+                    return false; // break
+                }
+            });
+            
+            if (!conceptoEncontrado) {
+                console.warn('No se encontró el concepto:', movimiento.concepto);
+            }
+        }
+        
+        // Handle specific fields based on movement type
+        if (movimiento.tipo === 'banco') {
+            // Show bank fields
+            $('#camposBanco').show();
+            $('#camposEfectivo').hide();
+            
+            // Set bank-specific fields
+            $('#justificante_banco').val(movimiento.justificante || '');
+            $('#referencia_bancaria').val(movimiento.referencia_bancaria || '');
+            
+            // Set bank operation type
+            const esBancoGasto = movimiento.es_gasto;
+            $('#tipo_operacion_banco').val(esBancoGasto ? 'gasto' : 'ingreso');
+            
+        } else {
+            // Show cash fields
+            $('#camposEfectivo').show();
+            $('#camposBanco').hide();
+            
+            // Set cash-specific fields
+            $('#justificante').val(movimiento.justificante || '');
+            
+            // Load money breakdown for cash movements
+            loadMovimientoDesglose(movimiento.id);
+        }
+        
+        // Trigger operation type change to show appropriate fields
+        $('#tipo_operacion').trigger('change');
+    }
+
+    function loadTurnosForCaja(cajaId, callback) {
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'GET',
+            data: {
+                'ajax': 'true',
+                'get_turnos': 'true',
+                'caja_id': cajaId
+            },
+            success: function(data) {
+                if (data.success) {
+                    // Clear and populate turnos
+                    const turnoSelect = $('#turno');
+                    turnoSelect.empty();
+                    turnoSelect.append('<option value="">-- Selecciona un turno --</option>');
+                    
+                    data.turnos.forEach(function(turno) {
+                        turnoSelect.append(`<option value="${turno.id}">${turno.nombre}</option>`);
+                    });
+                    
+                    if (callback) callback();
+                } else {
+                    showError('Error al cargar los turnos: ' + data.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading turnos:', error);
+                showError('Error al cargar los turnos');
+            }
+        });
+    }
+
+    function loadMovimientoDesglose(movimientoId) {
+        console.log('Cargando desglose para movimiento:', movimientoId);
+        
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'GET',
+            data: {
+                'ajax': 'true',
+                'get_movimiento_desglose': 'true',
+                'movimiento_id': movimientoId
+            },
+            success: function(data) {
+                if (data.success) {
+                    console.log('Desglose cargado:', data.desglose);
+                    
+                    // Initialize money breakdown first
+                    initializeMoneyBreakdown();
+                    
+                    // Populate the money breakdown inputs with the loaded data
+                    Object.keys(data.desglose).forEach(function(denominacionId) {
+                        const desglose = data.desglose[denominacionId];
+                        
+                        // Set entrada and salida values
+                        if (desglose.cantidad_entrada > 0) {
+                            $(`#entrada_${denominacionId}`).val(desglose.cantidad_entrada);
+                        }
+                        if (desglose.cantidad_salida > 0) {
+                            $(`#salida_${denominacionId}`).val(desglose.cantidad_salida);
+                        }
+                        
+                        console.log(`Denominación ${denominacionId}: entrada=${desglose.cantidad_entrada}, salida=${desglose.cantidad_salida}`);
+                    });
+                    
+                    // Recalculate totals after loading the data
+                    calculateMoneyBreakdown();
+                    
+                } else {
+                    console.error('Error al cargar el desglose:', data.error);
+                    showError('Error al cargar el desglose del movimiento: ' + data.error);
+                    // Fall back to empty money breakdown
+                    initializeMoneyBreakdown();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading movimiento desglose:', error);
+                showError('Error al cargar el desglose del movimiento');
+                // Fall back to empty money breakdown
+                initializeMoneyBreakdown();
+            }
+        });
     }
 </script>
 {% endblock extrajs %}

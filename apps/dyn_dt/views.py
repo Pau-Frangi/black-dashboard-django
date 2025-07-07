@@ -336,6 +336,34 @@ def registro(request):
                 })
             return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
         
+        if request.GET.get('get_movimiento_desglose') == 'true':
+            # Return money breakdown for a specific movement
+            movimiento_id = request.GET.get('movimiento_id')
+            if not movimiento_id:
+                return JsonResponse({'success': False, 'error': 'No se especificó un movimiento'})
+            
+            try:
+                movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
+                
+                # Get the money breakdown for this movement
+                desglose_data = {}
+                for mov_dinero in movimiento.movimientos_dinero.all():
+                    desglose_data[mov_dinero.denominacion.id] = {
+                        'cantidad_entrada': mov_dinero.cantidad_entrada,
+                        'cantidad_salida': mov_dinero.cantidad_salida,
+                        'cantidad_neta': mov_dinero.cantidad_neta(),
+                        'valor': float(mov_dinero.denominacion.valor),
+                        'valor_neto': float(mov_dinero.valor_neto())
+                    }
+                
+                return JsonResponse({
+                    'success': True,
+                    'desglose': desglose_data
+                })
+                
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+        
         if not caja_id:
             return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
         
@@ -359,7 +387,9 @@ def registro(request):
                     'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
                     'datetime_iso': mov.fecha.isoformat(),
                     'turno': str(mov.turno),
+                    'turno_id': mov.turno.id,
                     'concepto': str(mov.concepto),
+                    'concepto_id': mov.concepto.id,
                     'cantidad': float(mov.cantidad),
                     'es_gasto': mov.es_gasto(),
                     'justificante': mov.justificante or '',
@@ -378,7 +408,9 @@ def registro(request):
                     'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
                     'datetime_iso': mov.fecha.isoformat(),
                     'turno': str(mov.turno),
+                    'turno_id': mov.turno.id,
                     'concepto': str(mov.concepto),
+                    'concepto_id': mov.concepto.id,
                     'cantidad': float(mov.cantidad),
                     'es_gasto': mov.es_gasto(),
                     'justificante': mov.justificante or '',
@@ -537,6 +569,79 @@ def registro(request):
                 movimiento.delete()
                 
                 return JsonResponse({'success': True, 'message': 'Movimiento eliminado correctamente'})
+                
+            except Exception as e:
+                return JsonResponse({'success': False, 'error': str(e)})
+        
+        elif action == 'edit':
+            try:
+                movimiento_id = request.POST.get('movimiento_id')
+                tipo_movimiento = request.POST.get('tipo_movimiento', 'caja')
+                
+                # Get the existing movement
+                if tipo_movimiento == 'banco':
+                    movimiento = get_object_or_404(MovimientoBanco, id=movimiento_id)
+                else:
+                    movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
+                
+                # Update basic fields (except concepto and tipo_operacion which are not allowed to change)
+                fecha_str = request.POST.get('fecha')
+                hora_str = request.POST.get('hora', '12:00')
+                
+                # Combine date and time
+                from datetime import datetime
+                fecha_datetime = datetime.strptime(f"{fecha_str} {hora_str}", '%Y-%m-%d %H:%M')
+                fecha_datetime = timezone.make_aware(fecha_datetime)
+                
+                # Convert cantidad to Decimal to avoid precision issues
+                from decimal import Decimal
+                cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
+                
+                # Update editable fields
+                movimiento.cantidad = cantidad_decimal
+                movimiento.fecha = fecha_datetime
+                movimiento.descripcion = request.POST.get('descripcion') or None
+                movimiento.turno_id = request.POST.get('turno')
+                
+                # Update type-specific fields
+                if tipo_movimiento == 'banco':
+                    movimiento.justificante = request.POST.get('justificante_banco') or None
+                    movimiento.referencia_bancaria = request.POST.get('referencia_bancaria') or None
+                    
+                    # Handle file upload for bank movements
+                    if 'archivo_justificante_banco' in request.FILES:
+                        # Delete old file if exists
+                        if movimiento.archivo_justificante:
+                            movimiento.archivo_justificante.delete()
+                        movimiento.archivo_justificante = request.FILES['archivo_justificante_banco']
+                        
+                else:
+                    # For cash movements, only update justificante fields if it's a gasto
+                    if movimiento.concepto.es_gasto:
+                        movimiento.justificante = request.POST.get('justificante') or None
+                        
+                        # Handle file upload for cash movements
+                        if 'archivo_justificante' in request.FILES:
+                            # Delete old file if exists
+                            if movimiento.archivo_justificante:
+                                movimiento.archivo_justificante.delete()
+                            movimiento.archivo_justificante = request.FILES['archivo_justificante']
+                    else:
+                        # For ingresos, ensure justificante fields remain None
+                        movimiento.justificante = None
+                        if movimiento.archivo_justificante:
+                            movimiento.archivo_justificante.delete()
+                            movimiento.archivo_justificante = None
+                
+                # Validate and save
+                movimiento.full_clean()
+                movimiento.save()
+                
+                # Note: For cash movements, we don't update the money breakdown during edit
+                # This would require more complex logic to handle the difference in amounts
+                # and update the caja's money breakdown accordingly
+                
+                return JsonResponse({'success': True, 'message': 'Movimiento actualizado correctamente'})
                 
             except Exception as e:
                 return JsonResponse({'success': False, 'error': str(e)})
