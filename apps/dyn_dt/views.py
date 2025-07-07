@@ -648,15 +648,13 @@ def registro(request):
     
     # GET request - render the template
     cajas = Caja.objects.all().order_by('-año', 'nombre')
-    # Only get turnos for active cajas initially
-    turnos = Turno.objects.filter(caja__activa=True)
+    # Don't load turnos initially - they will be loaded via AJAX when a caja is selected
     conceptos = Concepto.objects.all()
     # Get denominaciones for the money breakdown form
     denominaciones = DenominacionEuro.objects.filter(activa=True).order_by('-valor')
     
     context = {
         'cajas': cajas,
-        'turnos': turnos,
         'conceptos': conceptos,
         'denominaciones': denominaciones,
         'segment': 'registro'

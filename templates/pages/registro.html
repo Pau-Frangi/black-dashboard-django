@@ -225,10 +225,7 @@
                             <div class="form-group">
                                 <label for="turno" class="form-label">Turno</label>
                                 <select class="form-control" name="turno" id="turno" required>
-                                    <option value="">-- Selecciona un turno --</option>
-                                    {% for turno in turnos %}
-                                        <option value="{{ turno.id }}">{{ turno.nombre }}</option>
-                                    {% endfor %}
+                                    <option value="">-- Selecciona primero una caja --</option>
                                 </select>
                             </div>
                         </div>
@@ -749,6 +746,9 @@
         $('#cajaIdInput').val(cajaId);
         console.log('Caja ID establecido en modal:', cajaId);
         
+        // Load turnos for the selected caja
+        loadTurnosForCaja(cajaId);
+        
         // Resetear el formulario y estilos
         resetModalForm();
         
@@ -821,6 +821,10 @@
             $('#filterControls').hide();
             $('#addMovementSection').hide();
             $('#noCajaMessage').show();
+            // Clear and disable turno dropdown
+            const turnoSelect = $('#turno');
+            turnoSelect.empty();
+            turnoSelect.append('<option value="">-- Selecciona primero una caja --</option>');
             // Limpiar los campos del header
             updateTotalsDisplay(0, 0, 0);
             currentMovimientos = [];
@@ -833,6 +837,9 @@
         
         // Set caja ID in the form
         $('#cajaIdInput').val(cajaId);
+        
+        // Load turnos for the selected caja
+        loadTurnosForCaja(cajaId);
         
         // Hide no caja message and show add movement section
         $('#noCajaMessage').hide();
