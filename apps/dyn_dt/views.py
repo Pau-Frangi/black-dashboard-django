@@ -438,6 +438,13 @@ def registro(request):
                 # Get tipo_operacion to determine movement type
                 tipo_operacion = request.POST.get('tipo_operacion')
                 
+                # Validate tipo_operacion is provided
+                if not tipo_operacion:
+                    return JsonResponse({'success': False, 'error': 'Tipo de operación es requerido'})
+                
+                if tipo_operacion not in ['efectivo', 'transferencia']:
+                    return JsonResponse({'success': False, 'error': 'Tipo de operación inválido'})
+                
                 # Create movement
                 fecha_str = request.POST.get('fecha')
                 hora_str = request.POST.get('hora', '12:00')
