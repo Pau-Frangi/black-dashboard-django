@@ -579,194 +579,6 @@ select.form-control {
     color: #ffffff !important;
 }
 
-/* ==============================================
-   ESTILOS PARA LOS CONTROLES DE FILTRADO
-   ============================================== */
-
-/* Controles de filtrado generales */
-#filterControls {
-    margin-bottom: 1rem;
-}
-
-#filterControls .btn-group .btn {
-    border-radius: 8px !important;
-    margin: 0 2px;
-    padding: 8px 16px !important;
-    font-weight: 500 !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    font-size: 0.85rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-}
-
-/* Filtro de tipo (efectivo/banco) */
-#filterTipo {
-    min-width: 120px !important;
-}
-
-#filterTipo.btn-outline-info {
-    background: linear-gradient(135deg, #27293d 0%, #2a2d42 100%) !important;
-    border: 2px solid rgba(52, 70, 117, 0.5) !important;
-    color: #fff !important;
-    box-shadow: 0 4px 15px rgba(52, 70, 117, 0.2) !important;
-}
-
-#filterTipo.btn-outline-info:hover {
-    background: linear-gradient(135deg, #344675 0%, #3a4a7f 100%) !important;
-    border-color: #51cbce !important;
-    color: #51cbce !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(81, 203, 206, 0.3) !important;
-}
-
-#filterTipo.btn-secondary {
-    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
-    border: 2px solid #6c757d !important;
-    color: #fff !important;
-    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3) !important;
-}
-
-#filterTipo.btn-secondary:hover {
-    background: linear-gradient(135deg, #5a6268 0%, #495057 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4) !important;
-}
-
-#filterTipo.btn-info {
-    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
-    border: 2px solid #17a2b8 !important;
-    color: #fff !important;
-    box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3) !important;
-}
-
-#filterTipo.btn-info:hover {
-    background: linear-gradient(135deg, #138496 0%, #117a8b 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(23, 162, 184, 0.4) !important;
-}
-
-/* Filtro de ingresos/gastos */
-#filterIngresosGastos {
-    min-width: 120px !important;
-}
-
-#filterIngresosGastos.btn-outline-success {
-    background: linear-gradient(135deg, #27293d 0%, #2a2d42 100%) !important;
-    border: 2px solid rgba(52, 70, 117, 0.5) !important;
-    color: #fff !important;
-    box-shadow: 0 4px 15px rgba(52, 70, 117, 0.2) !important;
-}
-
-#filterIngresosGastos.btn-outline-success:hover {
-    background: linear-gradient(135deg, #344675 0%, #3a4a7f 100%) !important;
-    border-color: #28a745 !important;
-    color: #28a745 !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3) !important;
-}
-
-#filterIngresosGastos.btn-success {
-    background: linear-gradient(135deg, #28a745 0%, #218838 100%) !important;
-    border: 2px solid #28a745 !important;
-    color: #fff !important;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3) !important;
-}
-
-#filterIngresosGastos.btn-success:hover {
-    background: linear-gradient(135deg, #218838 0%, #1e7e34 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4) !important;
-}
-
-#filterIngresosGastos.btn-danger {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
-    border: 2px solid #dc3545 !important;
-    color: #fff !important;
-    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3) !important;
-}
-
-#filterIngresosGastos.btn-danger:hover {
-    background: linear-gradient(135deg, #c82333 0%, #bd2130 100%) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4) !important;
-}
-
-#filterIngresosGastos.btn-outline-danger {
-    background: linear-gradient(135deg, #27293d 0%, #2a2d42 100%) !important;
-    border: 2px solid rgba(52, 70, 117, 0.5) !important;
-    color: #fff !important;
-    box-shadow: 0 4px 15px rgba(52, 70, 117, 0.2) !important;
-}
-
-#filterIngresosGastos.btn-outline-danger:hover {
-    background: linear-gradient(135deg, #344675 0%, #3a4a7f 100%) !important;
-    border-color: #dc3545 !important;
-    color: #dc3545 !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3) !important;
-}
-
-/* Estilos para modo claro */
-.white-content #filterTipo.btn-outline-info,
-.white-content #filterIngresosGastos.btn-outline-success {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%) !important;
-    border: 2px solid rgba(29, 37, 59, 0.3) !important;
-    color: #1d253b !important;
-    box-shadow: 0 4px 15px rgba(29, 37, 59, 0.1) !important;
-}
-
-.white-content #filterTipo.btn-outline-info:hover,
-.white-content #filterIngresosGastos.btn-outline-success:hover {
-    background: linear-gradient(135deg, #f0f2f7 0%, #e8ebf3 100%) !important;
-    border-color: #51cbce !important;
-    color: #51cbce !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(81, 203, 206, 0.2) !important;
-}
-
-.white-content #filterTipo.btn-secondary,
-.white-content #filterTipo.btn-info,
-.white-content #filterIngresosGastos.btn-success,
-.white-content #filterIngresosGastos.btn-danger {
-    color: #fff !important;
-}
-
-/* Responsive para los controles de filtrado */
-@media (max-width: 768px) {
-    #filterControls {
-        flex-direction: column !important;
-        gap: 10px !important;
-    }
-
-    #filterControls .col-md-6 {
-        width: 100% !important;
-        max-width: 100% !important;
-        flex: none !important;
-    }
-
-    #filterControls .btn-group {
-        width: 100% !important;
-        justify-content: center !important;
-    }
-
-    #filterTipo,
-    #filterIngresosGastos {
-        min-width: 200px !important;
-    }
-}
-
-@media (max-width: 576px) {
-    #filterTipo,
-    #filterIngresosGastos {
-        min-width: 150px !important;
-        font-size: 0.8rem !important;
-        padding: 6px 12px !important;
-    }
-}
-
 /* Estilos para los campos de totales compactos */
 .totals-section {
     background: none;
@@ -1792,44 +1604,474 @@ select.form-control {
     box-shadow: 0 6px 20px rgba(29, 37, 59, 0.1) !important;
 }
 
-/* Indicador visual para totales filtrados */
-.totals-section.filtered-totals {
+/* Input group styling específico para money inputs */
+.money-inputs .input-group-text {
+    background: linear-gradient(135deg, #344675 0%, #51cbce 100%) !important;
+    border: none !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    padding: 8px 10px !important;
+}
+
+.white-content .money-inputs .input-group-text {
+    background: linear-gradient(135deg, #f0f2f7 0%, #51cbce 100%) !important;
+    color: #fff !important;
+}
+
+/* Responsive mejorado para el desglose de dinero */
+@media (max-width: 768px) {
+    .desglose-dinero-section {
+        padding: 20px 15px;
+    }
+    
+    .money-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .money-label {
+        min-width: auto;
+        text-align: left;
+        margin-bottom: 8px;
+        font-size: 0.85rem;
+    }
+    
+    .money-inputs {
+        margin-left: 0;
+        gap: 6px;
+    }
+    
+    .money-input {
+        font-size: 0.85rem !important;
+        padding: 10px 14px !important;
+    }
+    
+    .money-inputs .input-group-text {
+        font-size: 0.75rem !important;
+        padding: 10px 12px !important;
+        min-width: 45px !important;
+    }
+    
+    .desglose-totals {
+        padding: 20px 16px !important;
+        margin-top: 20px !important;
+    }
+    
+    .total-box {
+        padding: 16px 12px !important;
+        margin-bottom: 12px;
+    }
+    
+    .total-value {
+        font-size: 1.1rem !important;
+    }
+    
+    .total-label {
+        font-size: 0.7rem !important;
+        margin-bottom: 6px !important;
+    }
+    
+    .desglose-actions {
+        flex-direction: column;
+        gap: 8px !important;
+    }
+    
+    .desglose-actions .btn {
+        width: 100%;
+        padding: 12px 16px !important;
+        font-size: 0.8rem !important;
+    }
+}
+
+/* Estilos para mostrar cantidad disponible */
+.available-quantity {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(81, 203, 206, 0.1);
+    border: 1px solid rgba(81, 203, 206, 0.3);
+    color: #51cbce;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+}
+
+.white-content .available-quantity {
+    background: rgba(81, 203, 206, 0.08);
+    border: 1px solid rgba(81, 203, 206, 0.2);
+    color: #3eb8bb;
+}
+
+.available-quantity i {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+.available-quantity .quantity-text {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Estado cuando no hay cantidad disponible (cantidad = 0) */
+.available-quantity.no-available {
+    background: rgba(253, 93, 147, 0.15) !important;
+    border-color: rgba(253, 93, 147, 0.4) !important;
+    color: #fd5d93 !important;
+    font-weight: 600 !important;
+    animation: pulseRed 1.5s ease-in-out infinite;
+}
+
+.white-content .available-quantity.no-available {
+    background: rgba(253, 93, 147, 0.12) !important;
+    border-color: rgba(253, 93, 147, 0.3) !important;
+    color: #e54576 !important;
+}
+
+/* Animación de pulso rojo para cantidad cero */
+@keyframes pulseRed {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(253, 93, 147, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 3px rgba(253, 93, 147, 0.1);
+        transform: scale(1.02);
+    }
+}
+
+/* Input con error por exceder cantidad disponible - versión mejorada */
+.money-input.exceeds-available {
+    border-color: #fd5d93 !important;
+    background: rgba(253, 93, 147, 0.08) !important;
+    box-shadow: 0 0 0 2px rgba(253, 93, 147, 0.15) !important;
+    animation: shake 0.5s ease-in-out;
+}
+
+.white-content .money-input.exceeds-available {
+    background: rgba(253, 93, 147, 0.05) !important;
+}
+
+.money-input.exceeds-available:focus {
+    border-color: #fd5d93 !important;
+    box-shadow: 
+        0 0 0 3px rgba(253, 93, 147, 0.2),
+        0 4px 12px rgba(253, 93, 147, 0.3) !important;
+}
+
+/* Animación de sacudida para inputs que exceden la cantidad */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+    20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+/* ==============================================
+   ALERTS Y MENSAJES TEMPORALES - VERSIÓN MEJORADA
+   ============================================== */
+
+/* Base styles para todos los mensajes temporales y alerts */
+.temp-message, 
+.alert-enhanced {
+    animation: fadeInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    padding: 12px 16px !important;
+    margin: 10px 0 !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
     position: relative;
-    background: linear-gradient(135deg, rgba(81, 203, 206, 0.1) 0%, rgba(81, 203, 206, 0.05) 100%) !important;
-    border: 2px solid rgba(81, 203, 206, 0.3) !important;
-    box-shadow: 0 4px 15px rgba(81, 203, 206, 0.2) !important;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
 }
 
-.white-content .totals-section.filtered-totals {
-    background: linear-gradient(135deg, rgba(81, 203, 206, 0.08) 0%, rgba(81, 203, 206, 0.03) 100%) !important;
-    border: 2px solid rgba(81, 203, 206, 0.4) !important;
-    box-shadow: 0 4px 15px rgba(81, 203, 206, 0.15) !important;
+.temp-message:hover,
+.alert-enhanced:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15), 0 3px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
-.totals-section.filtered-totals::after {
-    content: '🔍';
+/* Línea superior decorativa */
+.temp-message::before,
+.alert-enhanced::before {
+    content: '';
     position: absolute;
-    top: -8px;
-    right: -8px;
-    background: linear-gradient(135deg, #51cbce 0%, #3eb8bb 100%);
-    color: #fff;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, currentColor 0%, transparent 100%);
+    opacity: 0.8;
+    animation: slideIn 0.6s ease-out;
+}
+
+@keyframes slideIn {
+    from { width: 0%; }
+    to { width: 100%; }
+}
+
+/* Estilos para diferentes tipos de alerts */
+
+/* Alert Success */
+.temp-message.alert-success,
+.alert-enhanced.alert-success {
+    background: linear-gradient(135deg, rgba(39, 194, 76, 0.15) 0%, rgba(39, 194, 76, 0.08) 100%) !important;
+    color: #27c24c !important;
+    border-left: 4px solid #27c24c !important;
+}
+
+.white-content .temp-message.alert-success,
+.white-content .alert-enhanced.alert-success {
+    background: linear-gradient(135deg, rgba(39, 194, 76, 0.12) 0%, rgba(39, 194, 76, 0.05) 100%) !important;
+    color: #1e7e34 !important;
+}
+
+/* Alert Warning */
+.temp-message.alert-warning,
+.alert-enhanced.alert-warning {
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.15) 0%, rgba(253, 93, 147, 0.08) 100%) !important;
+    color: #fd5d93 !important;
+    border-left: 4px solid #fd5d93 !important;
+}
+
+.white-content .temp-message.alert-warning,
+.white-content .alert-enhanced.alert-warning {
+    background: linear-gradient(135deg, rgba(253, 93, 147, 0.12) 0%, rgba(253, 93, 147, 0.05) 100%) !important;
+    color: #e54576 !important;
+}
+
+/* Alert Danger */
+.temp-message.alert-danger,
+.alert-enhanced.alert-danger {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.08) 100%) !important;
+    color: #dc3545 !important;
+    border-left: 4px solid #dc3545 !important;
+}
+
+.white-content .temp-message.alert-danger,
+.white-content .alert-enhanced.alert-danger {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(220, 53, 69, 0.05) 100%) !important;
+    color: #c82333 !important;
+}
+
+/* Alert Info */
+.temp-message.alert-info,
+.alert-enhanced.alert-info {
+    background: linear-gradient(135deg, rgba(81, 203, 206, 0.15) 0%, rgba(81, 203, 206, 0.08) 100%) !important;
+    color: #51cbce !important;
+    border-left: 4px solid #51cbce !important;
+}
+
+.white-content .temp-message.alert-info,
+.white-content .alert-enhanced.alert-info {
+    background: linear-gradient(135deg, rgba(81, 203, 206, 0.12) 0%, rgba(81, 203, 206, 0.05) 100%) !important;
+    color: #3eb8bb !important;
+}
+
+/* Alert Primary */
+.temp-message.alert-primary,
+.alert-enhanced.alert-primary {
+    background: linear-gradient(135deg, rgba(226, 74, 202, 0.15) 0%, rgba(226, 74, 202, 0.08) 100%) !important;
+    color: #e24aca !important;
+    border-left: 4px solid #e24aca !important;
+}
+
+.white-content .temp-message.alert-primary,
+.white-content .alert-enhanced.alert-primary {
+    background: linear-gradient(135deg, rgba(226, 74, 202, 0.12) 0%, rgba(226, 74, 202, 0.05) 100%) !important;
+    color: #b23a81 !important;
+}
+
+/* Alert con iconos */
+.temp-message i,
+.alert-enhanced i {
+    font-size: 0.9rem;
+    margin-right: 8px;
+    opacity: 0.9;
+    flex-shrink: 0;
+}
+
+/* Mensaje de advertencia específico para cantidad excedida */
+.temp-message.exceeds-warning,
+.alert-enhanced.exceeds-warning {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.18) 0%, rgba(255, 149, 0, 0.10) 100%) !important;
+    color: #ff9500 !important;
+    border-left: 4px solid #ff9500 !important;
+    font-weight: 600 !important;
+    animation: fadeInUp 0.4s ease-out, pulseWarning 2s ease-in-out 3;
+}
+
+.white-content .temp-message.exceeds-warning,
+.white-content .alert-enhanced.exceeds-warning {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.15) 0%, rgba(255, 149, 0, 0.08) 100%) !important;
+    color: #e68500 !important;
+}
+
+/* Estados de carga y procesamiento */
+.temp-message.alert-loading,
+.alert-enhanced.alert-loading {
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.15) 0%, rgba(108, 117, 125, 0.08) 100%) !important;
+    color: #6c757d !important;
+    border-left: 4px solid #6c757d !important;
+}
+
+.temp-message.alert-loading::after,
+.alert-enhanced.alert-loading::after {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Animaciones mejoradas */
+@keyframes pulseWarning {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    50% {
+        box-shadow: 0 6px 25px rgba(255, 149, 0, 0.25), 0 4px 12px rgba(255, 149, 0, 0.15);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+}
+
+/* Clase para animar la salida */
+.temp-message.fade-out,
+.alert-enhanced.fade-out {
+    animation: fadeOut 0.3s ease-in forwards;
+}
+
+/* Alert con botón de cerrar mejorado */
+.temp-message .close,
+.alert-enhanced .close {
+    background: none;
+    border: none;
+    color: currentColor;
+    opacity: 0.7;
+    padding: 0;
+    margin-left: auto;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
-    font-weight: bold;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 8px rgba(81, 203, 206, 0.4);
-    animation: pulse-filter 2s infinite;
+    flex-shrink: 0;
 }
 
-@keyframes pulse-filter {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+.temp-message .close:hover,
+.alert-enhanced .close:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+/* Responsividad mejorada */
+@media (max-width: 768px) {
+    .temp-message,
+    .alert-enhanced {
+        font-size: 0.75rem !important;
+        padding: 10px 14px !important;
+        margin: 8px 0 !important;
+    }
+    
+    .temp-message i,
+    .alert-enhanced i {
+        font-size: 0.8rem;
+        margin-right: 6px;
+    }
+}
+
+/* Contenedor para múltiples alerts */
+.alerts-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    max-width: 400px;
+    pointer-events: none;
+}
+
+.alerts-container .temp-message,
+.alerts-container .alert-enhanced {
+    pointer-events: auto;
+    margin-bottom: 10px;
+}
+
+/* Adaptaciones para el modo blanco */
+.white-content .alerts-container {
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Estilo especial para el contenedor del input cuando hay error */
+.money-item.has-error {
+    background: rgba(253, 93, 147, 0.02);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid rgba(253, 93, 147, 0.2);
+    transition: all 0.3s ease;
+}
+
+.white-content .money-item.has-error {
+    background: rgba(253, 93, 147, 0.01);
+    border-color: rgba(253, 93, 147, 0.15);
+}
+
+/* Icono de alerta para cantidades excedidas */
+.money-input.exceeds-available + .input-group-append::after {
+    content: '⚠️';
+    position: absolute;
+    right: -25px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.9rem;
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(-50%) scale(1); }
+    50% { transform: translateY(-50%) scale(1.1); }
 }
 
 
