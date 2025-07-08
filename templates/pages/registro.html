@@ -1165,15 +1165,13 @@
         // =============================================================================
         
         if (tipoOperacion === 'efectivo') {
-            // Solo validar desglose para movimientos de efectivo (y solo para nuevos movimientos)
-            if (!editingMovimiento) {
-                const validationResult = validateCompleteMoneyBreakdown();
-                if (!validationResult.valid) {
-                    showError(validationResult.error, {floating: true});
-                    return;
-                }
-                console.log('Desglose de efectivo validado correctamente');
+            // Validar desglose para movimientos de efectivo (tanto nuevos como editados)
+            const validationResult = validateCompleteMoneyBreakdown();
+            if (!validationResult.valid) {
+                showError(validationResult.error, {floating: true});
+                return;
             }
+            console.log('Desglose de efectivo validado correctamente');
         } else if (tipoOperacion === 'transferencia') {
             // Para transferencias, no hay validaciones adicionales requeridas
             console.log('Datos bancarios validados correctamente');
@@ -1208,6 +1206,9 @@
             success: function(data) {
                 console.log('Respuesta guardar:', data);
                 if (data.success) {
+                    // Determine message before clearing editing state
+                    const message = editingMovimiento ? 'Movimiento actualizado correctamente' : 'Movimiento añadido correctamente';
+                    
                     $('#addMovementModal').modal('hide');
                     
                     // Clear editing state
@@ -1218,7 +1219,6 @@
                     // Recargar los movimientos para obtener el saldo actualizado
                     loadMovimientos(); // Esto actualizará tanto la tabla como los campos del header
                     
-                    const message = editingMovimiento ? 'Movimiento actualizado correctamente' : 'Movimiento añadido correctamente';
                     showSuccess(message);
                 } else {
                     showError('Error: ' + data.error);
@@ -2862,7 +2862,7 @@
                     });
                     
                     // Recalculate totals after loading the data
-                    calculateMoneyBreakdown();
+                    calculateMoneyTotals();
                     
                 } else {
                     console.error('Error al cargar el desglose:', data.error);

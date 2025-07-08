@@ -14,7 +14,7 @@ from django.views import View
 from django.db import models
 from pprint import pp 
 
-from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Caja, MovimientoCaja, MovimientoBanco, Turno, Concepto, DenominacionEuro, MovimientoDinero
+from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Caja, MovimientoCaja, MovimientoBanco, Turno, Concepto, DenominacionEuro, MovimientoDinero, DesgloseCaja
 from apps.dyn_dt.utils import user_filter
 from apps.dyn_dt.forms import MovimientoCajaForm, DesgloseDineroForm
 
@@ -578,11 +578,17 @@ def registro(request):
                 movimiento_id = request.POST.get('movimiento_id')
                 tipo_movimiento = request.POST.get('tipo_movimiento', 'caja')
                 
+                print(f"DEBUG: Editando movimiento {movimiento_id} de tipo {tipo_movimiento}")
+                
                 # Get the existing movement
                 if tipo_movimiento == 'banco':
                     movimiento = get_object_or_404(MovimientoBanco, id=movimiento_id)
                 else:
                     movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
+                
+                # Store original values for saldo calculation
+                cantidad_original = movimiento.cantidad
+                print(f"DEBUG: Cantidad original: {cantidad_original}")
                 
                 # Update basic fields (except concepto and tipo_operacion which are not allowed to change)
                 fecha_str = request.POST.get('fecha')
@@ -596,6 +602,7 @@ def registro(request):
                 # Convert cantidad to Decimal to avoid precision issues
                 from decimal import Decimal
                 cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
+                print(f"DEBUG: Nueva cantidad: {cantidad_decimal}")
                 
                 # Update editable fields
                 movimiento.cantidad = cantidad_decimal
@@ -636,14 +643,88 @@ def registro(request):
                 # Validate and save
                 movimiento.full_clean()
                 movimiento.save()
+                print(f"DEBUG: Movimiento guardado exitosamente")
                 
-                # Note: For cash movements, we don't update the money breakdown during edit
-                # This would require more complex logic to handle the difference in amounts
-                # and update the caja's money breakdown accordingly
+                # Handle money breakdown update for cash movements
+                if tipo_movimiento == 'caja' and isinstance(movimiento, MovimientoCaja):
+                    print(f"DEBUG: Procesando desglose de dinero para movimiento de efectivo")
+                    # For cash movements, we MUST process the money breakdown
+                    desglose_form = DesgloseDineroForm(request.POST)
+                    if desglose_form.is_valid():
+                        print(f"DEBUG: Formulario de desglose válido")
+                        # First, revert the original money breakdown from the caja's desglose
+                        for mov_dinero in movimiento.movimientos_dinero.all():
+                            print(f"DEBUG: Revirtiendo desglose original: {mov_dinero.denominacion.valor}€ - cantidad_neta: {mov_dinero.cantidad_neta()}")
+                            # Revert the original desglose
+                            desglose = DesgloseCaja.objects.filter(
+                                caja=movimiento.caja,
+                                denominacion=mov_dinero.denominacion
+                            ).first()
+                            
+                            if desglose:
+                                cantidad_anterior = desglose.cantidad
+                                desglose.cantidad -= mov_dinero.cantidad_neta()
+                                if desglose.cantidad < 0:
+                                    desglose.cantidad = 0
+                                desglose.save()
+                                print(f"DEBUG: Desglose {mov_dinero.denominacion.valor}€: {cantidad_anterior} -> {desglose.cantidad}")
+                        
+                        # Delete existing MovimientoDinero records
+                        movimientos_dinero_count = movimiento.movimientos_dinero.count()
+                        movimiento.movimientos_dinero.all().delete()
+                        print(f"DEBUG: Eliminados {movimientos_dinero_count} MovimientoDinero existentes")
+                        
+                        # Create new MovimientoDinero records with the updated data
+                        movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
+                        print(f"DEBUG: Creando {len(movimientos_dinero_data)} nuevos MovimientoDinero")
+                        
+                        for mov_data in movimientos_dinero_data:
+                            MovimientoDinero.objects.create(
+                                movimiento_caja=movimiento,
+                                denominacion=mov_data['denominacion'],
+                                cantidad_entrada=mov_data['cantidad_entrada'],
+                                cantidad_salida=mov_data['cantidad_salida']
+                            )
+                            print(f"DEBUG: Creado MovimientoDinero {mov_data['denominacion'].valor}€: entrada={mov_data['cantidad_entrada']}, salida={mov_data['cantidad_salida']}")
+                    else:
+                        print(f"DEBUG: Formulario de desglose inválido: {desglose_form.errors}")
+                        # If desglose form is invalid, we should return an error
+                        return JsonResponse({'success': False, 'error': 'El desglose de dinero es inválido o está incompleto'})
+                
+                # Update caja saldos manually since signals don't run on update
+                caja = movimiento.caja
+                saldo_caja_anterior = caja.saldo_caja
+                saldo_banco_anterior = caja.saldo_banco
+                
+                if tipo_movimiento == 'banco':
+                    # For bank movements, calculate the difference between old and new amounts
+                    cantidad_real_original = -cantidad_original if movimiento.es_gasto() else cantidad_original
+                    cantidad_real_nueva = movimiento.cantidad_real()
+                    diferencia = cantidad_real_nueva - cantidad_real_original
+                    
+                    print(f"DEBUG: Cálculo de diferencia banco: {cantidad_real_nueva} - {cantidad_real_original} = {diferencia}")
+                    
+                    # Update bank saldo
+                    caja.saldo_banco += diferencia
+                    print(f"DEBUG: Saldo banco: {saldo_banco_anterior} -> {caja.saldo_banco}")
+                else:
+                    # For cash movements, we need to recalculate the cash saldo completely
+                    # because the money breakdown has been updated
+                    print(f"DEBUG: Recalculando saldo de caja completo basado en todos los movimientos")
+                    caja.recalcular_saldo_caja()
+                    print(f"DEBUG: Saldo caja recalculado: {saldo_caja_anterior} -> {caja.saldo_caja}")
+                
+                # Update total saldo
+                caja.saldo = caja.saldo_caja + caja.saldo_banco
+                caja.save(skip_validation=True)
+                print(f"DEBUG: Saldo total actualizado: {caja.saldo}")
                 
                 return JsonResponse({'success': True, 'message': 'Movimiento actualizado correctamente'})
                 
             except Exception as e:
+                print(f"DEBUG: Error en edición: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 return JsonResponse({'success': False, 'error': str(e)})
     
     # GET request - render the template
