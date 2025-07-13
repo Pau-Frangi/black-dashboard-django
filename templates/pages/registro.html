@@ -319,10 +319,10 @@
                                     <div class="form-group">
                                         <label for="archivo_justificante" class="form-label">Archivo Justificante de Factura</label>
                                         <input type="file" class="form-control" name="archivo_justificante" id="archivo_justificante" 
-                                               accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp">
+                                               accept=".pdf,.jpg,.jpeg,.png,.bmp">
                                         <small class="form-text text-muted">
                                             <i class="tim-icons icon-cloud-upload-94"></i>
-                                            PDF, JPG, PNG, GIF, BMP (máx. 10MB)
+                                            PDF, JPG, PNG, BMP (máx. 10MB)
                                         </small>
                                     </div>
                                 </div>
@@ -522,10 +522,10 @@
                                     <div class="form-group">
                                         <label for="archivo_justificante_banco" class="form-label">Archivo Justificante</label>
                                         <input type="file" class="form-control" name="archivo_justificante_banco" id="archivo_justificante_banco" 
-                                               accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp">
+                                               accept=".pdf,.jpg,.jpeg,.png,.bmp">
                                         <small class="form-text text-muted">
                                             <i class="tim-icons icon-cloud-upload-94"></i>
-                                            PDF, JPG, PNG, GIF, BMP (máx. 10MB)
+                                            PDF, JPG, PNG, BMP (máx. 10MB)
                                         </small>
                                     </div>
                                 </div>
@@ -639,9 +639,9 @@
             }
             
             // Validate file type
-            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp'];
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/bmp'];
             if (!allowedTypes.includes(file.type)) {
-                showError('Tipo de archivo no permitido. Solo se permiten archivos PDF, JPG, PNG, GIF y BMP.', {floating: true});
+                showError('Tipo de archivo no permitido. Solo se permiten archivos PDF, JPG, PNG y BMP.', {floating: true});
                 $(input).val('');
                 return;
             }
