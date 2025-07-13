@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save, pre_delete, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
+import os
 
 # Create your models here.
 
@@ -29,6 +30,82 @@ class ModelFilter(models.Model):
 	def __str__(self):
 		return self.key
 
+
+class Ejercicio(models.Model):
+    """
+    Representa un ejercicio económico que agrupa varias cajas.
+    Cada ejercicio tiene su propio saldo bancario y calcula el saldo total
+    como la suma de todas las cajas más el saldo bancario del ejercicio.
+    """
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Nombre del ejercicio",
+        help_text="Ej: 'Ejercicio 2025'"
+    )
+
+    año = models.PositiveIntegerField(
+        verbose_name="Año",
+        help_text="Año correspondiente a este ejercicio (ej. 2025)"
+    )
+
+    activo = models.BooleanField(
+        default=True,
+        verbose_name="¿Ejercicio activo?",
+        help_text="Marca si este ejercicio está actualmente en uso"
+    )
+
+    saldo_banco = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+        verbose_name="Saldo bancario del ejercicio",
+        help_text="Saldo bancario propio del ejercicio, independiente de las cajas"
+    )
+
+    descripcion = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Descripción",
+        help_text="Descripción adicional del ejercicio"
+    )
+
+    def calcular_saldo_cajas(self):
+        """
+        Calcula la suma de todos los saldos de las cajas asociadas
+        """
+        total = Decimal('0.00')
+        for caja in self.cajas.all():
+            total += caja.saldo_caja
+        return total
+
+    def calcular_saldo_total(self):
+        """
+        Calcula el saldo total del ejercicio (suma de cajas + saldo banco del ejercicio)
+        """
+        return self.calcular_saldo_cajas() + self.saldo_banco
+
+    @property
+    def saldo_total(self):
+        """
+        Propiedad que retorna el saldo total calculado
+        """
+        return self.calcular_saldo_total()
+
+    def recalcular_saldos_cajas(self):
+        """
+        Recalcula los saldos de todas las cajas asociadas
+        """
+        for caja in self.cajas.all():
+            caja.recalcular_saldo()
+
+    def __str__(self):
+        return f"{self.nombre} ({self.año}) - Total: {self.saldo_total:.2f}€"
+
+    class Meta:
+        verbose_name = "Ejercicio"
+        verbose_name_plural = "Ejercicios"
+        ordering = ['-año']
 
 
 
@@ -96,6 +173,14 @@ class Caja(models.Model):
     Representa una caja general para un año o una campaña económica.
     Por ejemplo: 'Caja 2025'.
     """
+    ejercicio = models.ForeignKey(
+        'Ejercicio',
+        on_delete=models.CASCADE,
+        verbose_name="Ejercicio",
+        related_name="cajas",
+        help_text="Ejercicio al que pertenece esta caja"
+    )
+
     nombre = models.CharField(
         max_length=100,
         unique=True,
@@ -118,25 +203,8 @@ class Caja(models.Model):
         max_digits=10,
         decimal_places=2,
         default=0,
-        verbose_name="Saldo de caja (efectivo)",
-        help_text="Saldo de los movimientos en efectivo. Se actualiza automáticamente."
-    )
-
-    saldo_banco = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0,
-        verbose_name="Saldo bancario",
-        help_text="Saldo de los movimientos bancarios. Se actualiza automáticamente."
-    )
-
-    # Campo legacy para compatibilidad
-    saldo = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0,
-        verbose_name="Saldo total",
-        help_text="Suma del saldo de caja y banco. Se calcula automáticamente."
+        verbose_name="Saldo de caja",
+        help_text="Saldo de la caja. Se actualiza automáticamente."
     )
 
     observaciones = models.TextField(
@@ -151,33 +219,23 @@ class Caja(models.Model):
             # Obtener los saldos originales de la base de datos
             try:
                 original = Caja.objects.get(pk=self.pk)
-                if (self.saldo_caja != original.saldo_caja or 
-                    self.saldo_banco != original.saldo_banco or 
-                    self.saldo != original.saldo):
+                if self.saldo_caja != original.saldo_caja:
                     raise ValidationError({
                         'saldo_caja': 'No se puede modificar el saldo de caja de una caja existente. '
-                                     'El saldo se actualiza automáticamente con los movimientos.',
-                        'saldo_banco': 'No se puede modificar el saldo bancario de una caja existente. '
-                                      'El saldo se actualiza automáticamente con los movimientos.',
-                        'saldo': 'No se puede modificar el saldo total de una caja existente. '
-                                'El saldo se calcula automáticamente.'
+                                     'El saldo se actualiza automáticamente con los movimientos.'
                     })
             except Caja.DoesNotExist:
                 pass
 
     def save(self, *args, **kwargs):
         """Guarda la caja con validaciones"""
-        # Calcular el saldo total antes de guardar
-        if not kwargs.get('skip_validation', False):
-            self.saldo = self.saldo_caja + self.saldo_banco
-        
         # Solo ejecutar validaciones si no es una operación de recálculo automático
         if not kwargs.pop('skip_validation', False):
             self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} ({self.año}) - Efectivo: {self.saldo_caja:.2f}€ | Banco: {self.saldo_banco:.2f}€ | Total: {self.saldo:.2f}€"
+        return f"{self.nombre} ({self.año}) - Saldo: {self.saldo_caja:.2f}€"
 
     def recalcular_saldo_caja(self):
         """
@@ -188,41 +246,21 @@ class Caja(models.Model):
             total += movimiento.cantidad_real()
         
         self.saldo_caja = total
-        self.saldo = self.saldo_caja + self.saldo_banco
         self.save(skip_validation=True)
         return self.saldo_caja
 
-    def recalcular_saldo_banco(self):
-        """
-        Recalcula el saldo bancario basándose en todos los movimientos de banco.
-        """
-        total = Decimal('0.00')
-        for movimiento in self.movimientos_banco.all():
-            total += movimiento.cantidad_real()
-        
-        self.saldo_banco = total
-        self.saldo = self.saldo_caja + self.saldo_banco
-        self.save(skip_validation=True)
-        return self.saldo_banco
-
     def recalcular_saldo(self):
         """
-        Recalcula ambos saldos de la caja basándose en todos sus movimientos.
+        Recalcula el saldo de la caja basándose en todos sus movimientos.
         Útil para corregir inconsistencias en los saldos.
         """
         total_caja = Decimal('0.00')
         for movimiento in self.movimientos.all():
             total_caja += movimiento.cantidad_real()
         
-        total_banco = Decimal('0.00')
-        for movimiento in self.movimientos_banco.all():
-            total_banco += movimiento.cantidad_real()
-        
         self.saldo_caja = total_caja
-        self.saldo_banco = total_banco
-        self.saldo = self.saldo_caja + self.saldo_banco
         self.save(skip_validation=True)
-        return self.saldo
+        return self.saldo_caja
 
     def inicializar_desglose(self):
         """
@@ -406,20 +444,13 @@ class MovimientoCaja(models.Model):
 
 class MovimientoBanco(models.Model):
     """
-    Representa un movimiento bancario (transferencias, cheques, domiciliaciones, etc.)
-    Tiene los mismos campos que MovimientoCaja pero sin desglose de billetes/monedas
+    Representa un movimiento bancario asociado a un ejercicio.
+    Los movimientos bancarios afectan el saldo_banco del ejercicio, no de una caja específica.
     """
-    caja = models.ForeignKey(
-        Caja,
+    ejercicio = models.ForeignKey(
+        'Ejercicio',
         on_delete=models.CASCADE,
-        verbose_name="Caja",
-        related_name="movimientos_banco"
-    )
-
-    turno = models.ForeignKey(
-        Turno,
-        on_delete=models.CASCADE,
-        verbose_name="Turno",
+        verbose_name="Ejercicio",
         related_name="movimientos_banco"
     )
 
@@ -440,11 +471,12 @@ class MovimientoBanco(models.Model):
         verbose_name="Fecha y hora del movimiento"
     )
 
-    justificante = models.CharField(
-        max_length=5,
+    referencia_bancaria = models.CharField(
+        max_length=50,
         blank=True,
         null=True,
-        verbose_name="Nº Justificante"
+        verbose_name="Referencia bancaria",
+        help_text="Número de referencia de la operación bancaria"
     )
 
     archivo_justificante = models.FileField(
@@ -460,25 +492,13 @@ class MovimientoBanco(models.Model):
         help_text="Descripción detallada del movimiento bancario"
     )
 
-    # Campos específicos para movimientos bancarios
-    referencia_bancaria = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True,
-        verbose_name="Referencia bancaria",
-        help_text="Número de referencia de la operación bancaria"
-    )
-
     def clean(self):
         """Validación de datos antes de guardar"""
         if self.cantidad <= 0:
             raise ValidationError("La cantidad debe ser positiva")
         
-        if not self.caja.activa:
-            raise ValidationError("No se pueden añadir movimientos a una caja inactiva")
-        
-        # Para movimientos bancarios, tanto gastos como ingresos pueden tener justificante
-        # No se aplica la restricción de justificante solo para gastos
+        if not self.ejercicio.activo:
+            raise ValidationError("No se pueden añadir movimientos a un ejercicio inactivo")
         
         # Validar archivo justificante si se proporciona
         if self.archivo_justificante:
@@ -514,15 +534,12 @@ class MovimientoBanco(models.Model):
 
     def __str__(self):
         signo = "-" if self.es_gasto() else "+"
-        return f"{self.fecha.strftime('%Y-%m-%d %H:%M')} | {self.caja.nombre} | {self.turno} | {signo}{self.cantidad:.2f}€ | {self.concepto}"
+        return f"{self.fecha.strftime('%Y-%m-%d %H:%M')} | {self.ejercicio.nombre} | {signo}{self.cantidad:.2f}€ | {self.concepto}"
 
     class Meta:
         verbose_name = "Movimiento de banco"
         verbose_name_plural = "Movimientos de banco"
         ordering = ['-fecha']
-
-
-
 
 
 class DenominacionEuro(models.Model):
@@ -640,6 +657,23 @@ class MovimientoDinero(models.Model):
         unique_together = [['movimiento_caja', 'denominacion']]
 
 
+@receiver(post_save, sender=MovimientoBanco)
+def actualizar_saldo_banco_on_save(sender, instance, created, **kwargs):
+    """Actualiza el saldo bancario del ejercicio cuando se crea un movimiento de banco"""
+    if created:
+        # Actualizar saldo bancario del ejercicio
+        instance.ejercicio.saldo_banco += instance.cantidad_real()
+        instance.ejercicio.save()
+
+
+@receiver(pre_delete, sender=MovimientoBanco)
+def actualizar_saldo_banco_on_delete(sender, instance, **kwargs):
+    """Actualiza el saldo bancario del ejercicio cuando se elimina un movimiento de banco"""
+    # Revertir el movimiento bancario del ejercicio
+    instance.ejercicio.saldo_banco -= instance.cantidad_real()
+    instance.ejercicio.save()
+
+
 # Señales Django para actualizar el saldo de la caja automáticamente
 @receiver(post_save, sender=MovimientoCaja)
 def actualizar_saldo_caja_on_save(sender, instance, created, **kwargs):
@@ -647,7 +681,6 @@ def actualizar_saldo_caja_on_save(sender, instance, created, **kwargs):
     if created:
         # Actualizar saldo de caja
         instance.caja.saldo_caja += instance.cantidad_real()
-        instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
         instance.caja.save(skip_validation=True)
 
 
@@ -670,26 +703,6 @@ def actualizar_saldo_caja_on_delete(sender, instance, **kwargs):
     
     # Actualizar saldo de caja
     instance.caja.saldo_caja -= instance.cantidad_real()
-    instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
-    instance.caja.save(skip_validation=True)
-
-
-@receiver(post_save, sender=MovimientoBanco)
-def actualizar_saldo_banco_on_save(sender, instance, created, **kwargs):
-    """Actualiza el saldo bancario cuando se crea un movimiento de banco"""
-    if created:
-        # Actualizar saldo bancario
-        instance.caja.saldo_banco += instance.cantidad_real()
-        instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
-        instance.caja.save(skip_validation=True)
-
-
-@receiver(pre_delete, sender=MovimientoBanco)
-def actualizar_saldo_banco_on_delete(sender, instance, **kwargs):
-    """Actualiza el saldo bancario cuando se elimina un movimiento de banco"""
-    # Actualizar saldo bancario
-    instance.caja.saldo_banco -= instance.cantidad_real()
-    instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
     instance.caja.save(skip_validation=True)
 
 
@@ -725,7 +738,6 @@ def actualizar_saldo_on_desglose_save(sender, instance, created, **kwargs):
     # Actualizar el saldo de caja
     if instance.caja.saldo_caja != nuevo_saldo_caja:
         instance.caja.saldo_caja = nuevo_saldo_caja
-        instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
         instance.caja.save(skip_validation=True)
 
 
@@ -738,5 +750,20 @@ def actualizar_saldo_on_desglose_delete(sender, instance, **kwargs):
     # Actualizar el saldo de caja
     if instance.caja.saldo_caja != nuevo_saldo_caja:
         instance.caja.saldo_caja = nuevo_saldo_caja
-        instance.caja.saldo = instance.caja.saldo_caja + instance.caja.saldo_banco
         instance.caja.save(skip_validation=True)
+
+
+@receiver(post_save, sender=Caja)
+def actualizar_ejercicio_on_caja_save(sender, instance, created, **kwargs):
+    """Actualiza el ejercicio cuando se modifica el saldo de una caja"""
+    # Si la caja pertenece a un ejercicio, no necesitamos hacer nada especial
+    # ya que el saldo_total del ejercicio se calcula dinámicamente
+    pass
+
+
+@receiver(post_delete, sender=Caja)
+def actualizar_ejercicio_on_caja_delete(sender, instance, **kwargs):
+    """Se ejecuta cuando se elimina una caja del ejercicio"""
+    # Si la caja pertenece a un ejercicio, no necesitamos hacer nada especial
+    # ya que el saldo_total del ejercicio se calcula dinámicamente
+    pass

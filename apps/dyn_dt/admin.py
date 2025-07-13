@@ -30,19 +30,19 @@ class ConceptoAdmin(admin.ModelAdmin):
 
 @admin.register(Caja)
 class CajaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'año', 'saldo_caja', 'saldo_banco', 'saldo', 'saldo_desglose', 'activa', 'total_movimientos_caja', 'total_movimientos_banco', 'total_turnos')
-    list_filter = ('año', 'activa')
-    search_fields = ('nombre',)
+    list_display = ('nombre', 'ejercicio', 'año', 'saldo_caja', 'saldo_desglose', 'activa', 'total_movimientos_caja', 'total_turnos')
+    list_filter = ('año', 'activa', 'ejercicio')
+    search_fields = ('nombre', 'ejercicio__nombre')
     ordering = ('-año', 'nombre')
-    readonly_fields = ('saldo_caja', 'saldo_banco', 'saldo', 'saldo_desglose')  # Los saldos no se pueden modificar manualmente
+    readonly_fields = ('saldo_caja', 'saldo_desglose')  # Los saldos no se pueden modificar manualmente
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'año', 'activa')
+            'fields': ('nombre', 'ejercicio', 'año', 'activa')
         }),
         ('Saldos', {
-            'fields': ('saldo_caja', 'saldo_banco', 'saldo'),
-            'description': 'Los saldos se actualizan automáticamente con los movimientos. '
+            'fields': ('saldo_caja',),
+            'description': 'El saldo se actualiza automáticamente con los movimientos. '
                           'Solo se pueden establecer al crear la caja.'
         }),
         ('Observaciones', {
@@ -54,10 +54,6 @@ class CajaAdmin(admin.ModelAdmin):
     def total_movimientos_caja(self, obj):
         return obj.movimientos.count()
     total_movimientos_caja.short_description = 'Mov. Caja'
-    
-    def total_movimientos_banco(self, obj):
-        return obj.movimientos_banco.count()
-    total_movimientos_banco.short_description = 'Mov. Banco'
     
     def total_turnos(self, obj):
         return obj.turnos.count()
@@ -141,11 +137,24 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoBanco)
 class MovimientoBancoAdmin(admin.ModelAdmin):
-    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'referencia_bancaria', 'justificante_display', 'tiene_archivo')
-    list_filter = ('fecha', 'caja', 'turno', 'concepto__es_gasto')
-    search_fields = ('descripcion', 'justificante', 'referencia_bancaria')
+    list_display = ('fecha_display', 'ejercicio', 'concepto', 'cantidad_display', 'referencia_bancaria', 'tiene_archivo')
+    list_filter = ('fecha', 'concepto__es_gasto', 'ejercicio')
+    search_fields = ('descripcion', 'referencia_bancaria', 'ejercicio__nombre', 'concepto__nombre')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('ejercicio', 'concepto', 'cantidad', 'fecha', 'referencia_bancaria')
+        }),
+        ('Descripción', {
+            'fields': ('descripcion',)
+        }),
+        ('Justificante', {
+            'fields': ('archivo_justificante',),
+            'description': 'Archivo de justificante para el movimiento bancario'
+        }),
+    )
     
     def fecha_display(self, obj):
         return obj.fecha.strftime('%d/%m/%Y %H:%M')
@@ -156,16 +165,8 @@ class MovimientoBancoAdmin(admin.ModelAdmin):
         return f"{signo}{obj.cantidad:.2f}€"
     cantidad_display.short_description = 'Cantidad'
     
-    def justificante_display(self, obj):
-        if obj.es_gasto():
-            return obj.justificante or "Sin justificante"
-        return "N/A (Ingreso)"
-    justificante_display.short_description = 'Justificante'
-    
     def tiene_archivo(self, obj):
-        if obj.es_gasto():
-            return "Sí" if obj.archivo_justificante else "No"
-        return "N/A"
+        return "Sí" if obj.archivo_justificante else "No"
     tiene_archivo.short_description = 'Archivo'
     tiene_archivo.boolean = False
 
@@ -255,3 +256,53 @@ class MovimientoDineroAdmin(admin.ModelAdmin):
     list_filter = ('denominacion__es_billete', 'denominacion')
     ordering = ('-movimiento_caja__fecha',)
     readonly_fields = ('cantidad_neta', 'valor_neto')
+
+
+@admin.register(Ejercicio)
+class EjercicioAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'año', 'saldo_banco', 'saldo_cajas', 'saldo_total_display', 'activo', 'total_cajas')
+    list_filter = ('año', 'activo')
+    search_fields = ('nombre',)
+    ordering = ('-año', 'nombre')
+    readonly_fields = ('saldo_cajas', 'saldo_total_display')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre', 'año', 'activo')
+        }),
+        ('Saldos', {
+            'fields': ('saldo_banco', 'saldo_cajas', 'saldo_total_display'),
+            'description': 'El saldo de cajas y total se calculan automáticamente.'
+        }),
+        ('Descripción', {
+            'fields': ('descripcion',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def saldo_cajas(self, obj):
+        return f"{obj.calcular_saldo_cajas():.2f}€"
+    saldo_cajas.short_description = 'Saldo de Cajas'
+    
+    def saldo_total_display(self, obj):
+        return f"{obj.saldo_total:.2f}€"
+    saldo_total_display.short_description = 'Saldo Total'
+    
+    def total_cajas(self, obj):
+        return obj.cajas.count()
+    total_cajas.short_description = 'Total de Cajas'
+    
+    actions = ['recalcular_saldos_cajas_accion']
+    
+    def recalcular_saldos_cajas_accion(self, request, queryset):
+        """Acción del admin para recalcular saldos de todas las cajas de los ejercicios seleccionados"""
+        total_cajas = 0
+        for ejercicio in queryset:
+            ejercicio.recalcular_saldos_cajas()
+            total_cajas += ejercicio.cajas.count()
+        
+        self.message_user(
+            request,
+            f'Saldos recalculados para {total_cajas} caja(s) en {queryset.count()} ejercicio(s)'
+        )
+    recalcular_saldos_cajas_accion.short_description = 'Recalcular saldos de cajas en ejercicios seleccionados'

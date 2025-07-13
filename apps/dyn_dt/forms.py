@@ -51,8 +51,11 @@ class CajaForm(forms.ModelForm):
     
     class Meta:
         model = Caja
-        fields = ['nombre', 'año', 'activa', 'saldo', 'observaciones']
+        fields = ['ejercicio', 'nombre', 'año', 'activa', 'saldo_caja', 'observaciones']
         widgets = {
+            'ejercicio': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nombre de la caja (ej. Caja 2025)'
@@ -66,7 +69,7 @@ class CajaForm(forms.ModelForm):
             'activa': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
-            'saldo': forms.NumberInput(attrs={
+            'saldo_caja': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
                 'min': '0'
@@ -78,10 +81,11 @@ class CajaForm(forms.ModelForm):
             })
         }
         labels = {
+            'ejercicio': 'Ejercicio',
             'nombre': 'Nombre de la caja',
             'año': 'Año',
             'activa': '¿Caja activa?',
-            'saldo': 'Saldo inicial (€)',
+            'saldo_caja': 'Saldo inicial (€)',
             'observaciones': 'Observaciones'
         }
 
@@ -256,54 +260,46 @@ class MovimientoBancoForm(forms.ModelForm):
     
     class Meta:
         model = MovimientoBanco
-        fields = [
-            'caja', 'turno', 'concepto', 'cantidad', 'descripcion',
-            'justificante', 'archivo_justificante', 'referencia_bancaria'
-        ]
+        fields = ['ejercicio', 'concepto', 'cantidad', 'referencia_bancaria', 'archivo_justificante', 'descripcion']
         widgets = {
-            'caja': forms.Select(attrs={'class': 'form-select'}),
-            'turno': forms.Select(attrs={'class': 'form-select'}),
-            'concepto': forms.Select(attrs={'class': 'form-select'}),
+            'ejercicio': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'concepto': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             'cantidad': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',
-                'min': '0.01'
+                'min': '0.01',
+                'placeholder': '0.00'
             }),
-            'descripcion': forms.Textarea(attrs={
+            'referencia_bancaria': forms.TextInput(attrs={
                 'class': 'form-control',
-                'rows': 3
-            }),
-            'justificante': forms.TextInput(attrs={
-                'class': 'form-control',
-                'maxlength': '5'
+                'placeholder': 'Referencia bancaria (opcional)',
+                'maxlength': 50
             }),
             'archivo_justificante': forms.FileInput(attrs={
                 'class': 'form-control',
                 'accept': '.pdf,.jpg,.jpeg,.png,.gif,.bmp'
             }),
-            'referencia_bancaria': forms.TextInput(attrs={
+            'descripcion': forms.Textarea(attrs={
                 'class': 'form-control',
-                'placeholder': 'Referencia de la operación bancaria'
+                'rows': 3,
+                'placeholder': 'Descripción detallada del movimiento bancario'
             })
         }
-    
+        labels = {
+            'ejercicio': 'Ejercicio',
+            'concepto': 'Concepto',
+            'cantidad': 'Cantidad (€)',
+            'referencia_bancaria': 'Referencia Bancaria',
+            'archivo_justificante': 'Archivo Justificante',
+            'descripcion': 'Descripción'
+        }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Filter only active cajas
-        self.fields['caja'].queryset = Caja.objects.filter(activa=True)
-        
-        # Filter turnos based on selected caja
-        if 'caja' in self.data:
-            try:
-                caja_id = int(self.data.get('caja'))
-                self.fields['turno'].queryset = Turno.objects.filter(caja_id=caja_id)
-            except (ValueError, TypeError):
-                self.fields['turno'].queryset = Turno.objects.none()
-        elif self.instance.pk and self.instance.caja:
-            self.fields['turno'].queryset = Turno.objects.filter(caja=self.instance.caja)
-        else:
-            self.fields['turno'].queryset = Turno.objects.none()
         
         # Set default values
         if not self.instance.pk:
@@ -314,7 +310,7 @@ class MovimientoBancoForm(forms.ModelForm):
         else:
             self.fields['fecha_date'].initial = self.instance.fecha.date()
             self.fields['fecha_time'].initial = self.instance.fecha.time()
-    
+
     def clean_archivo_justificante(self):
         """Validate uploaded file"""
         archivo = self.cleaned_data.get('archivo_justificante')
@@ -334,7 +330,7 @@ class MovimientoBancoForm(forms.ModelForm):
                 raise forms.ValidationError("El archivo no puede superar los 10MB")
         
         return archivo
-    
+
     def clean(self):
         """Validación adicional para campos de justificante"""
         cleaned_data = super().clean()
@@ -342,25 +338,11 @@ class MovimientoBancoForm(forms.ModelForm):
         justificante = cleaned_data.get('justificante')
         archivo_justificante = cleaned_data.get('archivo_justificante')
         
-        # Validar campos de justificante según el tipo de concepto
-        if concepto:
-            if not concepto.es_gasto:
-                # Para ingresos, no debe haber justificante
-                if justificante or archivo_justificante:
-                    raise forms.ValidationError(
-                        "Los campos de justificante solo se pueden usar para gastos, no para ingresos."
-                    )
-        
-        # Combinar fecha y hora
-        fecha_date = cleaned_data.get('fecha_date')
-        fecha_time = cleaned_data.get('fecha_time')
-        
-        if fecha_date and fecha_time:
-            from datetime import datetime
-            from django.utils import timezone
-            
-            fecha_datetime = datetime.combine(fecha_date, fecha_time)
-            cleaned_data['fecha'] = timezone.make_aware(fecha_datetime)
+        # Si el concepto es un gasto, limpiar campos de justificante si no son gastos
+        if concepto and not concepto.es_gasto:
+            # Para ingresos, limpiar campos de justificante
+            cleaned_data['justificante'] = None
+            cleaned_data['archivo_justificante'] = None
         
         return cleaned_data
 

@@ -28,19 +28,20 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <!-- Selector de Caja -->
+                    <!-- Selector de Ejercicio -->
                     <div class="row mb-4">
                         <div class="col-md-8">
                             <div class="form-group">
-                                <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
-                                <select class="form-control" id="cajaSelect" onchange="loadMovimientos()">
-                                    <option value="">-- Selecciona una caja --</option>
-                                    {% for caja in cajas %}
-                                        <option value="{{ caja.id }}" 
-                                                data-saldo="{{ caja.saldo }}"
-                                                data-nombre="{{ caja.nombre }}"
-                                                {% if caja.id == selected_caja_id %}selected{% endif %}>
-                                            {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
+                                <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
+                                <select class="form-control" id="ejercicioSelect" onchange="loadEjercicioData()">
+                                    <option value="">-- Selecciona un ejercicio --</option>
+                                    {% for ejercicio in ejercicios %}
+                                        <option value="{{ ejercicio.id }}" 
+                                                data-saldo-total="{{ ejercicio.saldo_total }}"
+                                                data-saldo-banco="{{ ejercicio.saldo_banco }}"
+                                                data-nombre="{{ ejercicio.nombre }}"
+                                                {% if ejercicio.id == selected_ejercicio_id %}selected{% endif %}>
+                                            {{ ejercicio.nombre }} ({{ ejercicio.año }}) - Total: {{ ejercicio.saldo_total }}€
                                         </option>
                                     {% endfor %}
                                 </select>
@@ -192,6 +193,7 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <input type="hidden" name="caja_id" id="cajaIdInput">
+                    <input type="hidden" name="ejercicio_id" id="ejercicioIdInput">
                     
                     <!-- Tipo de Operación -->
                     <div class="row mb-3">
@@ -215,6 +217,26 @@
                                 <small class="form-text text-muted">
                                     <i class="tim-icons icon-bulb-63"></i>
                                     Efectivo: movimientos con billetes y monedas físicas. Transferencia: operaciones bancarias.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selector de Caja - Solo se muestra para movimientos de efectivo -->
+                    <div class="row mb-3" id="cajaSelectionRow" style="display: none;">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="cajaSelect" class="form-label">
+                                    <i class="tim-icons icon-coins mr-2"></i>
+                                    Seleccionar Caja
+                                </label>
+                                <select class="form-control" name="caja_id_select" id="cajaSelect" required>
+                                    <option value="">-- Selecciona una caja --</option>
+                                    <!-- Las cajas se cargarán dinámicamente según el ejercicio seleccionado -->
+                                </select>
+                                <small class="form-text text-muted">
+                                    <i class="tim-icons icon-bulb-63"></i>
+                                    Selecciona la caja específica para este movimiento de efectivo.
                                 </small>
                             </div>
                         </div>
@@ -807,126 +829,6 @@
         console.log('Formulario reseteado completamente');
     }
 
-    function loadMovimientos() {
-        const cajaId = $('#cajaSelect').val();
-        
-        console.log('Cargando movimientos para caja ID:', cajaId);
-        
-        if (!cajaId) {
-            // No caja selected
-            console.log('No hay caja seleccionada, ocultando elementos');
-            $('#movimientosContainer').hide();
-            $('#sortControls').hide();
-            $('#searchSection').hide();
-            $('#filterControls').hide();
-            $('#addMovementSection').hide();
-            $('#noCajaMessage').show();
-            // Clear and disable turno dropdown
-            const turnoSelect = $('#turno');
-            turnoSelect.empty();
-            turnoSelect.append('<option value="">-- Selecciona primero una caja --</option>');
-            // Limpiar los campos del header
-            updateTotalsDisplay(0, 0, 0);
-            currentMovimientos = [];
-            filteredMovimientos = [];
-            return;
-        }
-
-        // Update saldo display
-        updateSaldoDisplay();
-        
-        // Set caja ID in the form
-        $('#cajaIdInput').val(cajaId);
-        
-        // Load turnos for the selected caja
-        loadTurnosForCaja(cajaId);
-        
-        // Hide no caja message and show add movement section
-        $('#noCajaMessage').hide();
-        $('#addMovementSection').show();
-
-        // Load movements via AJAX
-        $.ajax({
-            url: '{% url "registro" %}',
-            method: 'GET',
-            data: {
-                'caja_id': cajaId,
-                'ajax': 'true'
-            },
-            success: function(data) {
-                console.log('Respuesta AJAX recibida:', data);
-                
-                if (data.success) {
-                    console.log('Datos recibidos correctamente, procesando...');
-                    
-                    // Guardar los movimientos para el ordenamiento
-                    currentMovimientos = data.movimientos;
-                    filteredMovimientos = [...currentMovimientos];
-                    
-                    // Resetear filtros
-                    currentTipoFilter = 'todos';
-                    currentIngresosGastosFilter = 'todos';
-                    
-                    // Limpiar búsqueda
-                    $('#movementsSearch').val('');
-                    $('#clearSearch').hide();
-                    
-                    displayMovimientos(data.movimientos);
-                    
-                    // No llamar updateResumen aquí porque displayMovimientos ya actualiza los totales
-                    // basándose en los movimientos filtrados
-                    
-                    // Actualizar cantidades disponibles en el formulario
-                    updateAvailableQuantities(data.desglose_actual || {});
-                    
-                    // Mostrar controles si hay movimientos
-                    if (data.movimientos && data.movimientos.length > 0) {
-                        $('#sortControls').show();
-                        $('#searchSection').show();
-                        $('#filterControls').show();
-                        updateSortButtons();
-                        updateTipoFilterButton();
-                        updateIngresosGastosFilterButton();
-                        updateSearchResults(data.movimientos.length, false);
-                    } else {
-                        $('#sortControls').hide();
-                        $('#searchSection').hide();
-                        $('#filterControls').hide();
-                    }
-                    
-                    // Asegurarse de que el contenedor se muestre
-                    console.log('Mostrando contenedor de movimientos...');
-                    $('#movimientosContainer').show();
-                    
-                    // Verificar que realmente se muestra
-                    const isVisible = $('#movimientosContainer').is(':visible');
-                    console.log('Contenedor visible:', isVisible);
-                    
-                    if (!isVisible) {
-                        console.error('ERROR: El contenedor no se está mostrando');
-                        $('#movimientosContainer').css('display', 'block');
-                    }
-                } else {
-                    console.error('Error loading movements:', data.error);
-                    showError('Error: ' + data.error);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX error:', error);
-                console.error('Status:', status);
-                console.error('xhr.status:', xhr.status);
-                console.error('Response:', xhr.responseText);
-                console.error('Response JSON:', xhr.responseJSON);
-                
-                if (xhr.status === 302 || xhr.status === 403) {
-                    // Problemas de autenticación
-                    showError('Sesión expirada. Por favor, inicia sesión nuevamente.');
-                    window.location.href = '/accounts/login/';
-                } else {
-                    showError('Error al cargar los movimientos: ' + error);
-                }
-            }
-        });
     }
 
     function displayMovimientos(movimientos) {
@@ -1286,9 +1188,13 @@
         console.log('Tipo de operación seleccionado:', tipoOperacion);
         
         if (tipoOperacion === 'efectivo') {
-            // Mostrar campos de efectivo y ocultar campos de banco
+            // Mostrar selector de caja y campos de efectivo
+            $('#cajaSelectionRow').show();
             $('#camposEfectivo').show();
             $('#camposBanco').hide();
+            
+            // Cargar cajas del ejercicio seleccionado
+            loadCajasForEjercicio();
             
             // Si hay un concepto seleccionado, aplicar lógica de justificante para efectivo
             const concepto = $('#concepto').find('option:selected');
@@ -1304,6 +1210,10 @@
             }
             
         } else if (tipoOperacion === 'transferencia') {
+            // Ocultar selector de caja para transferencias bancarias
+            $('#cajaSelectionRow').hide();
+            $('#cajaSelect').val(''); // Limpiar selección de caja
+            
             // Mostrar campos de banco y ocultar campos de efectivo
             $('#camposBanco').show();
             $('#camposEfectivo').hide();
@@ -2036,10 +1946,10 @@
                 if (cantidad > 0) {
                     // Obtener el valor actual del input y sumarle la nueva cantidad
                     const valorActual = parseInt(denom.elemento.val()) || 0;
-                    const nuevaCanidad = valorActual + cantidad;
-                    
-                    denom.elemento.val(nuevaCanidad);
-                    
+                    const nuevaCantidad = valorActual + cantidad;
+
+                    denom.elemento.val(nuevaCantidad);
+
                     const valorUsado = cantidad * denom.valor;
                     remainingChange -= valorUsado;
                     remainingChange = Math.round(remainingChange * 100) / 100; // Evitar errores de punto flotante
@@ -2824,6 +2734,145 @@
             error: function(xhr, status, error) {
                 console.error('Error loading turnos:', error);
                 showError('Error al cargar los turnos');
+            }
+        });
+    }
+
+    function loadEjercicioData() {
+        const ejercicioId = $('#ejercicioSelect').val();
+        
+        console.log('Cargando datos para ejercicio ID:', ejercicioId);
+        
+        if (!ejercicioId) {
+            // No ejercicio selected
+            console.log('No hay ejercicio seleccionado, ocultando elementos');
+            $('#movimientosContainer').hide();
+            $('#sortControls').hide();
+            $('#searchSection').hide();
+            $('#filterControls').hide();
+            $('#addMovementSection').hide();
+            $('#noCajaMessage').show();
+            
+            // Clear caja dropdown
+            const cajaSelect = $('#cajaSelect');
+            cajaSelect.empty();
+            cajaSelect.append('<option value="">-- Selecciona un ejercicio primero --</option>');
+            
+            // Limpiar los campos del header
+            updateTotalsDisplay(0, 0, 0);
+            currentMovimientos = [];
+            filteredMovimientos = [];
+            return;
+        }
+
+        // Update saldo display
+        updateSaldoDisplay();
+        
+        // Set ejercicio ID in the form
+        $('#ejercicioIdInput').val(ejercicioId);
+        
+        // Hide no ejercicio message and show add movement section
+        $('#noCajaMessage').hide();
+        $('#addMovementSection').show();
+
+        // Cargar cajas del ejercicio si el tipo de operación es efectivo
+        const tipoOperacion = $('#tipo_operacion').val();
+        if (tipoOperacion === 'efectivo') {
+            loadCajasForEjercicio();
+        }
+
+        // Cargar todos los movimientos del ejercicio
+        loadEjercicioMovimientos(ejercicioId);
+    }
+
+    function loadEjercicioMovimientos(ejercicioId) {
+        console.log('Cargando movimientos para ejercicio ID:', ejercicioId);
+        
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'GET',
+            data: {
+                'ajax': 'true',
+                'get_ejercicio_movimientos': 'true',
+                'ejercicio_id': ejercicioId
+            },
+            success: function(data) {
+                if (data.success) {
+                    console.log('Movimientos del ejercicio cargados:', data.movimientos.length);
+                    
+                    // Update global variables
+                    currentMovimientos = data.movimientos;
+                    filteredMovimientos = [...currentMovimientos];
+                    
+                    // Update totals display
+                    updateTotalsDisplay(data.resumen.total_ingresos, data.resumen.total_gastos, data.resumen.saldo_actual);
+                    
+                    // Show movements and controls
+                    $('#movimientosContainer').show();
+                    $('#sortControls').show();
+                    $('#searchSection').show();
+                    $('#filterControls').show();
+                    
+                    // Render movements
+                    renderMovimientos();
+                    
+                    showInfo(`Mostrando ${data.movimientos.length} movimientos del ejercicio ${data.ejercicio.nombre}`);
+                } else {
+                    showError('Error al cargar los movimientos: ' + data.error);
+                    currentMovimientos = [];
+                    filteredMovimientos = [];
+                    updateTotalsDisplay(0, 0, 0);
+                    $('#movimientosContainer').hide();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading ejercicio movimientos:', error);
+                showError('Error al cargar los movimientos del ejercicio');
+                currentMovimientos = [];
+                filteredMovimientos = [];
+                updateTotalsDisplay(0, 0, 0);
+                $('#movimientosContainer').hide();
+            }
+        });
+    }
+
+    function loadCajasForEjercicio() {
+        const ejercicioId = $('#ejercicioSelect').val();
+        
+        if (!ejercicioId) {
+            console.log('No hay ejercicio seleccionado');
+            return;
+        }
+
+        console.log('Cargando cajas para ejercicio ID:', ejercicioId);
+
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'GET',
+            data: {
+                'ajax': 'true',
+                'get_cajas': 'true',
+                'ejercicio_id': ejercicioId
+            },
+            success: function(data) {
+                if (data.success) {
+                    // Clear and populate cajas
+                    const cajaSelect = $('#cajaSelect');
+                    cajaSelect.empty();
+                    cajaSelect.append('<option value="">-- Selecciona una caja --</option>');
+                    
+                    data.cajas.forEach(function(caja) {
+                        cajaSelect.append(`<option value="${caja.id}" data-saldo="${caja.saldo_caja}">${caja.nombre} (${caja.año}) - ${caja.saldo_caja}€</option>`);
+                    });
+                    
+                    console.log('Cajas cargadas:', data.cajas.length);
+                } else {
+                    showError('Error al cargar las cajas: ' + data.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading cajas:', error);
+                showError('Error al cargar las cajas');
             }
         });
     }

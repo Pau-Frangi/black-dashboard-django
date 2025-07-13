@@ -14,7 +14,7 @@ from django.views import View
 from django.db import models
 from pprint import pp 
 
-from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Caja, MovimientoCaja, MovimientoBanco, Turno, Concepto, DenominacionEuro, MovimientoDinero, DesgloseCaja
+from apps.dyn_dt.models import ModelFilter, PageItems, HideShowFilter, Ejercicio, Caja, MovimientoCaja, MovimientoBanco, Turno, Concepto, DenominacionEuro, MovimientoDinero, DesgloseCaja
 from apps.dyn_dt.utils import user_filter
 from apps.dyn_dt.forms import MovimientoCajaForm, DesgloseDineroForm
 
@@ -325,6 +325,102 @@ def registro(request):
     # Handle AJAX requests
     if request.method == 'GET' and request.GET.get('ajax') == 'true':
         caja_id = request.GET.get('caja_id')
+        ejercicio_id = request.GET.get('ejercicio_id')
+        
+        if request.GET.get('get_ejercicio_movimientos') == 'true':
+            # Return all movements for the selected ejercicio (both cash and bank)
+            if ejercicio_id:
+                try:
+                    ejercicio = get_object_or_404(Ejercicio, id=ejercicio_id)
+                    
+                    # Get all cash movements from all cajas in the ejercicio
+                    movimientos_caja = MovimientoCaja.objects.filter(caja__ejercicio=ejercicio).order_by('-fecha')
+                    
+                    # Get all bank movements from the ejercicio
+                    movimientos_banco = MovimientoBanco.objects.filter(ejercicio=ejercicio).order_by('-fecha')
+                    
+                    # Prepare movements data for JSON response
+                    movimientos_data = []
+                    
+                    # Add cash movements
+                    for mov in movimientos_caja:
+                        movimientos_data.append({
+                            'id': mov.id,
+                            'tipo': 'caja',
+                            'fecha': mov.fecha.strftime('%Y-%m-%d'),
+                            'fecha_completa': mov.fecha.strftime('%Y-%m-%d %H:%M:%S'),
+                            'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                            'datetime_iso': mov.fecha.isoformat(),
+                            'caja': str(mov.caja),
+                            'caja_id': mov.caja.id,
+                            'turno': str(mov.turno),
+                            'turno_id': mov.turno.id,
+                            'concepto': str(mov.concepto),
+                            'concepto_id': mov.concepto.id,
+                            'cantidad': float(mov.cantidad),
+                            'es_gasto': mov.es_gasto(),
+                            'justificante': mov.justificante or '',
+                            'tiene_archivo': bool(mov.archivo_justificante),
+                            'archivo_url': mov.archivo_justificante.url if mov.archivo_justificante else None,
+                            'descripcion': mov.descripcion or ''
+                        })
+                    
+                    # Add bank movements
+                    for mov in movimientos_banco:
+                        movimientos_data.append({
+                            'id': mov.id,
+                            'tipo': 'banco',
+                            'fecha': mov.fecha.strftime('%Y-%m-%d'),
+                            'fecha_completa': mov.fecha.strftime('%Y-%m-%d %H:%M:%S'),
+                            'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                            'datetime_iso': mov.fecha.isoformat(),
+                            'caja': f"Banco - {ejercicio.nombre}",
+                            'caja_id': None,
+                            'turno': "Banco",
+                            'turno_id': None,
+                            'concepto': str(mov.concepto),
+                            'concepto_id': mov.concepto.id,
+                            'cantidad': float(mov.cantidad),
+                            'es_gasto': mov.es_gasto(),
+                            'justificante': getattr(mov, 'justificante', '') or '',
+                            'tiene_archivo': bool(mov.archivo_justificante),
+                            'archivo_url': mov.archivo_justificante.url if mov.archivo_justificante else None,
+                            'descripcion': mov.descripcion or '',
+                            'referencia_bancaria': getattr(mov, 'referencia_bancaria', '') or ''
+                        })
+                    
+                    # Sort all movements by date (most recent first)
+                    movimientos_data.sort(key=lambda x: x['datetime_iso'], reverse=True)
+                    
+                    # Calculate summary (include both cash and bank movements)
+                    all_movimientos = list(movimientos_caja) + list(movimientos_banco)
+                    total_ingresos = sum(mov.cantidad for mov in all_movimientos if not mov.es_gasto())
+                    total_gastos = sum(mov.cantidad for mov in all_movimientos if mov.es_gasto())
+                    
+                    # Calculate saldo actual del ejercicio (cajas + banco)
+                    saldo_actual = ejercicio.saldo_total
+                    
+                    resumen = {
+                        'total_ingresos': float(total_ingresos),
+                        'total_gastos': float(total_gastos),
+                        'saldo_actual': float(saldo_actual)
+                    }
+                    
+                    return JsonResponse({
+                        'success': True,
+                        'movimientos': movimientos_data,
+                        'resumen': resumen,
+                        'ejercicio': {
+                            'id': ejercicio.id,
+                            'nombre': ejercicio.nombre,
+                            'año': ejercicio.año
+                        }
+                    })
+                    
+                except Exception as e:
+                    return JsonResponse({'success': False, 'error': str(e)})
+            
+            return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
         
         if request.GET.get('get_turnos') == 'true':
             # Return turnos for the selected caja
@@ -335,6 +431,16 @@ def registro(request):
                     'turnos': list(turnos)
                 })
             return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
+        
+        if request.GET.get('get_cajas') == 'true':
+            # Return cajas for the selected ejercicio
+            if ejercicio_id:
+                cajas = Caja.objects.filter(ejercicio_id=ejercicio_id).values('id', 'nombre', 'año', 'saldo_caja')
+                return JsonResponse({
+                    'success': True,
+                    'cajas': list(cajas)
+                })
+            return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
         
         if request.GET.get('get_movimiento_desglose') == 'true':
             # Return money breakdown for a specific movement
@@ -372,7 +478,8 @@ def registro(request):
             
             # Get both cash and bank movements
             movimientos_caja = MovimientoCaja.objects.filter(caja=caja).order_by('-id')
-            movimientos_banco = MovimientoBanco.objects.filter(caja=caja).order_by('-id')
+            # Los movimientos bancarios están asociados al ejercicio, no a la caja
+            movimientos_banco = MovimientoBanco.objects.filter(ejercicio=caja.ejercicio).order_by('-id')
             
             # Prepare movements data for JSON response
             movimientos_data = []
@@ -431,7 +538,7 @@ def registro(request):
             resumen = {
                 'total_ingresos': float(total_ingresos),
                 'total_gastos': float(total_gastos),
-                'saldo_actual': float(caja.saldo)
+                'saldo_actual': float(caja.saldo_caja)
             }
             
             # Get current money breakdown for the caja
@@ -494,10 +601,16 @@ def registro(request):
                 cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
                 
                 if tipo_operacion == 'transferencia':
-                    # Create MovimientoBanco for bank transfers
+                    # Para transferencias bancarias, necesitamos el ejercicio, no la caja específica
+                    ejercicio_id = request.POST.get('ejercicio_id')
+                    if not ejercicio_id:
+                        ejercicio_id = caja.ejercicio.id  # Fallback a la caja seleccionada si no se especifica ejercicio
+                    
+                    ejercicio = get_object_or_404(Ejercicio, id=ejercicio_id)
+                    
+                    # Create MovimientoBanco for bank transfers (asociado al ejercicio)
                     movimiento = MovimientoBanco(
-                        caja=caja,
-                        turno_id=request.POST.get('turno'),
+                        ejercicio=ejercicio,
                         concepto=concepto,
                         cantidad=cantidad_decimal,
                         fecha=fecha_datetime,
@@ -694,7 +807,6 @@ def registro(request):
                 # Update caja saldos manually since signals don't run on update
                 caja = movimiento.caja
                 saldo_caja_anterior = caja.saldo_caja
-                saldo_banco_anterior = caja.saldo_banco
                 
                 if tipo_movimiento == 'banco':
                     # For bank movements, calculate the difference between old and new amounts
@@ -704,20 +816,17 @@ def registro(request):
                     
                     print(f"DEBUG: Cálculo de diferencia banco: {cantidad_real_nueva} - {cantidad_real_original} = {diferencia}")
                     
-                    # Update bank saldo
-                    caja.saldo_banco += diferencia
-                    print(f"DEBUG: Saldo banco: {saldo_banco_anterior} -> {caja.saldo_banco}")
+                    # Update bank saldo del ejercicio
+                    ejercicio = caja.ejercicio
+                    ejercicio.saldo_banco += diferencia
+                    ejercicio.save()
+                    print(f"DEBUG: Saldo banco del ejercicio actualizado: {ejercicio.saldo_banco}")
                 else:
                     # For cash movements, we need to recalculate the cash saldo completely
                     # because the money breakdown has been updated
                     print(f"DEBUG: Recalculando saldo de caja completo basado en todos los movimientos")
                     caja.recalcular_saldo_caja()
                     print(f"DEBUG: Saldo caja recalculado: {saldo_caja_anterior} -> {caja.saldo_caja}")
-                
-                # Update total saldo
-                caja.saldo = caja.saldo_caja + caja.saldo_banco
-                caja.save(skip_validation=True)
-                print(f"DEBUG: Saldo total actualizado: {caja.saldo}")
                 
                 return JsonResponse({'success': True, 'message': 'Movimiento actualizado correctamente'})
                 
@@ -728,6 +837,7 @@ def registro(request):
                 return JsonResponse({'success': False, 'error': str(e)})
     
     # GET request - render the template
+    ejercicios = Ejercicio.objects.all().order_by('-año', 'nombre')
     cajas = Caja.objects.all().order_by('-año', 'nombre')
     # Don't load turnos initially - they will be loaded via AJAX when a caja is selected
     conceptos = Concepto.objects.all()
@@ -735,6 +845,7 @@ def registro(request):
     denominaciones = DenominacionEuro.objects.filter(activa=True).order_by('-valor')
     
     context = {
+        'ejercicios': ejercicios,
         'cajas': cajas,
         'conceptos': conceptos,
         'denominaciones': denominaciones,
@@ -767,7 +878,7 @@ def saldo(request):
             concept_data = {}
             balance_evolution = []
             
-            running_balance = caja.saldo  # Start with the current balance of the caja
+            running_balance = caja.saldo_caja  # Start with the current balance of the caja
             
             for mov in movimientos:
                 month_key = mov.fecha.strftime('%Y-%m')
@@ -828,12 +939,12 @@ def saldo(request):
                 'caja_info': {
                     'nombre': caja.nombre,
                     'año': caja.año,
-                    'saldo_actual': float(caja.saldo)
+                    'saldo_actual': float(caja.saldo_caja)
                 },
                 'totals': {
                     'total_ingresos': float(total_ingresos),
                     'total_gastos': float(total_gastos),
-                    'saldo_actual': float(caja.saldo),
+                    'saldo_actual': float(caja.saldo_caja),
                     'total_movimientos': movimientos.count()
                 },
                 'monthly_data': monthly_data,
@@ -921,7 +1032,7 @@ def tables(request):
                 'caja_info': {
                     'nombre': caja.nombre,
                     'año': caja.año,
-                    'saldo_actual': float(caja.saldo)
+                    'saldo_actual': float(caja.saldo_caja)
                 },
                 'conceptos': conceptos_data,
                 'turnos': turnos_data
