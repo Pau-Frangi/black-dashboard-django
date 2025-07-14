@@ -56,7 +56,7 @@ class CajaAdmin(admin.ModelAdmin):
     total_movimientos_caja.short_description = 'Mov. Caja'
     
     def total_turnos(self, obj):
-        return obj.ejercicio.turnos.count()
+        return obj.turnos.count()
     total_turnos.short_description = 'Total turnos'
     
     def saldo_desglose(self, obj):

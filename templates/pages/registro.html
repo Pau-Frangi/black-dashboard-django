@@ -768,8 +768,13 @@
         $('#cajaIdInput').val(cajaId);
         console.log('Caja ID establecido en modal:', cajaId);
         
-        // Load turnos for the selected caja
-        loadTurnosForCaja(cajaId);
+        // Load turnos for the selected ejercicio (get ejercicio from selected ejercicio dropdown)
+        const ejercicioId = $('#ejercicioSelect').val();
+        if (ejercicioId) {
+            loadTurnosForEjercicio(ejercicioId);
+        } else {
+            console.warn('No hay ejercicio seleccionado');
+        }
         
         // Resetear el formulario y estilos
         resetModalForm();
@@ -2614,29 +2619,34 @@
         $('#tipo_operacion').prop('disabled', true);
         $('#tipo_operacion').addClass('disabled-field');
         
-        // Load turnos for the selected caja and then set the turno
-        loadTurnosForCaja($('#cajaSelect').val(), function() {
-            // Find and select the correct turno by ID
-            if (movimiento.turno_id) {
-                $('#turno').val(movimiento.turno_id);
-                console.log('Turno preseleccionado por ID:', movimiento.turno_id, '(' + movimiento.turno + ')');
-            } else {
-                // Fallback: search by text if ID not available
-                let turnoEncontrado = false;
-                $('#turno option').each(function() {
-                    if ($(this).text().trim() === movimiento.turno) {
-                        $('#turno').val($(this).val());
-                        turnoEncontrado = true;
-                        console.log('Turno preseleccionado por texto:', movimiento.turno);
-                        return false; // break
+        // Load turnos for the selected ejercicio and then set the turno
+        const ejercicioId = $('#ejercicioSelect').val();
+        if (ejercicioId) {
+            loadTurnosForEjercicio(ejercicioId, function() {
+                // Find and select the correct turno by ID
+                if (movimiento.turno_id) {
+                    $('#turno').val(movimiento.turno_id);
+                    console.log('Turno preseleccionado por ID:', movimiento.turno_id, '(' + movimiento.turno + ')');
+                } else {
+                    // Fallback: search by text if ID not available
+                    let turnoEncontrado = false;
+                    $('#turno option').each(function() {
+                        if ($(this).text().trim() === movimiento.turno) {
+                            $('#turno').val($(this).val());
+                            turnoEncontrado = true;
+                            console.log('Turno preseleccionado por texto:', movimiento.turno);
+                            return false; // break
+                        }
+                    });
+                    
+                    if (!turnoEncontrado) {
+                        console.warn('No se encontró el turno:', movimiento.turno);
                     }
-                });
-                
-                if (!turnoEncontrado) {
-                    console.warn('No se encontró el turno:', movimiento.turno);
                 }
-            }
-        });
+            });
+        } else {
+            console.warn('No hay ejercicio seleccionado para cargar turnos');
+        }
         
         // Find and select the correct concepto by ID
         if (movimiento.concepto_id) {
@@ -2704,38 +2714,6 @@
         $('#tipo_operacion').trigger('change');
     }
 
-    function loadTurnosForCaja(cajaId, callback) {
-        $.ajax({
-            url: '{% url "registro" %}',
-            method: 'GET',
-            data: {
-                'ajax': 'true',
-                'get_turnos': 'true',
-                'caja_id': cajaId
-            },
-            success: function(data) {
-                if (data.success) {
-                    // Clear and populate turnos
-                    const turnoSelect = $('#turno');
-                    turnoSelect.empty();
-                    turnoSelect.append('<option value="">-- Selecciona un turno --</option>');
-                    
-                    data.turnos.forEach(function(turno) {
-                        turnoSelect.append(`<option value="${turno.id}">${turno.nombre}</option>`);
-                    });
-                    
-                    if (callback) callback();
-                } else {
-                    showError('Error al cargar los turnos: ' + data.error);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading turnos:', error);
-                showError('Error al cargar los turnos');
-            }
-        });
-    }
-
     function loadEjercicioData() {
         const ejercicioId = $('#ejercicioSelect').val();
         
@@ -2756,6 +2734,11 @@
             cajaSelect.empty();
             cajaSelect.append('<option value="">-- Selecciona un ejercicio primero --</option>');
             
+            // Clear turnos dropdown
+            const turnoSelect = $('#turno');
+            turnoSelect.empty();
+            turnoSelect.append('<option value="">-- Selecciona un turno --</option>');
+            
             // Limpiar los campos del header
             updateTotalsDisplay(0, 0, 0);
             currentMovimientos = [];
@@ -2768,6 +2751,9 @@
         
         // Set ejercicio ID in the form
         $('#ejercicioIdInput').val(ejercicioId);
+        
+        // Load turnos for the selected ejercicio
+        loadTurnosForEjercicio(ejercicioId);
         
         // Hide no ejercicio message and show add movement section
         $('#noCajaMessage').hide();
@@ -2871,6 +2857,40 @@
             error: function(xhr, status, error) {
                 console.error('Error loading cajas:', error);
                 showError('Error al cargar las cajas');
+            }
+        });
+    }
+
+    function loadTurnosForEjercicio(ejercicioId, callback) {
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'GET',
+            data: {
+                'ajax': 'true',
+                'get_turnos': 'true',
+                'ejercicio_id': ejercicioId
+            },
+            success: function(data) {
+                if (data.success) {
+                    // Clear and populate turnos
+                    const turnoSelect = $('#turno');
+                    turnoSelect.empty();
+                    turnoSelect.append('<option value="">-- Selecciona un turno --</option>');
+                    
+                    data.turnos.forEach(function(turno) {
+                        turnoSelect.append(`<option value="${turno.id}">${turno.nombre}</option>`);
+                    });
+                    
+                    console.log('Turnos cargados:', data.turnos.length);
+                    
+                    if (callback) callback();
+                } else {
+                    showError('Error al cargar los turnos: ' + data.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading turnos:', error);
+                showError('Error al cargar los turnos');
             }
         });
     }
