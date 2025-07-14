@@ -803,6 +803,11 @@
         $('#justificanteFieldsBanco').hide();
         $('#camposEfectivo').hide();
         $('#camposBanco').hide();
+        $('#cajaSelectionRow').hide();
+        $('#desgloseDineroSection').hide();
+        
+        // Reset required attributes
+        $('#cajaSelect').prop('required', false);
         
         // Clear all form values
         $('#justificante').val('');
@@ -1209,6 +1214,9 @@
             $('#camposEfectivo').show();
             $('#camposBanco').hide();
             
+            // Hacer obligatorio el selector de caja para operaciones de efectivo
+            $('#cajaSelect').prop('required', true);
+            
             // Ocultar desglose hasta que se seleccione una caja
             $('#desgloseDineroSection').hide();
             
@@ -1233,6 +1241,9 @@
             $('#cajaSelectionRow').hide();
             $('#cajaSelect').val(''); // Limpiar selección de caja
             
+            // Hacer NO obligatorio el selector de caja para transferencias bancarias
+            $('#cajaSelect').prop('required', false);
+            
             // Ocultar desglose para transferencias bancarias
             $('#desgloseDineroSection').hide();
             
@@ -1256,6 +1267,9 @@
             $('#camposEfectivo').hide();
             $('#camposBanco').hide();
             $('#desgloseDineroSection').hide();
+            
+            // Hacer NO obligatorio el selector de caja cuando no hay selección
+            $('#cajaSelect').prop('required', false);
         }
         
         // Limpiar los campos del tipo no seleccionado
