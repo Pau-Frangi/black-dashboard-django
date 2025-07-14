@@ -164,11 +164,11 @@
                         </div>
                     </div>
 
-                    <!-- Mensaje cuando no hay caja seleccionada -->
+                    <!-- Mensaje cuando no hay ejercicio seleccionado -->
                     <div id="noCajaMessage" class="text-center py-5">
                         <i class="tim-icons icon-wallet-43" style="font-size: 4rem; color: #ccc;"></i>
-                        <h4 class="mt-3 text-muted">Selecciona una caja para ver sus movimientos</h4>
-                        <p class="text-muted">Asegúrate de haber iniciado sesión para acceder a los datos</p>
+                        <h4 class="mt-3 text-muted">Selecciona un ejercicio para ver todos sus movimientos</h4>
+                        <p class="text-muted">Elige un ejercicio del selector superior para visualizar todos los movimientos de caja y banco asociados</p>
                     </div>
                 </div>
             </div>
@@ -247,7 +247,7 @@
                             <div class="form-group">
                                 <label for="turno" class="form-label">Turno</label>
                                 <select class="form-control" name="turno" id="turno" required>
-                                    <option value="">-- Selecciona primero una caja --</option>
+                                    <option value="">-- Selecciona un turno --</option>
                                 </select>
                             </div>
                         </div>
@@ -748,10 +748,11 @@
 
     function prepareModal() {
         console.log('Preparando modal');
-        const cajaId = $('#cajaSelect').val();
         
-        if (!cajaId) {
-            showWarning('Por favor selecciona una caja antes de añadir un movimiento');
+        // Verificar que hay un ejercicio seleccionado
+        const ejercicioId = $('#ejercicioSelect').val();
+        if (!ejercicioId) {
+            showWarning('Por favor selecciona un ejercicio antes de añadir un movimiento');
             return false;
         }
         
@@ -764,17 +765,12 @@
             Añadir Nuevo Movimiento
         `);
         
-        // Establecer el caja_id en el formulario
-        $('#cajaIdInput').val(cajaId);
-        console.log('Caja ID establecido en modal:', cajaId);
+        // Establecer el ejercicio_id en el formulario
+        $('#ejercicioIdInput').val(ejercicioId);
+        console.log('Ejercicio ID establecido en modal:', ejercicioId);
         
-        // Load turnos for the selected ejercicio (get ejercicio from selected ejercicio dropdown)
-        const ejercicioId = $('#ejercicioSelect').val();
-        if (ejercicioId) {
-            loadTurnosForEjercicio(ejercicioId);
-        } else {
-            console.warn('No hay ejercicio seleccionado');
-        }
+        // Load turnos for the selected ejercicio
+        loadTurnosForEjercicio(ejercicioId);
         
         // Resetear el formulario y estilos
         resetModalForm();
@@ -1051,17 +1047,17 @@
         
         console.log('Enviando formulario de movimiento');
         
-        // Verificar que hay una caja seleccionada
-        const cajaId = $('#cajaSelect').val();
-        if (!cajaId) {
-            showWarning('Por favor selecciona una caja antes de añadir un movimiento', {floating: true});
-            return;
-        }
-        
         // Verificar que se ha seleccionado un tipo de operación
         const tipoOperacion = $('#tipo_operacion').val();
         if (!tipoOperacion) {
             showWarning('Por favor selecciona el tipo de operación', {floating: true});
+            return;
+        }
+        
+        // Verificar que hay un ejercicio seleccionado
+        const ejercicioId = $('#ejercicioSelect').val();
+        if (!ejercicioId) {
+            showWarning('Por favor selecciona un ejercicio', {floating: true});
             return;
         }
         
@@ -1070,6 +1066,13 @@
         // =============================================================================
         
         if (tipoOperacion === 'efectivo') {
+            // Para movimientos de efectivo, verificar que hay una caja seleccionada
+            const cajaId = $('#cajaSelect').val();
+            if (!cajaId) {
+                showWarning('Por favor selecciona una caja para movimientos de efectivo', {floating: true});
+                return;
+            }
+            
             // Validar desglose para movimientos de efectivo (tanto nuevos como editados)
             const validationResult = validateCompleteMoneyBreakdown();
             if (!validationResult.valid) {
@@ -1077,15 +1080,17 @@
                 return;
             }
             console.log('Desglose de efectivo validado correctamente');
+            
+            // Asegurar que el caja_id esté establecido en el formulario
+            $('#cajaIdInput').val(cajaId);
+            console.log('Caja ID:', cajaId);
+            
         } else if (tipoOperacion === 'transferencia') {
-            // Para transferencias, no hay validaciones adicionales requeridas
+            // Para transferencias, no necesitamos caja específica, solo ejercicio
             console.log('Datos bancarios validados correctamente');
         }
-
-        // Asegurar que el caja_id esté establecido en el formulario
-        $('#cajaIdInput').val(cajaId);
         
-        console.log('Caja ID:', cajaId);
+        console.log('Ejercicio ID:', ejercicioId);
         console.log('Tipo de operación:', tipoOperacion);
         
         // Create FormData object to handle file upload
@@ -2557,9 +2562,10 @@
     function editMovimiento(movimientoId, tipoMovimiento) {
         console.log('Editando movimiento:', movimientoId, 'tipo:', tipoMovimiento);
         
-        const cajaId = $('#cajaSelect').val();
-        if (!cajaId) {
-            showWarning('Por favor selecciona una caja antes de editar un movimiento');
+        // Verificar que hay un ejercicio seleccionado
+        const ejercicioId = $('#ejercicioSelect').val();
+        if (!ejercicioId) {
+            showWarning('Por favor selecciona un ejercicio antes de editar un movimiento');
             return;
         }
         
@@ -2597,8 +2603,14 @@
         // Reset form first
         resetModalForm();
         
-        // Set caja ID
-        $('#cajaIdInput').val($('#cajaSelect').val());
+        // Set ejercicio ID
+        const currentEjercicioId = $('#ejercicioSelect').val();
+        $('#ejercicioIdInput').val(currentEjercicioId);
+        
+        // Set caja ID only if it's available (for cash movements)
+        if (movimiento.caja_id) {
+            $('#cajaIdInput').val(movimiento.caja_id);
+        }
         
         // Parse fecha from movimiento
         const fecha = new Date(movimiento.datetime_iso);
@@ -2620,9 +2632,9 @@
         $('#tipo_operacion').addClass('disabled-field');
         
         // Load turnos for the selected ejercicio and then set the turno
-        const ejercicioId = $('#ejercicioSelect').val();
-        if (ejercicioId) {
-            loadTurnosForEjercicio(ejercicioId, function() {
+        const editEjercicioId = $('#ejercicioSelect').val();
+        if (editEjercicioId) {
+            loadTurnosForEjercicio(editEjercicioId, function() {
                 // Find and select the correct turno by ID
                 if (movimiento.turno_id) {
                     $('#turno').val(movimiento.turno_id);
@@ -2798,7 +2810,7 @@
                     $('#filterControls').show();
                     
                     // Render movements
-                    renderMovimientos();
+                    displayMovimientos(filteredMovimientos);
                     
                     showInfo(`Mostrando ${data.movimientos.length} movimientos del ejercicio ${data.ejercicio.nombre}`);
                 } else {

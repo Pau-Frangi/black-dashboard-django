@@ -515,8 +515,7 @@ def registro(request):
                     'fecha_completa': mov.fecha.strftime('%Y-%m-%d %H:%M:%S'),
                     'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
                     'datetime_iso': mov.fecha.isoformat(),
-                    'turno': str(mov.turno),
-                    'turno_id': mov.turno.id,
+                    'turno': 'Banco',  # Bank movements don't have a turno
                     'concepto': str(mov.concepto),
                     'concepto_id': mov.concepto.id,
                     'cantidad': float(mov.cantidad),
