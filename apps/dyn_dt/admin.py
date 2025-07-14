@@ -30,7 +30,7 @@ class ConceptoAdmin(admin.ModelAdmin):
 
 @admin.register(Caja)
 class CajaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'ejercicio', 'año', 'saldo_caja', 'saldo_desglose', 'activa', 'total_movimientos_caja', 'total_turnos')
+    list_display = ('nombre', 'ejercicio', 'año', 'saldo_caja', 'saldo_desglose', 'activa', 'total_movimientos_caja', 'total_turnos_ejercicio')
     list_filter = ('año', 'activa', 'ejercicio')
     search_fields = ('nombre', 'ejercicio__nombre')
     ordering = ('-año', 'nombre')
@@ -55,9 +55,9 @@ class CajaAdmin(admin.ModelAdmin):
         return obj.movimientos.count()
     total_movimientos_caja.short_description = 'Mov. Caja'
     
-    def total_turnos(self, obj):
-        return obj.turnos.count()
-    total_turnos.short_description = 'Total turnos'
+    def total_turnos_ejercicio(self, obj):
+        return obj.ejercicio.turnos.count()
+    total_turnos_ejercicio.short_description = 'Turnos (Ejercicio)'
     
     def saldo_desglose(self, obj):
         saldo_calc = obj.calcular_saldo_desde_desglose()
