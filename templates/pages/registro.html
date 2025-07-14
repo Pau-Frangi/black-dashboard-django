@@ -330,7 +330,7 @@
                         </div>
                     
                     <!-- Sección de desglose de billetes y monedas -->
-                    <div class="desglose-dinero-section" id="desgloseDineroSection">
+                    <div class="desglose-dinero-section" id="desgloseDineroSection" style="display: none;">
                         <h6 class="section-title">
                             <i class="tim-icons icon-coins mr-2"></i>
                             Desglose de Billetes y Monedas
@@ -1209,6 +1209,9 @@
             $('#camposEfectivo').show();
             $('#camposBanco').hide();
             
+            // Ocultar desglose hasta que se seleccione una caja
+            $('#desgloseDineroSection').hide();
+            
             // Cargar cajas del ejercicio seleccionado
             loadCajasForEjercicio();
             
@@ -1230,6 +1233,9 @@
             $('#cajaSelectionRow').hide();
             $('#cajaSelect').val(''); // Limpiar selección de caja
             
+            // Ocultar desglose para transferencias bancarias
+            $('#desgloseDineroSection').hide();
+            
             // Mostrar campos de banco y ocultar campos de efectivo
             $('#camposBanco').show();
             $('#camposEfectivo').hide();
@@ -1249,6 +1255,7 @@
             // Sin selección - ocultar todos los campos específicos
             $('#camposEfectivo').hide();
             $('#camposBanco').hide();
+            $('#desgloseDineroSection').hide();
         }
         
         // Limpiar los campos del tipo no seleccionado
@@ -1261,6 +1268,25 @@
             // Limpiar también campos de desglose de dinero
             $('.money-input').val('');
             calculateMoneyTotals();
+        }
+    });
+
+    // Handle caja selection changes for money breakdown
+    $(document).on('change', '#cajaSelect', function() {
+        const cajaId = $(this).val();
+        const tipoOperacion = $('#tipo_operacion').val();
+        
+        console.log('Caja seleccionada:', cajaId, 'Tipo operación:', tipoOperacion);
+        
+        if (cajaId && tipoOperacion === 'efectivo') {
+            // Load money breakdown data for the selected caja and show the desglose section
+            loadCajaMoneyBreakdown(cajaId);
+        } else if (tipoOperacion === 'efectivo') {
+            // Hide breakdown if no caja selected
+            $('#desgloseDineroSection').hide();
+            // Reset available quantities display
+            $('.available-quantity .quantity-text').text('Disponible: --');
+            $('.available-quantity').removeClass('has-available no-available');
         }
     });
 
@@ -2849,6 +2875,46 @@
             error: function(xhr, status, error) {
                 console.error('Error loading turnos:', error);
                 showError('Error al cargar los turnos');
+            }
+        });
+    }
+
+    function loadCajaMoneyBreakdown(cajaId) {
+        console.log('Cargando desglose de caja para ID:', cajaId);
+        
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'GET',
+            data: {
+                'ajax': 'true',
+                'caja_id': cajaId
+            },
+            success: function(data) {
+                if (data.success && data.desglose_actual) {
+                    console.log('Desglose de caja cargado:', data.desglose_actual);
+                    
+                    // Show the money breakdown section
+                    $('#desgloseDineroSection').show();
+                    
+                    // Initialize money breakdown
+                    initializeMoneyBreakdown();
+                    
+                    // Update available quantities with actual values
+                    updateAvailableQuantities(data.desglose_actual);
+                    
+                    showSuccess(`Desglose de caja cargado correctamente`);
+                } else {
+                    console.error('Error al cargar el desglose de caja:', data.error);
+                    showError('Error al cargar el desglose de la caja: ' + (data.error || 'Datos no disponibles'));
+                    // Hide breakdown section if error
+                    $('#desgloseDineroSection').hide();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading caja money breakdown:', error);
+                showError('Error al cargar el desglose de la caja');
+                // Hide breakdown section if error
+                $('#desgloseDineroSection').hide();
             }
         });
     }
