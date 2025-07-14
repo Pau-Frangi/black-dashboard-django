@@ -39,28 +39,19 @@ class Command(BaseCommand):
         
         with transaction.atomic():
             for caja in cajas:
-                saldo_original = caja.saldo
+                saldo_original = caja.saldo_caja
                 
                 if dry_run:
                     self.stdout.write(
                         f'[DRY-RUN] Caja "{caja.nombre}": '
-                        f'Saldo actual: {saldo_original}€ -> '
-                        f'Saldo caja: {saldo_original}€, '
-                        f'Saldo banco: 0.00€'
+                        f'Saldo actual: {saldo_original}€ (ya migrado)'
                     )
                 else:
-                    # Transferir el saldo actual al saldo_caja
-                    caja.saldo_caja = saldo_original
-                    caja.saldo_banco = Decimal('0.00')
-                    caja.saldo = caja.saldo_caja + caja.saldo_banco  # Debería ser igual al original
-                    caja.save(skip_validation=True)
-                    
+                    # El saldo ya está correctamente separado, solo validar
                     self.stdout.write(
                         self.style.SUCCESS(
                             f'✅ Caja "{caja.nombre}": '
-                            f'Saldo caja: {caja.saldo_caja:.2f}€, '
-                            f'Saldo banco: {caja.saldo_banco:.2f}€, '
-                            f'Total: {caja.saldo:.2f}€'
+                            f'Saldo caja: {caja.saldo_caja:.2f}€'
                         )
                     )
                 
@@ -77,6 +68,15 @@ class Command(BaseCommand):
             )
             self.stdout.write('Ejecuta sin --dry-run para aplicar los cambios')
         else:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'✅ {migradas} cajas migradas exitosamente'
+                )
+            )
+            
+        self.stdout.write(
+            'Ahora todos los saldos están divididos en efectivo (caja) y bancario'
+        )
             self.stdout.write(
                 self.style.SUCCESS(
                     f'✅ {migradas} cajas migradas exitosamente'

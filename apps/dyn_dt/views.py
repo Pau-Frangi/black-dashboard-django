@@ -423,14 +423,15 @@ def registro(request):
             return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
         
         if request.GET.get('get_turnos') == 'true':
-            # Return turnos for the selected caja
-            if caja_id:
-                turnos = Turno.objects.filter(caja_id=caja_id).values('id', 'nombre')
+            # Return turnos for the selected ejercicio (not caja anymore)
+            ejercicio_id = request.GET.get('ejercicio_id')
+            if ejercicio_id:
+                turnos = Turno.objects.filter(ejercicio_id=ejercicio_id).values('id', 'nombre')
                 return JsonResponse({
                     'success': True,
                     'turnos': list(turnos)
                 })
-            return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
+            return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
         
         if request.GET.get('get_cajas') == 'true':
             # Return cajas for the selected ejercicio

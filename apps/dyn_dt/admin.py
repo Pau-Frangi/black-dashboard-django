@@ -10,14 +10,14 @@ admin.site.register(ModelFilter)
 
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'caja', 'caja_año')
-    list_filter = ('caja', 'caja__año')
-    search_fields = ('nombre', 'caja__nombre')
-    ordering = ('caja__nombre', 'nombre')
+    list_display = ('nombre', 'ejercicio', 'ejercicio_año')
+    list_filter = ('ejercicio', 'ejercicio__año')
+    search_fields = ('nombre', 'ejercicio__nombre')
+    ordering = ('ejercicio__nombre', 'nombre')
     
-    def caja_año(self, obj):
-        return obj.caja.año
-    caja_año.short_description = 'Año de la caja'
+    def ejercicio_año(self, obj):
+        return obj.ejercicio.año
+    ejercicio_año.short_description = 'Año del ejercicio'
 
 
 @admin.register(Concepto)
@@ -56,7 +56,7 @@ class CajaAdmin(admin.ModelAdmin):
     total_movimientos_caja.short_description = 'Mov. Caja'
     
     def total_turnos(self, obj):
-        return obj.turnos.count()
+        return obj.ejercicio.turnos.count()
     total_turnos.short_description = 'Total turnos'
     
     def saldo_desglose(self, obj):

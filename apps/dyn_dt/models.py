@@ -113,15 +113,15 @@ class Ejercicio(models.Model):
 class Turno(models.Model):
     """
     Representa un turno del campamento (por ejemplo: 'Primer turno chicas').
-    Cada turno debe estar asociado a una caja específica.
+    Cada turno debe estar asociado a un ejercicio específico.
     """
     
-    caja = models.ForeignKey(
-        'Caja',
+    ejercicio = models.ForeignKey(
+        'Ejercicio',
         on_delete=models.CASCADE,
-        verbose_name="Caja",
+        verbose_name="Ejercicio",
         related_name="turnos",
-        help_text="Caja a la que pertenece este turno"
+        help_text="Ejercicio al que pertenece este turno"
     )
 
     nombre = models.CharField(
@@ -130,13 +130,13 @@ class Turno(models.Model):
     )
 
     def __str__(self):
-        return f"{self.nombre} ({self.caja.nombre})"
+        return f"{self.nombre} ({self.ejercicio.nombre})"
 
     class Meta:
         verbose_name = "Turno"
         verbose_name_plural = "Turnos"
-        ordering = ['caja__nombre', 'nombre']
-        unique_together = [['caja', 'nombre']]  # Unique turno name per caja
+        ordering = ['ejercicio__nombre', 'nombre']
+        unique_together = [['ejercicio', 'nombre']]  # Unique turno name per ejercicio
 
 
 

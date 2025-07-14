@@ -1,6 +1,7 @@
 from django import forms
 from .models import Concepto, Turno, Caja, MovimientoCaja, MovimientoBanco, DenominacionEuro, MovimientoDinero
 from datetime import date, datetime
+from apps.dyn_dt.models import Ejercicio
 import os
 
 
@@ -30,9 +31,9 @@ class TurnoForm(forms.ModelForm):
     
     class Meta:
         model = Turno
-        fields = ['caja', 'nombre']
+        fields = ['ejercicio', 'nombre']
         widgets = {
-            'caja': forms.Select(attrs={
+            'ejercicio': forms.Select(attrs={
                 'class': 'form-select'
             }),
             'nombre': forms.TextInput(attrs={
@@ -41,7 +42,7 @@ class TurnoForm(forms.ModelForm):
             })
         }
         labels = {
-            'caja': 'Caja',
+            'ejercicio': 'Ejercicio',
             'nombre': 'Nombre del turno'
         }
 
@@ -181,15 +182,16 @@ class MovimientoCajaForm(forms.ModelForm):
         # Filter only active cajas
         self.fields['caja'].queryset = Caja.objects.filter(activa=True)
         
-        # Filter turnos based on selected caja
+        # Filter turnos based on selected caja's ejercicio
         if 'caja' in self.data:
             try:
                 caja_id = int(self.data.get('caja'))
-                self.fields['turno'].queryset = Turno.objects.filter(caja_id=caja_id)
-            except (ValueError, TypeError):
+                caja = Caja.objects.get(id=caja_id)
+                self.fields['turno'].queryset = Turno.objects.filter(ejercicio=caja.ejercicio)
+            except (ValueError, TypeError, Caja.DoesNotExist):
                 self.fields['turno'].queryset = Turno.objects.none()
         elif self.instance.pk and self.instance.caja:
-            self.fields['turno'].queryset = Turno.objects.filter(caja=self.instance.caja)
+            self.fields['turno'].queryset = Turno.objects.filter(ejercicio=self.instance.caja.ejercicio)
         else:
             self.fields['turno'].queryset = Turno.objects.none()
         
@@ -460,6 +462,13 @@ class MovimientoCajaFilterForm(forms.Form):
         queryset=Turno.objects.all(),
         required=False,
         empty_label="Todos los turnos",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    ejercicio = forms.ModelChoiceField(
+        queryset=Ejercicio.objects.all(),
+        required=False,
+        empty_label="Todos los ejercicios",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
     
