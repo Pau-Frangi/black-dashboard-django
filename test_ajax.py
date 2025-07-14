@@ -13,7 +13,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 def test_ajax_request():
-    """Simula la petición AJAX para cargar movimientos"""
+    """Simula la petición AJAX para cargar movimientos de un ejercicio"""
     client = Client()
     
     # Crear un usuario de prueba y hacer login
@@ -32,13 +32,14 @@ def test_ajax_request():
     # URL de la vista registro
     url = reverse('registro')
     
-    # Simular petición AJAX
+    # Simular petición AJAX para cargar movimientos de ejercicio
     response = client.get(url, {
-        'caja_id': '1',  # Caja 1 que sabemos que existe
-        'ajax': 'true'
+        'ejercicio_id': '1',  # Ejercicio 1 que debería existir
+        'ajax': 'true',
+        'get_ejercicio_movimientos': 'true'
     })
     
-    print("=== RESPUESTA DE LA VISTA ===")
+    print("=== RESPUESTA DE LA VISTA (EJERCICIO MOVIMIENTOS) ===")
     print(f"Status Code: {response.status_code}")
     print(f"Content-Type: {response.get('Content-Type', 'No content-type')}")
     print(f"Content: {response.content.decode('utf-8')}")
@@ -49,8 +50,9 @@ def test_ajax_request():
             data = json.loads(response.content.decode('utf-8'))
             print("\n=== DATOS JSON ===")
             print(f"Success: {data.get('success', 'No success field')}")
-            print(f"Movimientos: {data.get('movimientos', 'No movimientos field')}")
+            print(f"Movimientos: {len(data.get('movimientos', []))} movimientos encontrados")
             print(f"Resumen: {data.get('resumen', 'No resumen field')}")
+            print(f"Ejercicio: {data.get('ejercicio', 'No ejercicio field')}")
         except json.JSONDecodeError as e:
             print(f"Error parsing JSON: {e}")
     

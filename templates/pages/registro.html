@@ -566,10 +566,11 @@
         // Initialize money breakdown
         initializeMoneyBreakdown();
         
-        // Load movements if a caja is already selected
-        if ($('#cajaSelect').val()) {
-            console.log('Caja ya seleccionada, cargando movimientos...');
-            loadMovimientos();
+        // Load movements if an ejercicio is already selected
+        const ejercicioId = $('#ejercicioSelect').val();
+        if (ejercicioId) {
+            console.log('Ejercicio ya seleccionado, cargando movimientos...');
+            loadEjercicioMovimientos(ejercicioId);
         }
 
         // File upload handler
@@ -1028,7 +1029,11 @@
             success: function(data) {
                 console.log('Respuesta eliminar:', data);
                 if (data.success) {
-                    loadMovimientos(); // Reload the table
+                    // Reload movements for the current ejercicio
+                    const ejercicioId = $('#ejercicioSelect').val();
+                    if (ejercicioId) {
+                        loadEjercicioMovimientos(ejercicioId); // Reload the table
+                    }
                     showSuccess('Movimiento eliminado correctamente', {floating: true});
                 } else {
                     showError('Error: ' + data.error, {floating: true});
@@ -1127,7 +1132,10 @@
                     resetModalForm(); // Usar la función de reset más completa
                     
                     // Recargar los movimientos para obtener el saldo actualizado
-                    loadMovimientos(); // Esto actualizará tanto la tabla como los campos del header
+                    const ejercicioId = $('#ejercicioSelect').val();
+                    if (ejercicioId) {
+                        loadEjercicioMovimientos(ejercicioId); // Esto actualizará tanto la tabla como los campos del header
+                    }
                     
                     showSuccess(message);
                 } else {
@@ -1991,68 +1999,6 @@
         console.log('Distribución del cambio:', distribucionCambio);
         return distribucionCambio;
     }
-    
-    // Actualizar el ready function para inicializar el desglose
-    $(document).ready(function () {
-        console.log('Página de registro cargada');
-        
-        // Initialize page
-        updateSaldoDisplay();
-        
-        // Initialize money breakdown
-        initializeMoneyBreakdown();
-        
-        // Load movements if a caja is already selected
-        if ($('#cajaSelect').val()) {
-            console.log('Caja ya seleccionada, cargando movimientos...');
-            loadMovimientos();
-        }
-
-        // File upload handler
-        $('#archivo_justificante').on('change', function() {
-            handleFileUpload(this);
-        });
-
-        // Search functionality
-        $('#movementsSearch').on('input', function() {
-            const searchTerm = $(this).val().toLowerCase().trim();
-            
-            if (searchTerm === '') {
-                // Si no hay búsqueda, mostrar todos los movimientos
-                $('#clearSearch').hide();
-                filteredMovimientos = [...currentMovimientos];
-                displayMovimientos(filteredMovimientos);
-                updateSearchResults(filteredMovimientos.length, false);
-            } else {
-                // Filtrar movimientos
-                $('#clearSearch').show();
-                filteredMovimientos = currentMovimientos.filter(mov => {
-                    return mov.concepto.toLowerCase().includes(searchTerm) ||
-                           mov.cantidad.toString().includes(searchTerm) ||
-                           (mov.justificante && mov.justificante.toLowerCase().includes(searchTerm)) ||
-                           (mov.descripcion && mov.descripcion.toLowerCase().includes(searchTerm)) ||
-                           mov.turno.toLowerCase().includes(searchTerm);
-                });
-                
-                displayMovimientos(filteredMovimientos);
-                updateSearchResults(filteredMovimientos.length, true);
-            }
-        });
-
-        // Clear search
-        $('#clearSearch').on('click', function() {
-            $('#movementsSearch').val('');
-            $(this).hide();
-            filteredMovimientos = [...currentMovimientos];
-            displayMovimientos(filteredMovimientos);
-            updateSearchResults(filteredMovimientos.length, false);
-        });
-        
-        // Event listener para el campo cantidad para validar desglose
-        $('#cantidad').on('input', function() {
-            validateMoneyBreakdown();
-        });
-    });
 
     function updateSearchResults(count, isSearching) {
         $('#resultsCount').text(count);
