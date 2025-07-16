@@ -454,6 +454,13 @@ class MovimientoBanco(models.Model):
         related_name="movimientos_banco"
     )
 
+    turno = models.ForeignKey(
+        Turno,
+        on_delete=models.CASCADE,
+        verbose_name="Turno",
+        related_name="movimientos_banco"
+    )
+
     concepto = models.ForeignKey(
         Concepto,
         on_delete=models.PROTECT,

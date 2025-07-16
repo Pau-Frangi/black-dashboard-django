@@ -137,15 +137,15 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoBanco)
 class MovimientoBancoAdmin(admin.ModelAdmin):
-    list_display = ('fecha_display', 'ejercicio', 'concepto', 'cantidad_display', 'referencia_bancaria', 'tiene_archivo')
-    list_filter = ('fecha', 'concepto__es_gasto', 'ejercicio')
-    search_fields = ('descripcion', 'referencia_bancaria', 'ejercicio__nombre', 'concepto__nombre')
+    list_display = ('fecha_display', 'ejercicio', 'turno', 'concepto', 'cantidad_display', 'referencia_bancaria', 'tiene_archivo')
+    list_filter = ('fecha', 'concepto__es_gasto', 'ejercicio', 'turno')
+    search_fields = ('descripcion', 'referencia_bancaria', 'ejercicio__nombre', 'concepto__nombre', 'turno__nombre')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('ejercicio', 'concepto', 'cantidad', 'fecha', 'referencia_bancaria')
+            'fields': ('ejercicio', 'turno', 'concepto', 'cantidad', 'fecha', 'referencia_bancaria')
         }),
         ('Descripción', {
             'fields': ('descripcion',)

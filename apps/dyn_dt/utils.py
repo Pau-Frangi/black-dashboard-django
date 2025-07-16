@@ -99,8 +99,8 @@ def format_movement_data(movement, tipo='caja'):
         base_data.update({
             'caja': f"Banco - {movement.ejercicio.nombre}",
             'caja_id': None,
-            'turno': "Banco",
-            'turno_id': None,
+            'turno': str(movement.turno),
+            'turno_id': movement.turno.id,
             'referencia_bancaria': getattr(movement, 'referencia_bancaria', '') or ''
         })
     

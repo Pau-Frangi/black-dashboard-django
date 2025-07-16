@@ -262,9 +262,12 @@ class MovimientoBancoForm(forms.ModelForm):
     
     class Meta:
         model = MovimientoBanco
-        fields = ['ejercicio', 'concepto', 'cantidad', 'referencia_bancaria', 'archivo_justificante', 'descripcion']
+        fields = ['ejercicio', 'turno', 'concepto', 'cantidad', 'referencia_bancaria', 'archivo_justificante', 'descripcion']
         widgets = {
             'ejercicio': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'turno': forms.Select(attrs={
                 'class': 'form-select'
             }),
             'concepto': forms.Select(attrs={
@@ -293,6 +296,7 @@ class MovimientoBancoForm(forms.ModelForm):
         }
         labels = {
             'ejercicio': 'Ejercicio',
+            'turno': 'Turno',
             'concepto': 'Concepto',
             'cantidad': 'Cantidad (€)',
             'referencia_bancaria': 'Referencia Bancaria',
@@ -302,6 +306,18 @@ class MovimientoBancoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Filter turnos based on selected ejercicio
+        if 'ejercicio' in self.data:
+            try:
+                ejercicio_id = int(self.data.get('ejercicio'))
+                self.fields['turno'].queryset = Turno.objects.filter(ejercicio_id=ejercicio_id)
+            except (ValueError, TypeError):
+                self.fields['turno'].queryset = Turno.objects.none()
+        elif self.instance.pk and self.instance.ejercicio:
+            self.fields['turno'].queryset = Turno.objects.filter(ejercicio=self.instance.ejercicio)
+        else:
+            self.fields['turno'].queryset = Turno.objects.none()
         
         # Set default values
         if not self.instance.pk:
