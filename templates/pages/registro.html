@@ -866,7 +866,7 @@
         
         movimientos.forEach(function(mov, index) {
             console.log(`Procesando movimiento ${index + 1}:`, mov);
-            console.log('¿Tiene caja_nombre?', mov.caja.nombre); // Debug añadido
+            console.log('¿Tiene caja_nombre?', mov.caja); // Debug añadido
 
             const fechaDisplay = mov.fecha_display || new Date(mov.datetime_iso).toLocaleString('es-ES');
             const cantidadClass = mov.es_gasto ? 'text-danger' : 'text-success';
@@ -882,8 +882,8 @@
                 // Para movimientos de caja, solo badge de efectivo
                 tipoBadge = '<span class="badge badge-secondary"><i class="tim-icons icon-coins"></i> Efectivo</span>';
                 // El nombre de la caja se añadirá después
-                if (mov.caja && mov.caja.nombre) {
-                    tipoBadge += `<span class="d-block mt-1 text-muted" style="font-size: 0.8rem;">${mov.caja.nombre}</span>`;
+                if (mov.caja && mov.caja) {
+                    tipoBadge += `<span class="d-block mt-1 text-muted" style="font-size: 0.8rem;">${mov.caja}</span>`;
                 }
             }
             

@@ -13,7 +13,7 @@ urlpatterns = [
     path('delete/<str:aPath>/<int:id>/', views.delete, name="delete"),
     path('update/<str:aPath>/<int:id>/', views.update, name="update"),
 
-    path('export-csv/<str:aPath>/', views.ExportCSVView.as_view(), name='export_csv'),
+    path('export-csv/<str:aPath>/', views.export_csv, name='export_csv'),
 
     path('dynamic-dt/<str:aPath>/', views.model_dt, name="model_dt"),
     path('tables/', views.tables, name='tables'),
