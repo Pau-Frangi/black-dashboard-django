@@ -8,6 +8,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.conf import settings
+from datetime import datetime
 
 # Import modular handlers
 from apps.dyn_dt.handlers.ajax_handlers import RegistroAjaxHandler, LegacyAjaxHandler
@@ -158,11 +159,28 @@ def _get_registro_context():
     Returns:
         Dictionary with context data for the template
     """
+    ejercicios = Ejercicio.objects.all().order_by('-año', 'nombre')
+    
+    # Determine default ejercicio - current year first, then highest year
+    current_year = datetime.now().year
+    default_ejercicio = None
+    
+    # Try to find ejercicio for current year
+    for ejercicio in ejercicios:
+        if ejercicio.año == current_year:
+            default_ejercicio = ejercicio
+            break
+    
+    # If no ejercicio for current year, get the one with highest year
+    if not default_ejercicio and ejercicios.exists():
+        default_ejercicio = ejercicios.first()  # Already ordered by -año
+    
     return {
-        'ejercicios': Ejercicio.objects.all().order_by('-año', 'nombre'),
+        'ejercicios': ejercicios,
         'cajas': Caja.objects.all().order_by('-año', 'nombre'),
         'conceptos': Concepto.objects.all(),
         'denominaciones': DenominacionEuro.objects.filter(activa=True).order_by('-valor'),
+        'default_ejercicio_id': default_ejercicio.id if default_ejercicio else None,
         'segment': 'registro'
     }
 

@@ -33,10 +33,10 @@ class RegistroAjaxHandler:
             # Get all movements for the ejercicio
             movimientos_caja = MovimientoCaja.objects.filter(
                 caja__ejercicio=ejercicio
-            ).order_by('-fecha')
+            ).select_related('caja', 'turno', 'concepto').order_by('-fecha')
             movimientos_banco = MovimientoBanco.objects.filter(
                 ejercicio=ejercicio
-            ).order_by('-fecha')
+            ).select_related('concepto').order_by('-fecha')
             
             # Format movements data
             movimientos_data = []
@@ -64,7 +64,8 @@ class RegistroAjaxHandler:
                 'ejercicio': {
                     'id': ejercicio.id,
                     'nombre': ejercicio.nombre,
-                    'año': ejercicio.año
+                    'año': ejercicio.año,
+                    'saldo_total': float(ejercicio.saldo_total)
                 }
             })
             

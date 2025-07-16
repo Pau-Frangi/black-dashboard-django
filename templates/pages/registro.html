@@ -40,7 +40,7 @@
                                                 data-saldo-total="{{ ejercicio.saldo_total }}"
                                                 data-saldo-banco="{{ ejercicio.saldo_banco }}"
                                                 data-nombre="{{ ejercicio.nombre }}"
-                                                {% if ejercicio.id == selected_ejercicio_id %}selected{% endif %}>
+                                                {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
                                             {{ ejercicio.nombre }} ({{ ejercicio.año }}) - Total: {{ ejercicio.saldo_total }}€
                                         </option>
                                     {% endfor %}
@@ -566,11 +566,11 @@
         // Initialize money breakdown
         initializeMoneyBreakdown();
         
-        // Load movements if an ejercicio is already selected
-        const ejercicioId = $('#ejercicioSelect').val();
-        if (ejercicioId) {
-            console.log('Ejercicio ya seleccionado, cargando movimientos...');
-            loadEjercicioMovimientos(ejercicioId);
+        // Check if there's a default ejercicio selected and load its data
+        const defaultEjercicioId = $('#ejercicioSelect').val();
+        if (defaultEjercicioId) {
+            console.log('Ejercicio preseleccionado detectado:', defaultEjercicioId);
+            loadEjercicioData(); // This will call loadEjercicioMovimientos
         }
 
         // File upload handler
