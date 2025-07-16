@@ -8,6 +8,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.conf import settings
+from django.db import models
 from datetime import datetime
 
 # Import modular handlers
@@ -96,12 +97,14 @@ def tables(request):
         request: Django request object
         
     Returns:
-        Rendered tables template
+        Rendered tables template or JsonResponse for AJAX
     """
-    context = {
-        'routes': settings.DYNAMIC_DATATB.keys(),
-        'segment': 'tables'
-    }
+    # Handle AJAX requests for tables data
+    if request.method == 'GET' and request.GET.get('ajax') == 'true':
+        return _handle_tables_ajax_requests(request)
+    
+    # GET request - render the tables template
+    context = _get_tables_context()
     return render(request, 'pages/tables.html', context)
 
 
@@ -127,6 +130,119 @@ def _handle_ajax_requests(request):
     else:
         # Legacy caja-specific requests for backward compatibility
         return LegacyAjaxHandler.handle_legacy_caja_request(request)
+
+
+def _handle_get_ejercicio_movimientos_request(request):
+    """
+    Handle AJAX request for ejercicio movimientos.
+    
+    Args:
+        request: Django request object
+        
+    Returns:
+        JsonResponse with movimientos data
+    """
+    from django.http import JsonResponse
+    from django.db.models import Sum, Q
+    from apps.dyn_dt.models import MovimientoCaja, MovimientoBanco
+    
+    try:
+        ejercicio_id = request.GET.get('ejercicio_id')
+        if not ejercicio_id:
+            return JsonResponse({'success': False, 'error': 'Ejercicio ID requerido'})
+        
+        ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+        
+        # Get all movements for this ejercicio
+        movimientos_caja = MovimientoCaja.objects.filter(caja__ejercicio=ejercicio).select_related(
+            'caja', 'turno', 'concepto'
+        ).order_by('-created_at')
+        
+        movimientos_banco = MovimientoBanco.objects.filter(ejercicio=ejercicio).select_related(
+            'concepto'
+        ).order_by('-created_at')
+        
+        # Combine and format movements
+        all_movimientos = []
+        
+        # Process caja movements
+        for mov in movimientos_caja:
+            all_movimientos.append({
+                'id': mov.id,
+                'tipo': 'caja',
+                'fecha_display': mov.created_at.strftime('%d/%m/%Y %H:%M'),
+                'datetime_iso': mov.created_at.isoformat(),
+                'turno': mov.turno.nombre,
+                'turno_id': mov.turno.id,
+                'concepto': mov.concepto.nombre,
+                'concepto_id': mov.concepto.id,
+                'descripcion': mov.descripcion,
+                'cantidad': float(mov.cantidad),
+                'es_gasto': mov.concepto.es_gasto,
+                'justificante': mov.justificante,
+                'caja': mov.caja.nombre,
+                'caja_id': mov.caja.id
+            })
+        
+        # Process banco movements
+        for mov in movimientos_banco:
+            all_movimientos.append({
+                'id': mov.id,
+                'tipo': 'banco',
+                'fecha_display': mov.created_at.strftime('%d/%m/%Y %H:%M'),
+                'datetime_iso': mov.created_at.isoformat(),
+                'turno': 'N/A',  # Bank movements don't have turnos
+                'turno_id': None,
+                'concepto': mov.concepto.nombre,
+                'concepto_id': mov.concepto.id,
+                'descripcion': mov.descripcion,
+                'cantidad': float(mov.cantidad),
+                'es_gasto': mov.concepto.es_gasto,
+                'justificante': mov.justificante_banco or '',
+                'caja': None,
+                'caja_id': None,
+                'referencia_bancaria': mov.referencia_bancaria
+            })
+        
+        # Sort all movements by datetime
+        all_movimientos.sort(key=lambda x: x['datetime_iso'], reverse=True)
+        
+        # Calculate totals
+        total_ingresos_caja = movimientos_caja.filter(concepto__es_gasto=False).aggregate(
+            total=Sum('cantidad'))['total'] or 0
+        total_gastos_caja = movimientos_caja.filter(concepto__es_gasto=True).aggregate(
+            total=Sum('cantidad'))['total'] or 0
+        
+        total_ingresos_banco = movimientos_banco.filter(concepto__es_gasto=False).aggregate(
+            total=Sum('cantidad'))['total'] or 0
+        total_gastos_banco = movimientos_banco.filter(concepto__es_gasto=True).aggregate(
+            total=Sum('cantidad'))['total'] or 0
+        
+        total_ingresos = total_ingresos_caja + total_ingresos_banco
+        total_gastos = total_gastos_caja + total_gastos_banco
+        saldo_actual = ejercicio.saldo_total
+        
+        resumen = {
+            'total_ingresos': float(total_ingresos),
+            'total_gastos': float(total_gastos),
+            'saldo_actual': float(saldo_actual)
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'ejercicio': {
+                'id': ejercicio.id,
+                'nombre': ejercicio.nombre,
+                'año': ejercicio.año
+            },
+            'movimientos': all_movimientos,
+            'resumen': resumen
+        })
+        
+    except Ejercicio.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Ejercicio no encontrado'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 
 def _handle_movement_operations(request):
@@ -182,6 +298,180 @@ def _get_registro_context():
         'denominaciones': DenominacionEuro.objects.filter(activa=True).order_by('-valor'),
         'default_ejercicio_id': default_ejercicio.id if default_ejercicio else None,
         'segment': 'registro'
+    }
+
+
+def _handle_tables_ajax_requests(request):
+    """
+    Routes AJAX requests for tables to appropriate handlers.
+    
+    Args:
+        request: Django request object with AJAX parameters
+        
+    Returns:
+        JsonResponse from appropriate handler
+    """
+    ejercicio_id = request.GET.get('ejercicio_id')
+    
+    if ejercicio_id:
+        # Handle ejercicio-based tables request
+        return _handle_ejercicio_tables_request(request, ejercicio_id)
+    else:
+        from django.http import JsonResponse
+        return JsonResponse({'success': False, 'error': 'Ejercicio ID requerido'})
+
+
+def _handle_ejercicio_tables_request(request, ejercicio_id):
+    """
+    Handle tables data request for a specific ejercicio.
+    
+    Args:
+        request: Django request object
+        ejercicio_id: ID of the ejercicio
+        
+    Returns:
+        JsonResponse with tables data
+    """
+    from django.http import JsonResponse
+    from django.db.models import Sum, Count, Q
+    from apps.dyn_dt.models import MovimientoCaja, MovimientoBanco
+    
+    try:
+        ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+        
+        # Get all movements for this ejercicio (both caja and banco)
+        movimientos_caja = MovimientoCaja.objects.filter(caja__ejercicio=ejercicio)
+        movimientos_banco = MovimientoBanco.objects.filter(ejercicio=ejercicio)
+        
+        # Calculate conceptos data
+        conceptos_data = []
+        
+        # Process concepto data from caja movements
+        conceptos_caja = movimientos_caja.values('concepto__id', 'concepto__nombre', 'concepto__es_gasto').annotate(
+            total=Sum('cantidad'),
+            count=Count('id')
+        )
+        
+        # Process concepto data from banco movements
+        conceptos_banco = movimientos_banco.values('concepto__id', 'concepto__nombre', 'concepto__es_gasto').annotate(
+            total=Sum('cantidad'),
+            count=Count('id')
+        )
+        
+        # Combine concepto data
+        conceptos_dict = {}
+        
+        for concepto in conceptos_caja:
+            concepto_id = concepto['concepto__id']
+            if concepto_id not in conceptos_dict:
+                conceptos_dict[concepto_id] = {
+                    'id': concepto_id,
+                    'nombre': concepto['concepto__nombre'],
+                    'es_gasto': concepto['concepto__es_gasto'],
+                    'total': 0,
+                    'count': 0
+                }
+            conceptos_dict[concepto_id]['total'] += float(concepto['total'] or 0)
+            conceptos_dict[concepto_id]['count'] += concepto['count']
+        
+        for concepto in conceptos_banco:
+            concepto_id = concepto['concepto__id']
+            if concepto_id not in conceptos_dict:
+                conceptos_dict[concepto_id] = {
+                    'id': concepto_id,
+                    'nombre': concepto['concepto__nombre'],
+                    'es_gasto': concepto['concepto__es_gasto'],
+                    'total': 0,
+                    'count': 0
+                }
+            conceptos_dict[concepto_id]['total'] += float(concepto['total'] or 0)
+            conceptos_dict[concepto_id]['count'] += concepto['count']
+        
+        conceptos_data = list(conceptos_dict.values())
+        
+        # Calculate turnos data (only from caja movements since banco doesn't have turnos)
+        turnos_data = []
+        turnos_caja = movimientos_caja.values('turno__id', 'turno__nombre').annotate(
+            total_ingresos=Sum('cantidad', filter=Q(concepto__es_gasto=False)),
+            total_gastos=Sum('cantidad', filter=Q(concepto__es_gasto=True)),
+            count=Count('id')
+        )
+        
+        for turno in turnos_caja:
+            turnos_data.append({
+                'id': turno['turno__id'],
+                'nombre': turno['turno__nombre'],
+                'ingresos': float(turno['total_ingresos'] or 0),
+                'gastos': float(turno['total_gastos'] or 0),
+                'count': turno['count']
+            })
+        
+        # Calculate resumen
+        total_ingresos_caja = movimientos_caja.filter(concepto__es_gasto=False).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        total_gastos_caja = movimientos_caja.filter(concepto__es_gasto=True).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        
+        total_ingresos_banco = movimientos_banco.filter(concepto__es_gasto=False).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        total_gastos_banco = movimientos_banco.filter(concepto__es_gasto=True).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
+        
+        total_ingresos = float(total_ingresos_caja + total_ingresos_banco)
+        total_gastos = float(total_gastos_caja + total_gastos_banco)
+        saldo_actual = float(ejercicio.saldo_total)
+        
+        resumen = {
+            'total_ingresos': total_ingresos,
+            'total_gastos': total_gastos,
+            'saldo_actual': saldo_actual
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'ejercicio': {
+                'id': ejercicio.id,
+                'nombre': ejercicio.nombre,
+                'año': ejercicio.año
+            },
+            'conceptos': conceptos_data,
+            'turnos': turnos_data,
+            'resumen': resumen
+        })
+        
+    except Ejercicio.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Ejercicio no encontrado'})
+    except Exception as e:
+        import traceback
+        print(f"Error in _handle_ejercicio_tables_request: {e}")
+        print(traceback.format_exc())
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+def _get_tables_context():
+    """
+    Prepares context data for the tables template.
+    
+    Returns:
+        Dictionary with context data for the template
+    """
+    ejercicios = Ejercicio.objects.all().order_by('-año', 'nombre')
+    
+    # Determine default ejercicio - current year first, then highest year
+    current_year = datetime.now().year
+    default_ejercicio = None
+    
+    # Try to find ejercicio for current year
+    for ejercicio in ejercicios:
+        if ejercicio.año == current_year:
+            default_ejercicio = ejercicio
+            break
+    
+    # If no ejercicio for current year, get the one with highest year
+    if not default_ejercicio and ejercicios.exists():
+        default_ejercicio = ejercicios.first()  # Already ordered by -año
+    
+    return {
+        'ejercicios': ejercicios,
+        'default_ejercicio_id': default_ejercicio.id if default_ejercicio else None,
+        'routes': settings.DYNAMIC_DATATB.keys(),
+        'segment': 'tables'
     }
 
 
@@ -270,7 +560,8 @@ def create_page_items(request, model_name):
 # ================================
 
 @login_required(login_url='/accounts/login/')
-def create(request, aPath):
+
+def create(request, aPath):    
     """Creates a new model instance."""
     return CRUDHandler.create_item(request, aPath)
 
@@ -290,7 +581,6 @@ def delete(request, aPath, id):
 # ================================
 # EXPORT VIEWS
 # ================================
-
 def export_csv(request, aPath):
     """Handles CSV export requests."""
     return ExportHandler.export_csv(request, aPath)

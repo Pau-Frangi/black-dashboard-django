@@ -16,14 +16,14 @@
       <div class="page-header">
         <h2 class="page-title">
           <i class="tim-icons icon-chart-pie-36 mr-3"></i>
-          Tablas de Resultados por Caja
+          Tablas de Resultados por Ejercicio
         </h2>
         <p class="page-subtitle">Análisis detallado de resultados por conceptos y turnos</p>
       </div>
     </div>
   </div>
 
-  <!-- Selector de Caja -->
+  <!-- Selector de Ejercicio -->
   <div class="row">
     <div class="col-md-12">
       <div class="card">
@@ -31,13 +31,16 @@
           <div class="row mb-4">
             <div class="col-md-8">
               <div class="form-group">
-                <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
-                <select class="form-control" id="cajaSelect" onchange="loadTablesData()">
-                  <option value="">-- Selecciona una caja --</option>
-                  {% for caja in cajas %}
-                  <option value="{{ caja.id }}" data-saldo="{{ caja.saldo }}" data-nombre="{{ caja.nombre }}"
-                    data-año="{{ caja.año }}">
-                    {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
+                <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
+                <select class="form-control" id="ejercicioSelect" onchange="loadTablesData()">
+                  <option value="">-- Selecciona un ejercicio --</option>
+                  {% for ejercicio in ejercicios %}
+                  <option value="{{ ejercicio.id }}" 
+                          data-saldo-total="{{ ejercicio.saldo_total }}"
+                          data-saldo-banco="{{ ejercicio.saldo_banco }}"
+                          data-nombre="{{ ejercicio.nombre }}"
+                          {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
+                    {{ ejercicio.nombre }} ({{ ejercicio.año }}) - Total: {{ ejercicio.saldo_total }}€
                   </option>
                   {% endfor %}
                 </select>
@@ -148,13 +151,11 @@
 
             </div>
 
-            <!-- Mensaje cuando no hay caja seleccionada -->
-            <div id="noCajaMessage" class="text-center py-5">
+            <!-- Mensaje cuando no hay ejercicio seleccionado -->
+            <div id="noEjercicioMessage" class="text-center py-5">
               <i class="tim-icons icon-chart-pie-36" style="font-size: 4rem; color: #ccc;"></i>
-              <h4 class="mt-3 text-muted">Selecciona una caja para ver las tablas de resultados</h4>
-              <p class="text-muted">Elige una caja del selector superior para visualizar los análisis por conceptos y
-                turnos
-              </p>
+              <h4 class="mt-3 text-muted">Selecciona un ejercicio para ver las tablas de resultados</h4>
+              <p class="text-muted">Elige un ejercicio del selector superior para visualizar los análisis por conceptos y turnos</p>
             </div>
           </div>
       </div>
@@ -250,26 +251,26 @@
         // Initialize page
         updateSaldoDisplay();
         
-        // Load tables data if a caja is already selected
-        if ($('#cajaSelect').val()) {
-          console.log('Caja ya seleccionada, cargando datos...');
+        // Load tables data if an ejercicio is already selected
+        if ($('#ejercicioSelect').val()) {
+          console.log('Ejercicio ya seleccionado, cargando datos...');
           loadTablesData();
         }
       });
 
       function updateSaldoDisplay() {
-        const selectedOption = $('#cajaSelect option:selected');
-        const saldo = selectedOption.data('saldo');
+        const selectedOption = $('#ejercicioSelect option:selected');
+        const saldoTotal = selectedOption.data('saldo-total');
         
-        console.log('Actualizando saldo display:', saldo, 'tipo:', typeof saldo);
+        console.log('Actualizando saldo display:', saldoTotal, 'tipo:', typeof saldoTotal);
         
-        if (saldo !== undefined && saldo !== null && saldo !== '') {
+        if (saldoTotal !== undefined && saldoTotal !== null && saldoTotal !== '') {
           // Convertir a número si es necesario
-          const saldoNum = parseFloat(saldo);
+          const saldoNum = parseFloat(saldoTotal);
           if (!isNaN(saldoNum)) {
             $('#saldoActual').text(saldoNum.toFixed(2) + '€');
           } else {
-            console.warn('Saldo no es un número válido:', saldo);
+            console.warn('Saldo no es un número válido:', saldoTotal);
             $('#saldoActual').text('0.00€');
           }
           // Limpiar los totales hasta que se carguen los datos
@@ -295,7 +296,7 @@
           $('#saldoActual').text(saldoActual.toFixed(2) + '€');
           
           // También actualizar el data attribute para futuras referencias
-          $('#cajaSelect option:selected').data('saldo', saldoActual);
+          $('#ejercicioSelect option:selected').data('saldo-total', saldoActual);
         }
       }
 
@@ -315,13 +316,13 @@
       }
 
       function loadTablesData() {
-        const cajaId = $('#cajaSelect').val();
+        const ejercicioId = $('#ejercicioSelect').val();
 
-        if (!cajaId) {
+        if (!ejercicioId) {
           $('#tableTypeSection').hide();
           $('#conceptosTable').hide();
           $('#turnosTable').hide();
-          $('#noCajaMessage').show();
+          $('#noEjercicioMessage').show();
           // Limpiar los campos del header
           $('#totalIngresosHeader').text('--');
           $('#totalGastosHeader').text('--');
@@ -331,14 +332,14 @@
 
         // Update saldo display
         updateSaldoDisplay();
-        $('#noCajaMessage').hide();
+        $('#noEjercicioMessage').hide();
 
         // Load data via AJAX
         $.ajax({
           url: '{% url "tables" %}',
           method: 'GET',
           data: {
-            'caja_id': cajaId,
+            'ejercicio_id': ejercicioId,
             'ajax': 'true'
           },
           success: function (data) {
@@ -353,7 +354,7 @@
                 updateSaldoFromResponse(data.resumen);
               } else {
                 // Si no hay resumen en la respuesta, cargar los movimientos para obtenerlo
-                loadMovimientosForSummary(cajaId);
+                loadMovimientosForSummary(ejercicioId);
               }
 
               // Show the currently active table
@@ -375,13 +376,13 @@
         });
       }
 
-      function loadMovimientosForSummary(cajaId) {
+      function loadMovimientosForSummary(ejercicioId) {
         // Cargar los movimientos desde el endpoint de registro para obtener el resumen
         $.ajax({
           url: '{% url "registro" %}',
           method: 'GET',
           data: {
-            'caja_id': cajaId,
+            'ejercicio_id': ejercicioId,
             'ajax': 'true'
           },
           success: function (data) {
@@ -420,7 +421,7 @@
         if (!currentTablesData.conceptos || currentTablesData.conceptos.length === 0) {
           tbody.append(`
                 <tr>
-                    <td colspan="4" class="text-center text-muted">No hay datos de conceptos para esta caja</td>
+                    <td colspan="4" class="text-center text-muted">No hay datos de conceptos para este ejercicio</td>
                 </tr>
             `);
           $('#conceptosTable').show();
@@ -510,7 +511,7 @@
         if (!currentTablesData.turnos || currentTablesData.turnos.length === 0) {
           tbody.append(`
                 <tr>
-                    <td colspan="5" class="text-center text-muted">No hay datos de turnos para esta caja</td>
+                    <td colspan="5" class="text-center text-muted">No hay datos de turnos para este ejercicio</td>
                 </tr>
             `);
           $('#turnosTable').show();
@@ -582,14 +583,14 @@
         const tipo = $(this).data('tipo');
         const id = $(this).data('id');
         const nombre = $(this).data('nombre');
-        const cajaId = $('#cajaSelect').val();
+        const ejercicioId = $('#ejercicioSelect').val();
 
-        if (!cajaId) return;
+        if (!ejercicioId) return;
 
-        showMovimientosModal(tipo, id, nombre, cajaId);
+        showMovimientosModal(tipo, id, nombre, ejercicioId);
       });
 
-      function showMovimientosModal(tipo, id, nombre, cajaId) {
+      function showMovimientosModal(tipo, id, nombre, ejercicioId) {
         // Set modal title
         $('#movimientosModalLabel').html(`
       <i class="tim-icons icon-notes mr-2"></i>
@@ -601,15 +602,16 @@
         $('#modalLoading').show();
         $('#modalContent').hide();
 
-        console.log('Loading movements for:', { tipo, id, nombre, cajaId });
+        console.log('Loading movements for:', { tipo, id, nombre, ejercicioId });
 
-        // First try: Use the existing movimientos endpoint from registro page
+        // Use the existing movimientos endpoint from registro page
         $.ajax({
           url: '{% url "registro" %}',
           method: 'GET',
           data: {
-            'caja_id': cajaId,
-            'ajax': 'true'
+            'ejercicio_id': ejercicioId,
+            'ajax': 'true',
+            'get_ejercicio_movimientos': 'true'
           },
           success: function (data) {
             console.log('Registro data received:', data);
@@ -647,14 +649,14 @@
               }
             } else {
               // Fallback: show test data to verify modal works
-              console.log('No data from registro, showing test data...');
-              showTestMovimientosData(tipo, nombre);
+              console.log('No data from registro, showing empty state...');
+              showNoMovimientosFound(tipo, nombre);
             }
           },
           error: function (xhr, status, error) {
             console.error('Error loading from registro:', error);
-            // Fallback: show test data
-            showTestMovimientosData(tipo, nombre);
+            // Fallback: show empty state
+            showNoMovimientosFound(tipo, nombre);
           }
         });
       }
@@ -666,7 +668,7 @@
         <h5 class="mt-3 text-muted">No se encontraron movimientos</h5>
         <p class="text-muted">
           No hay movimientos registrados para ${tipo === 'concepto' ? 'el concepto' : 'el turno'} 
-          <strong>"${nombre}"</strong> en esta caja.
+          <strong>"${nombre}"</strong> en este ejercicio.
         </p>
         <div class="mt-4">
           <div class="summary-card" style="display: inline-block; min-width: 200px;">
@@ -686,100 +688,556 @@
         $('#modalContent').show();
       }
 
-      function showTestMovimientosData(tipo, nombre) {
-        console.log('Showing test data for debugging...');
+      function showConceptosTable() {
+        const tbody = $('#conceptosTableBody');
+        const tfoot = $('#conceptosTableFooter');
+        tbody.empty();
+        tfoot.empty();
 
-        // Create test data based on the type
-        let testData = [];
-
-        if (tipo === 'concepto') {
-          testData = [
-            {
-              fecha: '2024-01-15T10:30:00',
-              concepto: nombre,
-              turno: 'Mañana',
-              importe: 25.50,
-              observaciones: 'Movimiento de prueba para ' + nombre
-            },
-            {
-              fecha: '2024-01-14T16:45:00',
-              concepto: nombre,
-              turno: 'Tarde',
-              importe: -15.75,
-              observaciones: 'Otro movimiento de prueba'
-            }
-          ];
-        } else if (tipo === 'turno') {
-          testData = [
-            {
-              fecha: '2024-01-15T09:00:00',
-              concepto: 'Venta productos',
-              turno: nombre,
-              importe: 45.00,
-              observaciones: 'Venta durante ' + nombre
-            },
-            {
-              fecha: '2024-01-15T11:30:00',
-              concepto: 'Material oficina',
-              turno: nombre,
-              importe: -12.50,
-              observaciones: 'Gasto en ' + nombre
-            }
-          ];
+        if (!currentTablesData.conceptos || currentTablesData.conceptos.length === 0) {
+          tbody.append(`
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No hay datos de conceptos para este ejercicio</td>
+                </tr>
+            `);
+          $('#conceptosTable').show();
+          return;
         }
 
-        // Add a warning that this is test data
+        let totalIngresos = 0;
+        let totalGastos = 0;
+        let totalMovimientos = 0;
+
+        currentTablesData.conceptos.forEach(function (concepto) {
+          const tipoClass = concepto.es_gasto ? 'text-danger' : 'text-success';
+          const tipoText = concepto.es_gasto ? 'Gasto' : 'Ingreso';
+          const tipoIcon = concepto.es_gasto ? 'tim-icons icon-simple-remove' : 'tim-icons icon-simple-add';
+
+          if (concepto.es_gasto) {
+            totalGastos += concepto.total;
+          } else {
+            totalIngresos += concepto.total;
+          }
+          totalMovimientos += concepto.count;
+
+          const row = `
+                <tr class="clickable-row" data-tipo="concepto" data-id="${concepto.id}" data-nombre="${concepto.nombre}" style="cursor: pointer;">
+                    <td>
+                        <strong>${concepto.nombre}</strong>
+                    </td>
+                    <td>
+                        <span class="badge ${concepto.es_gasto ? 'badge-danger' : 'badge-success'}">
+                            <i class="${tipoIcon}"></i>
+                            ${tipoText}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-info">${concepto.count}</span>
+                    </td>
+                    <td class="text-right ${tipoClass}">
+                        <strong>${concepto.total.toFixed(2)}€</strong>
+                    </td>
+                </tr>
+            `;
+          tbody.append(row);
+        });
+
+        const balance = totalIngresos - totalGastos;
+        const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
+
+        // Add totals footer
+        const footerRow = `
+            <tr class="table-active" style="border-top: 2px solid #344675;">
+                <td><strong>TOTALES</strong></td>
+                <td>
+                    <span class="badge badge-primary">
+                        <i class="tim-icons icon-chart-bar-32"></i>
+                        Resumen
+                    </span>
+                </td>
+                <td class="text-center">
+                    <strong>${totalMovimientos}</strong>
+                </td>
+                <td class="text-right">
+                    <div class="d-flex flex-column">
+                        <div class="text-success mb-1">
+                            <small>Ingresos:</small> <strong>+${totalIngresos.toFixed(2)}€</strong>
+                        </div>
+                        <div class="text-danger mb-1">
+                            <small>Gastos:</small> <strong>-${totalGastos.toFixed(2)}€</strong>
+                        </div>
+                        <div class="${balanceClass}" style="border-top: 1px solid #344675; padding-top: 5px;">
+                            <small>Balance:</small> <strong>${balance.toFixed(2)}€</strong>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        tfoot.append(footerRow);
+
+        $('#conceptosTable').show();
+      }
+
+      function showTurnosTable() {
+        const tbody = $('#turnosTableBody');
+        const tfoot = $('#turnosTableFooter');
+        tbody.empty();
+        tfoot.empty();
+
+        if (!currentTablesData.turnos || currentTablesData.turnos.length === 0) {
+          tbody.append(`
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No hay datos de turnos para este ejercicio</td>
+                </tr>
+            `);
+          $('#turnosTable').show();
+          return;
+        }
+
+        let totalMovimientos = 0;
+        let totalIngresosTurnos = 0;
+        let totalGastosTurnos = 0;
+
+        currentTablesData.turnos.forEach(function (turno) {
+          const balance = turno.ingresos - turno.gastos;
+          const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
+
+          totalMovimientos += turno.count;
+          totalIngresosTurnos += turno.ingresos;
+          totalGastosTurnos += turno.gastos;
+
+          const row = `
+                <tr class="clickable-row" data-tipo="turno" data-id="${turno.id}" data-nombre="${turno.nombre}" style="cursor: pointer;">
+                    <td>
+                        <strong>${turno.nombre}</strong>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-info">${turno.count}</span>
+                    </td>
+                    <td class="text-right text-success">
+                        <strong>+${turno.ingresos.toFixed(2)}€</strong>
+                    </td>
+                    <td class="text-right text-danger">
+                        <strong>-${turno.gastos.toFixed(2)}€</strong>
+                    </td>
+                    <td class="text-right ${balanceClass}">
+                        <strong>${balance.toFixed(2)}€</strong>
+                    </td>
+                </tr>
+            `;
+          tbody.append(row);
+        });
+
+        const totalBalance = totalIngresosTurnos - totalGastosTurnos;
+        const totalBalanceClass = totalBalance >= 0 ? 'text-success' : 'text-danger';
+
+        // Add totals footer
+        const footerRow = `
+            <tr class="table-active" style="border-top: 2px solid #344675;">
+                <td><strong>TOTALES</strong></td>
+                <td class="text-center">
+                    <strong>${totalMovimientos}</strong>
+                </td>
+                <td class="text-right text-success">
+                    <strong>+${totalIngresosTurnos.toFixed(2)}€</strong>
+                </td>
+                <td class="text-right text-danger">
+                    <strong>-${totalGastosTurnos.toFixed(2)}€</strong>
+                </td>
+                <td class="text-right ${totalBalanceClass}">
+                    <strong>${totalBalance.toFixed(2)}€</strong>
+                </td>
+            </tr>
+        `;
+        tfoot.append(footerRow);
+
+        $('#turnosTable').show();
+      }
+
+      // Event handler for clickable rows
+      $(document).on('click', '.clickable-row', function () {
+        const tipo = $(this).data('tipo');
+        const id = $(this).data('id');
+        const nombre = $(this).data('nombre');
+        const ejercicioId = $('#ejercicioSelect').val();
+
+        if (!ejercicioId) return;
+
+        showMovimientosModal(tipo, id, nombre, ejercicioId);
+      });
+
+      function showMovimientosModal(tipo, id, nombre, ejercicioId) {
+        // Set modal title
+        $('#movimientosModalLabel').html(`
+      <i class="tim-icons icon-notes mr-2"></i>
+      Movimientos - ${nombre}
+    `);
+
+        // Show modal and loading state
+        $('#movimientosModal').modal('show');
+        $('#modalLoading').show();
+        $('#modalContent').hide();
+
+        console.log('Loading movements for:', { tipo, id, nombre, ejercicioId });
+
+        // Use the existing movimientos endpoint from registro page
+        $.ajax({
+          url: '{% url "registro" %}',
+          method: 'GET',
+          data: {
+            'ejercicio_id': ejercicioId,
+            'ajax': 'true',
+            'get_ejercicio_movimientos': 'true'
+          },
+          success: function (data) {
+            console.log('Registro data received:', data);
+
+            if (data.success && data.movimientos) {
+              // Filter movements based on tipo and id/nombre
+              let filteredMovements = data.movimientos;
+
+              if (tipo === 'concepto') {
+                filteredMovements = data.movimientos.filter(mov => {
+                  return mov.concepto === nombre || mov.concepto_id == id;
+                });
+              } else if (tipo === 'turno') {
+                filteredMovements = data.movimientos.filter(mov => {
+                  return mov.turno === nombre || mov.turno_id == id;
+                });
+              }
+
+              console.log('Filtered movements:', filteredMovements);
+
+              if (filteredMovements.length > 0) {
+                // Transform data to match expected format
+                const transformedMovements = filteredMovements.map(mov => ({
+                  fecha: mov.datetime_iso || mov.fecha,
+                  concepto: mov.concepto,
+                  turno: mov.turno,
+                  importe: mov.es_gasto ? -Math.abs(parseFloat(mov.cantidad)) : Math.abs(parseFloat(mov.cantidad)),
+                  observaciones: mov.descripcion || mov.observaciones || ''
+                }));
+
+                displayMovimientosData(transformedMovements);
+              } else {
+                // No movements found, show empty state with explanation
+                showNoMovimientosFound(tipo, nombre);
+              }
+            } else {
+              // Fallback: show test data to verify modal works
+              console.log('No data from registro, showing empty state...');
+              showNoMovimientosFound(tipo, nombre);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error('Error loading from registro:', error);
+            // Fallback: show empty state
+            showNoMovimientosFound(tipo, nombre);
+          }
+        });
+      }
+
+      function showNoMovimientosFound(tipo, nombre) {
         $('#modalContent').html(`
-      <div class="alert alert-warning">
-        <i class="tim-icons icon-alert-circle-exc mr-2"></i>
-        <strong>Datos de prueba:</strong> Los movimientos reales no se pudieron cargar. 
-        Estos son datos de ejemplo para verificar que el modal funciona correctamente.
-      </div>
-      <div class="movement-summary mb-3">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="summary-card">
-              <div class="summary-icon">
-                <i class="tim-icons icon-chart-bar-32"></i>
-              </div>
-              <div class="summary-info">
-                <h6>Total Movimientos</h6>
-                <span id="modalTotalCount">0</span>
-              </div>
+      <div class="text-center py-5">
+        <i class="tim-icons icon-zoom-split" style="font-size: 3rem; color: #8b949e;"></i>
+        <h5 class="mt-3 text-muted">No se encontraron movimientos</h5>
+        <p class="text-muted">
+          No hay movimientos registrados para ${tipo === 'concepto' ? 'el concepto' : 'el turno'} 
+          <strong>"${nombre}"</strong> en este ejercicio.
+        </p>
+        <div class="mt-4">
+          <div class="summary-card" style="display: inline-block; min-width: 200px;">
+            <div class="summary-icon">
+              <i class="tim-icons icon-chart-bar-32"></i>
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="summary-card">
-              <div class="summary-icon">
-                <i class="tim-icons icon-wallet-43"></i>
-              </div>
-              <div class="summary-info">
-                <h6>Importe Total</h6>
-                <span id="modalTotalAmount">0.00€</span>
-              </div>
+            <div class="summary-info">
+              <h6>Total Movimientos</h6>
+              <span>0</span>
             </div>
           </div>
         </div>
       </div>
-      <div class="table-responsive">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Turno</th>
-              <th>Concepto</th>
-              <th>Descripción</th>
-              <th class="text-right">Importe</th>
+    `);
+
+        $('#modalLoading').hide();
+        $('#modalContent').show();
+      }
+
+      function showConceptosTable() {
+        const tbody = $('#conceptosTableBody');
+        const tfoot = $('#conceptosTableFooter');
+        tbody.empty();
+        tfoot.empty();
+
+        if (!currentTablesData.conceptos || currentTablesData.conceptos.length === 0) {
+          tbody.append(`
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No hay datos de conceptos para este ejercicio</td>
+                </tr>
+            `);
+          $('#conceptosTable').show();
+          return;
+        }
+
+        let totalIngresos = 0;
+        let totalGastos = 0;
+        let totalMovimientos = 0;
+
+        currentTablesData.conceptos.forEach(function (concepto) {
+          const tipoClass = concepto.es_gasto ? 'text-danger' : 'text-success';
+          const tipoText = concepto.es_gasto ? 'Gasto' : 'Ingreso';
+          const tipoIcon = concepto.es_gasto ? 'tim-icons icon-simple-remove' : 'tim-icons icon-simple-add';
+
+          if (concepto.es_gasto) {
+            totalGastos += concepto.total;
+          } else {
+            totalIngresos += concepto.total;
+          }
+          totalMovimientos += concepto.count;
+
+          const row = `
+                <tr class="clickable-row" data-tipo="concepto" data-id="${concepto.id}" data-nombre="${concepto.nombre}" style="cursor: pointer;">
+                    <td>
+                        <strong>${concepto.nombre}</strong>
+                    </td>
+                    <td>
+                        <span class="badge ${concepto.es_gasto ? 'badge-danger' : 'badge-success'}">
+                            <i class="${tipoIcon}"></i>
+                            ${tipoText}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-info">${concepto.count}</span>
+                    </td>
+                    <td class="text-right ${tipoClass}">
+                        <strong>${concepto.total.toFixed(2)}€</strong>
+                    </td>
+                </tr>
+            `;
+          tbody.append(row);
+        });
+
+        const balance = totalIngresos - totalGastos;
+        const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
+
+        // Add totals footer
+        const footerRow = `
+            <tr class="table-active" style="border-top: 2px solid #344675;">
+                <td><strong>TOTALES</strong></td>
+                <td>
+                    <span class="badge badge-primary">
+                        <i class="tim-icons icon-chart-bar-32"></i>
+                        Resumen
+                    </span>
+                </td>
+                <td class="text-center">
+                    <strong>${totalMovimientos}</strong>
+                </td>
+                <td class="text-right">
+                    <div class="d-flex flex-column">
+                        <div class="text-success mb-1">
+                            <small>Ingresos:</small> <strong>+${totalIngresos.toFixed(2)}€</strong>
+                        </div>
+                        <div class="text-danger mb-1">
+                            <small>Gastos:</small> <strong>-${totalGastos.toFixed(2)}€</strong>
+                        </div>
+                        <div class="${balanceClass}" style="border-top: 1px solid #344675; padding-top: 5px;">
+                            <small>Balance:</small> <strong>${balance.toFixed(2)}€</strong>
+                        </div>
+                    </div>
+                </td>
             </tr>
-          </thead>
-          <tbody id="modalMovimientosTable">
-            <!-- Los movimientos se cargarán aquí -->
-          </tbody>
-        </table>
+        `;
+        tfoot.append(footerRow);
+
+        $('#conceptosTable').show();
+      }
+
+      function showTurnosTable() {
+        const tbody = $('#turnosTableBody');
+        const tfoot = $('#turnosTableFooter');
+        tbody.empty();
+        tfoot.empty();
+
+        if (!currentTablesData.turnos || currentTablesData.turnos.length === 0) {
+          tbody.append(`
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No hay datos de turnos para este ejercicio</td>
+                </tr>
+            `);
+          $('#turnosTable').show();
+          return;
+        }
+
+        let totalMovimientos = 0;
+        let totalIngresosTurnos = 0;
+        let totalGastosTurnos = 0;
+
+        currentTablesData.turnos.forEach(function (turno) {
+          const balance = turno.ingresos - turno.gastos;
+          const balanceClass = balance >= 0 ? 'text-success' : 'text-danger';
+
+          totalMovimientos += turno.count;
+          totalIngresosTurnos += turno.ingresos;
+          totalGastosTurnos += turno.gastos;
+
+          const row = `
+                <tr class="clickable-row" data-tipo="turno" data-id="${turno.id}" data-nombre="${turno.nombre}" style="cursor: pointer;">
+                    <td>
+                        <strong>${turno.nombre}</strong>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge badge-info">${turno.count}</span>
+                    </td>
+                    <td class="text-right text-success">
+                        <strong>+${turno.ingresos.toFixed(2)}€</strong>
+                    </td>
+                    <td class="text-right text-danger">
+                        <strong>-${turno.gastos.toFixed(2)}€</strong>
+                    </td>
+                    <td class="text-right ${balanceClass}">
+                        <strong>${balance.toFixed(2)}€</strong>
+                    </td>
+                </tr>
+            `;
+          tbody.append(row);
+        });
+
+        const totalBalance = totalIngresosTurnos - totalGastosTurnos;
+        const totalBalanceClass = totalBalance >= 0 ? 'text-success' : 'text-danger';
+
+        // Add totals footer
+        const footerRow = `
+            <tr class="table-active" style="border-top: 2px solid #344675;">
+                <td><strong>TOTALES</strong></td>
+                <td class="text-center">
+                    <strong>${totalMovimientos}</strong>
+                </td>
+                <td class="text-right text-success">
+                    <strong>+${totalIngresosTurnos.toFixed(2)}€</strong>
+                </td>
+                <td class="text-right text-danger">
+                    <strong>-${totalGastosTurnos.toFixed(2)}€</strong>
+                </td>
+                <td class="text-right ${totalBalanceClass}">
+                    <strong>${totalBalance.toFixed(2)}€</strong>
+                </td>
+            </tr>
+        `;
+        tfoot.append(footerRow);
+
+        $('#turnosTable').show();
+      }
+
+      // Event handler for clickable rows
+      $(document).on('click', '.clickable-row', function () {
+        const tipo = $(this).data('tipo');
+        const id = $(this).data('id');
+        const nombre = $(this).data('nombre');
+        const ejercicioId = $('#ejercicioSelect').val();
+
+        if (!ejercicioId) return;
+
+        showMovimientosModal(tipo, id, nombre, ejercicioId);
+      });
+
+      function showMovimientosModal(tipo, id, nombre, ejercicioId) {
+        // Set modal title
+        $('#movimientosModalLabel').html(`
+      <i class="tim-icons icon-notes mr-2"></i>
+      Movimientos - ${nombre}
+    `);
+
+        // Show modal and loading state
+        $('#movimientosModal').modal('show');
+        $('#modalLoading').show();
+        $('#modalContent').hide();
+
+        console.log('Loading movements for:', { tipo, id, nombre, ejercicioId });
+
+        // Use the existing movimientos endpoint from registro page
+        $.ajax({
+          url: '{% url "registro" %}',
+          method: 'GET',
+          data: {
+            'ejercicio_id': ejercicioId,
+            'ajax': 'true',
+            'get_ejercicio_movimientos': 'true'
+          },
+          success: function (data) {
+            console.log('Registro data received:', data);
+
+            if (data.success && data.movimientos) {
+              // Filter movements based on tipo and id/nombre
+              let filteredMovements = data.movimientos;
+
+              if (tipo === 'concepto') {
+                filteredMovements = data.movimientos.filter(mov => {
+                  return mov.concepto === nombre || mov.concepto_id == id;
+                });
+              } else if (tipo === 'turno') {
+                filteredMovements = data.movimientos.filter(mov => {
+                  return mov.turno === nombre || mov.turno_id == id;
+                });
+              }
+
+              console.log('Filtered movements:', filteredMovements);
+
+              if (filteredMovements.length > 0) {
+                // Transform data to match expected format
+                const transformedMovements = filteredMovements.map(mov => ({
+                  fecha: mov.datetime_iso || mov.fecha,
+                  concepto: mov.concepto,
+                  turno: mov.turno,
+                  importe: mov.es_gasto ? -Math.abs(parseFloat(mov.cantidad)) : Math.abs(parseFloat(mov.cantidad)),
+                  observaciones: mov.descripcion || mov.observaciones || ''
+                }));
+
+                displayMovimientosData(transformedMovements);
+              } else {
+                // No movements found, show empty state with explanation
+                showNoMovimientosFound(tipo, nombre);
+              }
+            } else {
+              // Fallback: show test data to verify modal works
+              console.log('No data from registro, showing empty state...');
+              showNoMovimientosFound(tipo, nombre);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error('Error loading from registro:', error);
+            // Fallback: show empty state
+            showNoMovimientosFound(tipo, nombre);
+          }
+        });
+      }
+
+      function showNoMovimientosFound(tipo, nombre) {
+        $('#modalContent').html(`
+      <div class="text-center py-5">
+        <i class="tim-icons icon-zoom-split" style="font-size: 3rem; color: #8b949e;"></i>
+        <h5 class="mt-3 text-muted">No se encontraron movimientos</h5>
+        <p class="text-muted">
+          No hay movimientos registrados para ${tipo === 'concepto' ? 'el concepto' : 'el turno'} 
+          <strong>"${nombre}"</strong> en este ejercicio.
+        </p>
+        <div class="mt-4">
+          <div class="summary-card" style="display: inline-block; min-width: 200px;">
+            <div class="summary-icon">
+              <i class="tim-icons icon-chart-bar-32"></i>
+            </div>
+            <div class="summary-info">
+              <h6>Total Movimientos</h6>
+              <span>0</span>
+            </div>
+          </div>
+        </div>
       </div>
     `);
 
-        displayMovimientosData(testData);
+        $('#modalLoading').hide();
+        $('#modalContent').show();
       }
 
       function displayMovimientosData(movimientos) {
