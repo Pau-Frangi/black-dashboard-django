@@ -866,16 +866,26 @@
         
         movimientos.forEach(function(mov, index) {
             console.log(`Procesando movimiento ${index + 1}:`, mov);
-            
+            console.log('¿Tiene caja_nombre?', mov.caja.nombre); // Debug añadido
+
             const fechaDisplay = mov.fecha_display || new Date(mov.datetime_iso).toLocaleString('es-ES');
             const cantidadClass = mov.es_gasto ? 'text-danger' : 'text-success';
             const cantidadSign = mov.es_gasto ? '-' : '+';
             
             // Determinar el tipo de movimiento y su badge
             const tipoMovimiento = mov.tipo || 'caja';
-            const tipoBadge = tipoMovimiento === 'banco' ? 
-                '<span class="badge badge-info"><i class="tim-icons icon-credit-card"></i> Banco</span>' : 
-                '<span class="badge badge-secondary"><i class="tim-icons icon-coins"></i> Efectivo</span>';
+            let tipoBadge;
+            
+            if (tipoMovimiento === 'banco') {
+                tipoBadge = '<span class="badge badge-info"><i class="tim-icons icon-credit-card"></i> Banco</span>';
+            } else {
+                // Para movimientos de caja, solo badge de efectivo
+                tipoBadge = '<span class="badge badge-secondary"><i class="tim-icons icon-coins"></i> Efectivo</span>';
+                // El nombre de la caja se añadirá después
+                if (mov.caja && mov.caja.nombre) {
+                    tipoBadge += `<span class="d-block mt-1 text-muted" style="font-size: 0.8rem;">${mov.caja.nombre}</span>`;
+                }
+            }
             
             // Badge para ingreso/gasto
             const ingresoGastoBadge = mov.es_gasto ? 

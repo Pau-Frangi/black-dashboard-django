@@ -347,12 +347,14 @@ def registro(request):
                         movimientos_data.append({
                             'id': mov.id,
                             'tipo': 'caja',
+                            'caja': {
+                                'id': mov.caja.id,
+                                'nombre': str(mov.caja)
+                            },
                             'fecha': mov.fecha.strftime('%Y-%m-%d'),
                             'fecha_completa': mov.fecha.strftime('%Y-%m-%d %H:%M:%S'),
                             'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
                             'datetime_iso': mov.fecha.isoformat(),
-                            'caja': str(mov.caja),
-                            'caja_id': mov.caja.id,
                             'turno': str(mov.turno),
                             'turno_id': mov.turno.id,
                             'concepto': str(mov.concepto),
@@ -489,6 +491,10 @@ def registro(request):
                 movimientos_data.append({
                     'id': mov.id,
                     'tipo': 'caja',
+                    'caja': {
+                        'id': mov.caja.id,
+                        'nombre': str(mov.caja)
+                    },
                     'fecha': mov.fecha.strftime('%Y-%m-%d'),
                     'fecha_completa': mov.fecha.strftime('%Y-%m-%d %H:%M:%S'),
                     'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
