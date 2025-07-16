@@ -389,22 +389,49 @@ def _handle_ejercicio_tables_request(request, ejercicio_id):
         
         conceptos_data = list(conceptos_dict.values())
         
-        # Calculate turnos data (only from caja movements since banco doesn't have turnos)
+        # Calculate turnos data (combine both caja and banco movements)
         turnos_data = []
-        turnos_caja = movimientos_caja.values('turno__id', 'turno__nombre').annotate(
-            total_ingresos=Sum('cantidad', filter=Q(concepto__es_gasto=False)),
-            total_gastos=Sum('cantidad', filter=Q(concepto__es_gasto=True)),
-            count=Count('id')
-        )
         
-        for turno in turnos_caja:
-            turnos_data.append({
-                'id': turno['turno__id'],
-                'nombre': turno['turno__nombre'],
-                'ingresos': float(turno['total_ingresos'] or 0),
-                'gastos': float(turno['total_gastos'] or 0),
-                'count': turno['count']
-            })
+        # Get all turnos for this ejercicio
+        turnos_ejercicio = ejercicio.turnos.all()
+        
+        for turno in turnos_ejercicio:
+            # Calculate totals for this turno from caja movements
+            caja_ingresos = movimientos_caja.filter(
+                turno=turno, concepto__es_gasto=False
+            ).aggregate(total=Sum('cantidad'))['total'] or 0
+            
+            caja_gastos = movimientos_caja.filter(
+                turno=turno, concepto__es_gasto=True
+            ).aggregate(total=Sum('cantidad'))['total'] or 0
+            
+            caja_count = movimientos_caja.filter(turno=turno).count()
+            
+            # Calculate totals for this turno from banco movements
+            banco_ingresos = movimientos_banco.filter(
+                turno=turno, concepto__es_gasto=False
+            ).aggregate(total=Sum('cantidad'))['total'] or 0
+            
+            banco_gastos = movimientos_banco.filter(
+                turno=turno, concepto__es_gasto=True
+            ).aggregate(total=Sum('cantidad'))['total'] or 0
+            
+            banco_count = movimientos_banco.filter(turno=turno).count()
+            
+            # Combine totals
+            total_ingresos = float(caja_ingresos + banco_ingresos)
+            total_gastos = float(caja_gastos + banco_gastos)
+            total_count = caja_count + banco_count
+            
+            # Only include turnos that have movements
+            if total_count > 0:
+                turnos_data.append({
+                    'id': turno.id,
+                    'nombre': turno.nombre,
+                    'ingresos': total_ingresos,
+                    'gastos': total_gastos,
+                    'count': total_count
+                })
         
         # Calculate resumen
         total_ingresos_caja = movimientos_caja.filter(concepto__es_gasto=False).aggregate(Sum('cantidad'))['cantidad__sum'] or 0
