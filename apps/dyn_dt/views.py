@@ -382,7 +382,6 @@ def registro(request):
                             'concepto_id': mov.concepto.id,
                             'cantidad': float(mov.cantidad),
                             'es_gasto': mov.es_gasto(),
-                            'justificante': getattr(mov, 'justificante', '') or '',
                             'tiene_archivo': bool(mov.archivo_justificante),
                             'archivo_url': mov.archivo_justificante.url if mov.archivo_justificante else None,
                             'descripcion': mov.descripcion or '',
@@ -520,7 +519,6 @@ def registro(request):
                     'concepto_id': mov.concepto.id,
                     'cantidad': float(mov.cantidad),
                     'es_gasto': mov.es_gasto(),
-                    'justificante': mov.justificante or '',
                     'tiene_archivo': bool(mov.archivo_justificante),
                     'archivo_url': mov.archivo_justificante.url if mov.archivo_justificante else None,
                     'descripcion': mov.descripcion or '',
@@ -619,7 +617,6 @@ def registro(request):
                     )
                     
                     # Set justificante fields for bank movements (both gastos and ingresos can have justificante)
-                    movimiento.justificante = request.POST.get('justificante_banco') or None
                     if 'archivo_justificante_banco' in request.FILES:
                         movimiento.archivo_justificante = request.FILES['archivo_justificante_banco']
                     
@@ -725,7 +722,6 @@ def registro(request):
                 
                 # Update type-specific fields
                 if tipo_movimiento == 'banco':
-                    movimiento.justificante = request.POST.get('justificante_banco') or None
                     movimiento.referencia_bancaria = request.POST.get('referencia_bancaria') or None
                     
                     # Handle file upload for bank movements

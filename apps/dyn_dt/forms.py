@@ -337,13 +337,11 @@ class MovimientoBancoForm(forms.ModelForm):
         """Validación adicional para campos de justificante"""
         cleaned_data = super().clean()
         concepto = cleaned_data.get('concepto')
-        justificante = cleaned_data.get('justificante')
         archivo_justificante = cleaned_data.get('archivo_justificante')
         
         # Si el concepto es un gasto, limpiar campos de justificante si no son gastos
         if concepto and not concepto.es_gasto:
             # Para ingresos, limpiar campos de justificante
-            cleaned_data['justificante'] = None
             cleaned_data['archivo_justificante'] = None
         
         return cleaned_data
@@ -526,5 +524,7 @@ class MovimientoCajaFilterForm(forms.Form):
             raise forms.ValidationError(
                 "No se pueden seleccionar 'Solo gastos' y 'Solo ingresos' al mismo tiempo"
             )
+        
+        return cleaned_data
         
         return cleaned_data
