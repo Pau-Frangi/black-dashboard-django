@@ -2845,12 +2845,6 @@
 
         console.log('Cargando cajas para ejercicio ID:', ejercicioId);
 
-        data.cajas.forEach(function(caja) {
-            const disabled = !caja.activa ? 'disabled style="background-color: #eee; color: #888;"' : '';
-            const label = caja.nombre + ' (' + caja.año + ') - ' + caja.saldo_caja + '€' + (!caja.activa ? ' [INACTIVA]' : '');
-            cajaSelect.append(`<option value="${caja.id}" data-saldo="${caja.saldo_caja}" ${disabled}>${label}</option>`);
-        });
-
         $.ajax({
             url: '{% url "registro" %}',
             method: 'GET',
@@ -2862,13 +2856,14 @@
             success: function(data) {
                 if (data.success) {
                     // Clear and populate cajas
+                    data.cajas.forEach(function(caja) {
+                        const disabled = !caja.activa ? 'disabled style="background-color: #eee; color: #888;"' : '';
+                        const label = caja.nombre + ' (' + caja.año + ') - ' + caja.saldo_caja + '€' + (!caja.activa ? ' [INACTIVA]' : '');
+                        cajaSelect.append(`<option value="${caja.id}" data-saldo="${caja.saldo_caja}" ${disabled}>${label}</option>`);
+                    });
                     const cajaSelect = $('#cajaSelect');
                     cajaSelect.empty();
                     cajaSelect.append('<option value="">-- Selecciona una caja --</option>');
-                    
-                    data.cajas.forEach(function(caja) {
-                        cajaSelect.append(`<option value="${caja.id}" data-saldo="${caja.saldo_caja}">${caja.nombre} (${caja.año}) - ${caja.saldo_caja}€</option>`);
-                    });
                     
                     console.log('Cajas cargadas:', data.cajas.length);
                 } else {
