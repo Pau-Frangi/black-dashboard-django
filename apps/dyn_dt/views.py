@@ -308,7 +308,8 @@ def cajas(request):
             desglose_data = [{
                 'denominacion': str(d.denominacion),
                 'cantidad': d.cantidad,
-                'valor_total': float(d.valor_total())
+                'valor_total': float(d.valor_total()),
+                'tipo': 'billete' if getattr(d.denominacion, 'es_billete', False) else 'moneda'
             } for d in desglose]
             return JsonResponse({'success': True, 'desglose': desglose_data})
         # Movimientos de caja

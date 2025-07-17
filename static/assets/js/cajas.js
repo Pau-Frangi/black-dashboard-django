@@ -63,7 +63,7 @@ function renderCajasTabs(cajas) {
                     <div class="col-md-6">
                         <div class="card mt-3">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0"><i class="tim-icons icon-coins"></i> Desglose de Caja</h5>
+                                <h5 class="card-title mb-0 section-title"><i class="tim-icons icon-coins"></i> Desglose de Caja</h5>
                                 <button class="btn btn-sm btn-info" onclick="openCambioDineroModal(${caja.id})">
                                     <i class="tim-icons icon-refresh-01"></i> Cambio de Dinero
                                 </button>
@@ -76,10 +76,10 @@ function renderCajasTabs(cajas) {
                         </div>
                         <div class="card mt-3">
                             <div class="card-header">
-                                <h5 class="card-title"><i class="tim-icons icon-refresh-01"></i> Movimientos de Dinero</h5>
+                                <h5 class="card-title section-title"><i class="tim-icons icon-refresh-01"></i> Movimientos de Dinero</h5>
                             </div>
                             <div class="card-body">
-                                <div id="movimientosDineroCaja-${caja.id}">
+                                <div id="movimientosDineroCaja-${caja.id}" class="movements-search-bar">
                                     <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
                                 </div>
                             </div>
@@ -88,7 +88,7 @@ function renderCajasTabs(cajas) {
                     <div class="col-md-6">
                         <div class="card mt-3">
                             <div class="card-header">
-                                <h5 class="card-title"><i class="tim-icons icon-notes"></i> Movimientos de la Caja</h5>
+                                <h5 class="card-title section-title"><i class="tim-icons icon-notes"></i> Movimientos de la Caja</h5>
                             </div>
                             <div class="card-body">
                                 <div id="movimientosCaja-${caja.id}">
@@ -98,7 +98,7 @@ function renderCajasTabs(cajas) {
                         </div>
                         <div class="card mt-3">
                             <div class="card-header">
-                                <h5 class="card-title"><i class="tim-icons icon-chart-bar-32"></i> Gráficos de Utilidad</h5>
+                                <h5 class="card-title section-title"><i class="tim-icons icon-chart-bar-32"></i> Gráficos de Utilidad</h5>
                             </div>
                             <div class="card-body">
                                 <div id="graficosCaja-${caja.id}">
