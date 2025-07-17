@@ -169,7 +169,7 @@ def _handle_get_ejercicio_movimientos_request(request):
         for mov in movimientos_caja:
             all_movimientos.append({
                 'id': mov.id,
-                'tipo': 'caja',
+                'tipo': 'caja',  # <-- ya existe, aseguramos que esté presente
                 'fecha_display': mov.created_at.strftime('%d/%m/%Y %H:%M'),
                 'datetime_iso': mov.created_at.isoformat(),
                 'turno': mov.turno.nombre,
@@ -188,7 +188,7 @@ def _handle_get_ejercicio_movimientos_request(request):
         for mov in movimientos_banco:
             all_movimientos.append({
                 'id': mov.id,
-                'tipo': 'banco',
+                'tipo': 'banco',  # <-- ya existe, aseguramos que esté presente
                 'fecha_display': mov.created_at.strftime('%d/%m/%Y %H:%M'),
                 'datetime_iso': mov.created_at.isoformat(),
                 'turno': 'N/A',  # Bank movements don't have turnos
