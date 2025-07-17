@@ -232,7 +232,14 @@
                                 </label>
                                 <select class="form-control" name="caja_id_select" id="cajaSelect" required>
                                     <option value="">-- Selecciona una caja --</option>
-                                    <!-- Las cajas se cargarán dinámicamente según el ejercicio seleccionado -->
+                                    {% for caja in cajas %}
+                                        <option value="{{ caja.id }}"
+                                                data-saldo="{{ caja.saldo_caja }}"
+                                                {% if not caja.activa %}disabled style="background-color: #eee; color: #888;"{% endif %}>
+                                            {{ caja.nombre }} - {{ caja.saldo_caja }}€
+                                            {% if not caja.activa %} [INACTIVA]{% endif %}
+                                        </option>
+                                    {% endfor %}
                                 </select>
                                 <small class="form-text text-muted">
                                     <i class="tim-icons icon-bulb-63"></i>
@@ -2837,6 +2844,12 @@
         }
 
         console.log('Cargando cajas para ejercicio ID:', ejercicioId);
+
+        data.cajas.forEach(function(caja) {
+            const disabled = !caja.activa ? 'disabled style="background-color: #eee; color: #888;"' : '';
+            const label = caja.nombre + ' (' + caja.año + ') - ' + caja.saldo_caja + '€' + (!caja.activa ? ' [INACTIVA]' : '');
+            cajaSelect.append(`<option value="${caja.id}" data-saldo="${caja.saldo_caja}" ${disabled}>${label}</option>`);
+        });
 
         $.ajax({
             url: '{% url "registro" %}',
