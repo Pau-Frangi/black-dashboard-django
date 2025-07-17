@@ -62,15 +62,44 @@ function renderCajasTabs(cajas) {
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card mt-3">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0 section-title"><i class="tim-icons icon-coins"></i> Desglose de Caja</h5>
-                                <button class="btn btn-sm btn-info" onclick="openCambioDineroModal(${caja.id})">
-                                    <i class="tim-icons icon-refresh-01"></i> Cambio de Dinero
-                                </button>
-                            </div>
-                            <div class="card-body">
-                                <div id="desgloseCaja-${caja.id}">
-                                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h4 class="card-title">
+                                        <i class="tim-icons icon-coins mr-2"></i>
+                                        Desglose Actual de las Cajas
+                                    </h4>
+                                </div>
+                                <div class="card-body">
+                                    <div id="desgloseActualContainer">
+                                        <div class="text-center text-muted py-3" id="noDesgloseMessage-${caja.id}">
+                                            <i class="tim-icons icon-wallet-43" style="font-size: 2rem;"></i>
+                                            <p class="mt-2">Selecciona un ejercicio para ver el desglose de sus cajas</p>
+                                        </div>
+                                        <div id="desgloseContent-${caja.id}" style="display: none;">
+                                            <div id="desgloseCaja-${caja.id}">
+                                                <!-- El desglose de la caja se cargará aquí -->
+                                            </div>
+                                            <hr>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="d-flex justify-content-between">
+                                                        <strong>Total calculado desde desglose:</strong>
+                                                        <span id="totalDesglose-${caja.id}" class="text-success">--</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex justify-content-between">
+                                                        <strong>Saldo oficial:</strong>
+                                                        <span id="saldoOficial-${caja.id}" class="text-info">--</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="diferenciaSaldo-${caja.id}" class="alert alert-warning mt-2" style="display: none;">
+                                                <i class="tim-icons icon-alert-circle-exc mr-1"></i>
+                                                <strong>Atención:</strong> Hay una diferencia entre el saldo oficial y el calculado desde el desglose.
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -138,24 +167,39 @@ function loadDesgloseCaja(cajaId) {
         },
         success: function(data) {
             if (data.success && data.desglose && data.desglose.length > 0) {
-                let html = '<ul class="list-group desglose-list">';
+                let html = '<table class="table table-sm"><thead><tr><th>Denominación</th><th>Cantidad</th><th>Total (€)</th></tr></thead><tbody>';
+                let total = 0;
                 data.desglose.forEach(function(item) {
-                    html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span class="denom-label">${item.denominacion}</span>
-                        <span>
-                            <strong class="denom-cantidad">${item.cantidad}</strong>
-                            <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small>
-                        </span>
-                    </li>`;
+                    html += `<tr>
+                        <td>${item.denominacion}</td>
+                        <td>${item.cantidad}</td>
+                        <td>${item.valor_total.toFixed(2)}</td>
+                    </tr>`;
+                    total += item.valor_total;
                 });
-                html += '</ul>';
+                html += '</tbody></table>';
                 container.html(html);
+                $('#desgloseContent-' + cajaId).show();
+                $('#noDesgloseMessage-' + cajaId).hide();
+                $('#totalDesglose-' + cajaId).text(total.toFixed(2) + '€');
+                if (data.saldo_oficial !== undefined) {
+                    $('#saldoOficial-' + cajaId).text(data.saldo_oficial.toFixed(2) + '€');
+                    if (Math.abs(total - data.saldo_oficial) > 0.01) {
+                        $('#diferenciaSaldo-' + cajaId).show();
+                    } else {
+                        $('#diferenciaSaldo-' + cajaId).hide();
+                    }
+                }
             } else {
                 container.html('<div class="text-muted py-2">No hay desglose disponible.</div>');
+                $('#desgloseContent-' + cajaId).hide();
+                $('#noDesgloseMessage-' + cajaId).show();
             }
         },
         error: function() {
             container.html('<div class="text-danger py-2">Error al cargar el desglose.</div>');
+            $('#desgloseContent-' + cajaId).hide();
+            $('#noDesgloseMessage-' + cajaId).show();
         }
     });
 }
