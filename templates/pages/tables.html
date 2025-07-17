@@ -63,101 +63,101 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Selector de Tipo de Tabla -->
-      <div class="row mb-4" id="tableTypeSection" style="display: none;">
-        <div class="col-md-12">
-            <div class="modern-tabs-container">
-              <div class="modern-tabs">
-                <button type="button" class="modern-tab active" onclick="selectTab('conceptos', this)">
-                  <i class="tim-icons icon-tag tab-icon"></i>
-                  <span class="tab-text">Por Conceptos</span>
-                </button>
-                <button type="button" class="modern-tab" onclick="selectTab('turnos', this)">
-                  <i class="tim-icons icon-calendar-60 tab-icon"></i>
-                  <span class="tab-text">Por Turnos</span>
-                </button>
-              </div>
-            </div>
-            <div class="tab-content-wrapper">
-              <p class="tab-description" id="tabDescription">
-                Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto
-              </p>
-            </div>
-            <!-- Tabla de Conceptos -->
-            <div id="conceptosTable" style="display: none;">
+          <!-- Selector de Tipo de Tabla -->
+          <div class="row mb-4" id="tableTypeSection" style="display: none;">
+            <div class="col-md-12">
+                <div class="modern-tabs-container">
+                  <div class="modern-tabs">
+                    <button type="button" class="modern-tab active" onclick="selectTab('conceptos', this)">
+                      <i class="tim-icons icon-tag tab-icon"></i>
+                      <span class="tab-text">Por Conceptos</span>
+                    </button>
+                    <button type="button" class="modern-tab" onclick="selectTab('turnos', this)">
+                      <i class="tim-icons icon-calendar-60 tab-icon"></i>
+                      <span class="tab-text">Por Turnos</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="tab-content-wrapper">
+                  <p class="tab-description" id="tabDescription">
+                    Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto
+                  </p>
+                </div>
+                <!-- Tabla de Conceptos -->
+                <div id="conceptosTable" style="display: none;">
 
-              <div class="card-header">
-                <h4 class="card-title">
-                  <i class="tim-icons icon-tag mr-2"></i>
-                  Resultados por Conceptos
-                </h4>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-striped">
-                    <thead>
-                      <tr>
-                        <th>Concepto</th>
-                        <th>Tipo</th>
-                        <th class="text-center">Nº Movimientos</th>
-                        <th class="text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody id="conceptosTableBody">
-                      <!-- Los datos se cargarán aquí -->
-                    </tbody>
-                    <tfoot id="conceptosTableFooter">
-                      <!-- Los totales se cargarán aquí -->
-                    </tfoot>
-                  </table>
+                  <div class="card-header">
+                    <h4 class="card-title">
+                      <i class="tim-icons icon-tag mr-2"></i>
+                      Resultados por Conceptos
+                    </h4>
+                  </div>
+                  <div class="card-body">
+                    <div class="table-responsive">
+                      <table class="table table-striped">
+                        <thead>
+                          <tr>
+                            <th>Concepto</th>
+                            <th>Tipo</th>
+                            <th class="text-center">Nº Movimientos</th>
+                            <th class="text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody id="conceptosTableBody">
+                          <!-- Los datos se cargarán aquí -->
+                        </tbody>
+                        <tfoot id="conceptosTableFooter">
+                          <!-- Los totales se cargarán aquí -->
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Tabla de Turnos -->
+                <div id="turnosTable" style="display: none;">
+
+                  <div class="card-header">
+                    <h4 class="card-title">
+                      <i class="tim-icons icon-calendar-60 mr-2"></i>
+                      Resultados por Turnos
+                    </h4>
+                  </div>
+                  <div class="card-body">
+                    <div class="table-responsive">
+                      <table class="table table-striped">
+                        <thead>
+                          <tr>
+                            <th>Turno</th>
+                            <th class="text-center">Nº Movimientos</th>
+                            <th class="text-right">Total Ingresos</th>
+                            <th class="text-right">Total Gastos</th>
+                            <th class="text-right">Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody id="turnosTableBody">
+                          <!-- Los datos se cargarán aquí -->
+                        </tbody>
+                        <tfoot id="turnosTableFooter">
+                          <!-- Los totales se cargarán aquí -->
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Mensaje cuando no hay ejercicio seleccionado -->
+                <div id="noEjercicioMessage" class="text-center py-5">
+                  <i class="tim-icons icon-chart-pie-36" style="font-size: 4rem; color: #ccc;"></i>
+                  <h4 class="mt-3 text-muted">Selecciona un ejercicio para ver las tablas de resultados</h4>
+                  <p class="text-muted">Elige un ejercicio del selector superior para visualizar los análisis por conceptos y turnos</p>
                 </div>
               </div>
-
-            </div>
-
-            <!-- Tabla de Turnos -->
-            <div id="turnosTable" style="display: none;">
-
-              <div class="card-header">
-                <h4 class="card-title">
-                  <i class="tim-icons icon-calendar-60 mr-2"></i>
-                  Resultados por Turnos
-                </h4>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table class="table table-striped">
-                    <thead>
-                      <tr>
-                        <th>Turno</th>
-                        <th class="text-center">Nº Movimientos</th>
-                        <th class="text-right">Total Ingresos</th>
-                        <th class="text-right">Total Gastos</th>
-                        <th class="text-right">Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody id="turnosTableBody">
-                      <!-- Los datos se cargarán aquí -->
-                    </tbody>
-                    <tfoot id="turnosTableFooter">
-                      <!-- Los totales se cargarán aquí -->
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Mensaje cuando no hay ejercicio seleccionado -->
-            <div id="noEjercicioMessage" class="text-center py-5">
-              <i class="tim-icons icon-chart-pie-36" style="font-size: 4rem; color: #ccc;"></i>
-              <h4 class="mt-3 text-muted">Selecciona un ejercicio para ver las tablas de resultados</h4>
-              <p class="text-muted">Elige un ejercicio del selector superior para visualizar los análisis por conceptos y turnos</p>
-            </div>
           </div>
+        </div>
       </div>
 
       <!-- Modal para detalles de movimientos -->
@@ -243,7 +243,7 @@
 
       const tabDescriptions = {
         'conceptos': 'Análisis detallado de movimientos agrupados por conceptos de ingreso y gasto',
-        'turnos': 'Resumen de actividad financiera organizado por turnos de trabajo'
+        'turnos': 'Resumen de actividad financiera organizado por turnos del campamento'
       };
 
       $(document).ready(function () {
@@ -639,6 +639,7 @@
                   fecha: mov.datetime_iso || mov.fecha,
                   tipo: mov.tipo || 'caja',
                   caja: mov.caja || '',
+                  es_gasto: mov.es_gasto || false,
                   concepto: mov.concepto,
                   turno: mov.turno,
                   importe: mov.es_gasto ? -Math.abs(parseFloat(mov.cantidad)) : Math.abs(parseFloat(mov.cantidad)),
@@ -742,6 +743,12 @@
                 }
             }
 
+            // Badge para ingreso/gasto
+            const ingresoGastoBadge = mov.es_gasto ? 
+                '<span class="badge badge-danger"><i class="tim-icons icon-simple-remove"></i> Gasto</span>' : 
+                '<span class="badge badge-success"><i class="tim-icons icon-simple-add"></i> Ingreso</span>';
+          
+
             totalAmount += importe;
             const importeClass = importe >= 0 ? 'text-success' : 'text-danger';
             const importeIcon = importe >= 0 ? '+' : '';
@@ -773,7 +780,10 @@
             <td>
               <span class="badge badge-secondary">${turno}</span>
             </td>
-            <td>${concepto}</td>
+            <td>
+            ${concepto}
+            ${ingresoGastoBadge}
+            </td>
             <td>
               <small class="text-muted">${descripcion || '-'}</small>
             </td>
