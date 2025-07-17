@@ -270,7 +270,104 @@ def cajas(request):
     """
     Vista principal para gestión de cajas por ejercicio.
     Permite seleccionar un ejercicio y visualizar las cajas asociadas.
+    También responde a AJAX para datos de cajas, desglose, movimientos, etc.
     """
+    from django.http import JsonResponse
+    from django.db.models import Sum
+    # AJAX handler
+    if request.method == 'GET' and request.GET.get('ajax') == 'true':
+        ejercicio_id = request.GET.get('ejercicio_id')
+        action = request.GET.get('action')
+        if not ejercicio_id:
+            return JsonResponse({'success': False, 'error': 'Ejercicio ID requerido'})
+        try:
+            ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+        except Ejercicio.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Ejercicio no encontrado'})
+        # Obtener cajas del ejercicio
+        if not action:
+            cajas = Caja.objects.filter(ejercicio=ejercicio)
+            cajas_data = [{
+                'id': caja.id,
+                'nombre': caja.nombre,
+                'año': caja.año,
+                'activa': caja.activa,
+                'saldo_caja': float(caja.saldo_caja)
+            } for caja in cajas]
+            return JsonResponse({'success': True, 'cajas': cajas_data})
+        # Desglose de caja
+        elif action == 'get_desglose':
+            caja_id = request.GET.get('caja_id')
+            if not caja_id:
+                return JsonResponse({'success': False, 'error': 'Caja ID requerido'})
+            try:
+                caja = Caja.objects.get(id=caja_id)
+            except Caja.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Caja no encontrada'})
+            desglose = caja.obtener_desglose_actual()
+            desglose_data = [{
+                'denominacion': str(d.denominacion),
+                'cantidad': d.cantidad,
+                'valor_total': float(d.valor_total())
+            } for d in desglose]
+            return JsonResponse({'success': True, 'desglose': desglose_data})
+        # Movimientos de caja
+        elif action == 'get_movimientos':
+            caja_id = request.GET.get('caja_id')
+            if not caja_id:
+                return JsonResponse({'success': False, 'error': 'Caja ID requerido'})
+            try:
+                caja = Caja.objects.get(id=caja_id)
+            except Caja.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Caja no encontrada'})
+            movimientos = caja.movimientos.select_related('turno', 'concepto').order_by('-fecha')
+            movimientos_data = [{
+                'id': mov.id,
+                'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                'concepto': mov.concepto.nombre,
+                'cantidad': float(mov.cantidad),
+                'es_gasto': mov.concepto.es_gasto
+            } for mov in movimientos]
+            return JsonResponse({'success': True, 'movimientos': movimientos_data})
+        # Movimientos de dinero
+        elif action == 'get_movimientos_dinero':
+            caja_id = request.GET.get('caja_id')
+            if not caja_id:
+                return JsonResponse({'success': False, 'error': 'Caja ID requerido'})
+            try:
+                caja = Caja.objects.get(id=caja_id)
+            except Caja.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Caja no encontrada'})
+            movimientos_dinero = []
+            for mov in caja.movimientos.all():
+                for md in mov.movimientos_dinero.all():
+                    movimientos_dinero.append({
+                        'denominacion': str(md.denominacion),
+                        'cantidad_entrada': md.cantidad_entrada,
+                        'cantidad_salida': md.cantidad_salida
+                    })
+            return JsonResponse({'success': True, 'movimientos_dinero': movimientos_dinero})
+        # Gráficos de utilidad (ejemplo: saldo por día)
+        elif action == 'get_graficos':
+            caja_id = request.GET.get('caja_id')
+            if not caja_id:
+                return JsonResponse({'success': False, 'error': 'Caja ID requerido'})
+            try:
+                caja = Caja.objects.get(id=caja_id)
+            except Caja.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Caja no encontrada'})
+            movimientos = caja.movimientos.order_by('fecha')
+            labels = []
+            saldos = []
+            saldo = 0
+            for mov in movimientos:
+                saldo += mov.cantidad_real()
+                labels.append(mov.fecha.strftime('%d/%m'))
+                saldos.append(float(saldo))
+            return JsonResponse({'success': True, 'grafico': {'labels': labels, 'saldos': saldos}})
+        else:
+            return JsonResponse({'success': False, 'error': 'Acción no válida'})
+    # Render HTML
     ejercicios = Ejercicio.objects.all().order_by('-año', 'nombre')
     current_year = datetime.now().year
     default_ejercicio = None

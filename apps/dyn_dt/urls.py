@@ -17,4 +17,6 @@ urlpatterns = [
 
     path('dynamic-dt/<str:aPath>/', views.model_dt, name="model_dt"),
     path('tables/', views.tables, name='tables'),
+    path('saldo/', views.saldo, name='saldo'),
+    path('cajas/', views.cajas, name='cajas'),
 ]

@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    // Preselección automática y carga inicial
+    // Preselección automática y carga inicial (igual que saldo)
     const defaultEjercicioId = $('#ejercicioSelect').val();
     if (defaultEjercicioId) {
         loadCajasData();
@@ -16,7 +16,7 @@ function loadCajasData() {
     $('#noEjercicioMessage').hide();
     // AJAX para obtener cajas del ejercicio y sus datos
     $.ajax({
-        url: $("#ejercicioSelect").data("ajax-url") || "/cajas/",
+        url: "/cajas/",
         method: "GET",
         data: {
             'ejercicio_id': ejercicioId,
