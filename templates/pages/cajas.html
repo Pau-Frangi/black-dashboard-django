@@ -5,6 +5,7 @@
 
 {% block extrastyle %}
 <link href="{% static 'assets/css/registro.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/css/cajas.css' %}" rel="stylesheet" />
 {% endblock extrastyle %}
 
 {% block content %}
@@ -45,7 +46,7 @@
         </div>
     </div>
 
-    <!-- Pestañas de cajas -->
+    <!-- Pestañas de cajas y contenido -->
     <div id="cajasTabsContainer" style="display: none;">
         <ul class="nav nav-tabs" id="cajasTabs" role="tablist">
             <!-- Las pestañas de cajas se generan dinámicamente -->
@@ -100,5 +101,6 @@
 {% endblock content %}
 
 {% block extrajs %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{% static 'assets/js/cajas.js' %}"></script>
 {% endblock extrajs %}

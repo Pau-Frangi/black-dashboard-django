@@ -1,20 +1,17 @@
 $(document).ready(function() {
-    // Preselección automática y carga inicial (igual que saldo)
     const defaultEjercicioId = $('#ejercicioSelect').val();
     if (defaultEjercicioId) {
         loadCajasData();
     }
+    $('#ejercicioSelect').on('change', loadCajasData);
 });
 
 function loadCajasData() {
     const ejercicioId = $('#ejercicioSelect').val();
     if (!ejercicioId) {
         $('#cajasTabsContainer').hide();
-        $('#noEjercicioMessage').show();
         return;
     }
-    $('#noEjercicioMessage').hide();
-    // AJAX para obtener cajas del ejercicio y sus datos
     $.ajax({
         url: "/cajas/",
         method: "GET",
@@ -23,36 +20,26 @@ function loadCajasData() {
             'ajax': 'true'
         },
         success: function(data) {
-            if (data.success) {
+            if (data.success && data.cajas && data.cajas.length > 0) {
                 renderCajasTabs(data.cajas);
                 $('#cajasTabsContainer').show();
             } else {
-                alert('Error: ' + data.error);
                 $('#cajasTabsContainer').hide();
-                $('#noEjercicioMessage').show();
             }
         },
-        error: function(xhr, status, error) {
-            alert('Error al cargar las cajas: ' + error);
+        error: function() {
             $('#cajasTabsContainer').hide();
-            $('#noEjercicioMessage').show();
         }
     });
 }
 
-// Renderiza las pestañas y el contenido de cada caja
 function renderCajasTabs(cajas) {
     const tabs = $('#cajasTabs');
-    const tabContent = $('#cajasTabContent');
     tabs.empty();
+    const tabContent = $('#cajasTabContent');
     tabContent.empty();
-    if (!cajas || cajas.length === 0) {
-        $('#cajasTabsContainer').hide();
-        $('#noEjercicioMessage').show();
-        return;
-    }
+
     cajas.forEach(function(caja, idx) {
-        // Pestaña
         tabs.append(`
             <li class="nav-item">
                 <a class="nav-link ${idx === 0 ? 'active' : ''}" id="tab-caja-${caja.id}" data-toggle="tab" href="#caja-${caja.id}" role="tab">
@@ -60,43 +47,58 @@ function renderCajasTabs(cajas) {
                 </a>
             </li>
         `);
-        // Contenido de la caja
+
         tabContent.append(`
             <div class="tab-pane fade ${idx === 0 ? 'show active' : ''}" id="caja-${caja.id}" role="tabpanel">
-                <div class="row mb-3">
+                <div class="row">
                     <div class="col-md-6">
-                        <h5>Desglose por Denominaciones</h5>
-                        <div id="desgloseCaja-${caja.id}">
-                            <!-- Desglose se carga por AJAX -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="card-title"><i class="tim-icons icon-coins"></i> Desglose de Caja</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="desgloseCaja-${caja.id}">
+                                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+                                </div>
+                            </div>
                         </div>
-                        <button class="btn btn-info mt-3" onclick="openCambioDineroModal(${caja.id})">
-                            <i class="tim-icons icon-refresh-01"></i> Cambio de Dinero
-                        </button>
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="card-title"><i class="tim-icons icon-refresh-01"></i> Movimientos de Dinero</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="movimientosDineroCaja-${caja.id}">
+                                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="col-md-6">
-                        <h5>Gráficos de Utilidad</h5>
-                        <div id="graficosCaja-${caja.id}">
-                            <!-- Gráficos se cargan por JS -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="card-title"><i class="tim-icons icon-notes"></i> Movimientos de la Caja</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="movimientosCaja-${caja.id}">
+                                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <h5>Movimientos de la Caja</h5>
-                        <div id="movimientosCaja-${caja.id}">
-                            <!-- Listado de movimientos de caja por AJAX -->
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h5>Movimientos de Dinero</h5>
-                        <div id="movimientosDineroCaja-${caja.id}">
-                            <!-- Listado de movimientos de dinero por AJAX -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="card-title"><i class="tim-icons icon-chart-bar-32"></i> Gráficos de Utilidad</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="graficosCaja-${caja.id}">
+                                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         `);
-        // Cargar desglose, movimientos y gráficos por AJAX/JS
+
         loadDesgloseCaja(caja.id);
         loadMovimientosCaja(caja.id);
         loadMovimientosDineroCaja(caja.id);
@@ -104,11 +106,11 @@ function renderCajasTabs(cajas) {
     });
 }
 
-// Funciones para cargar desglose, movimientos y gráficos (implementa AJAX según tu backend)
 function loadDesgloseCaja(cajaId) {
-    // AJAX para desglose de la caja
+    const container = $('#desgloseCaja-' + cajaId);
+    container.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>');
     $.ajax({
-        url: '/cajas/', // Ajusta si tienes un endpoint específico
+        url: '/cajas/',
         method: 'GET',
         data: {
             'ajax': 'true',
@@ -116,31 +118,34 @@ function loadDesgloseCaja(cajaId) {
             'caja_id': cajaId
         },
         success: function(data) {
-            const container = $('#desgloseCaja-' + cajaId);
-            if (data.success && data.desglose) {
-                let html = '<ul class="list-group">';
+            if (data.success && data.desglose && data.desglose.length > 0) {
+                let html = '<ul class="list-group desglose-list">';
                 data.desglose.forEach(function(item) {
                     html += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>${item.denominacion}:</span>
-                        <span><strong>${item.cantidad}</strong> <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small></span>
+                        <span class="denom-label">${item.denominacion}</span>
+                        <span>
+                            <strong class="denom-cantidad">${item.cantidad}</strong>
+                            <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small>
+                        </span>
                     </li>`;
                 });
                 html += '</ul>';
                 container.html(html);
             } else {
-                container.html('<div class="text-muted">No hay desglose disponible.</div>');
+                container.html('<div class="text-muted py-2">No hay desglose disponible.</div>');
             }
         },
         error: function() {
-            $('#desgloseCaja-' + cajaId).html('<div class="text-danger">Error al cargar el desglose.</div>');
+            container.html('<div class="text-danger py-2">Error al cargar el desglose.</div>');
         }
     });
 }
 
 function loadMovimientosCaja(cajaId) {
-    // AJAX para movimientos de la caja
+    const container = $('#movimientosCaja-' + cajaId);
+    container.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>');
     $.ajax({
-        url: '/cajas/', // Ajusta si tienes un endpoint específico
+        url: '/cajas/',
         method: 'GET',
         data: {
             'ajax': 'true',
@@ -148,8 +153,7 @@ function loadMovimientosCaja(cajaId) {
             'caja_id': cajaId
         },
         success: function(data) {
-            const container = $('#movimientosCaja-' + cajaId);
-            if (data.success && data.movimientos) {
+            if (data.success && data.movimientos && data.movimientos.length > 0) {
                 let html = '<table class="table table-sm"><thead><tr><th>Fecha</th><th>Concepto</th><th>Cantidad</th></tr></thead><tbody>';
                 data.movimientos.forEach(function(mov) {
                     html += `<tr>
@@ -161,19 +165,20 @@ function loadMovimientosCaja(cajaId) {
                 html += '</tbody></table>';
                 container.html(html);
             } else {
-                container.html('<div class="text-muted">No hay movimientos registrados.</div>');
+                container.html('<div class="text-muted py-2">No hay movimientos registrados.</div>');
             }
         },
         error: function() {
-            $('#movimientosCaja-' + cajaId).html('<div class="text-danger">Error al cargar los movimientos.</div>');
+            container.html('<div class="text-danger py-2">Error al cargar los movimientos.</div>');
         }
     });
 }
 
 function loadMovimientosDineroCaja(cajaId) {
-    // AJAX para movimientos de dinero de la caja
+    const container = $('#movimientosDineroCaja-' + cajaId);
+    container.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>');
     $.ajax({
-        url: '/cajas/', // Ajusta si tienes un endpoint específico
+        url: '/cajas/',
         method: 'GET',
         data: {
             'ajax': 'true',
@@ -181,8 +186,7 @@ function loadMovimientosDineroCaja(cajaId) {
             'caja_id': cajaId
         },
         success: function(data) {
-            const container = $('#movimientosDineroCaja-' + cajaId);
-            if (data.success && data.movimientos_dinero) {
+            if (data.success && data.movimientos_dinero && data.movimientos_dinero.length > 0) {
                 let html = '<table class="table table-sm"><thead><tr><th>Denominación</th><th>Entrada</th><th>Salida</th></tr></thead><tbody>';
                 data.movimientos_dinero.forEach(function(mov) {
                     html += `<tr>
@@ -194,19 +198,20 @@ function loadMovimientosDineroCaja(cajaId) {
                 html += '</tbody></table>';
                 container.html(html);
             } else {
-                container.html('<div class="text-muted">No hay movimientos de dinero registrados.</div>');
+                container.html('<div class="text-muted py-2">No hay movimientos de dinero registrados.</div>');
             }
         },
         error: function() {
-            $('#movimientosDineroCaja-' + cajaId).html('<div class="text-danger">Error al cargar los movimientos de dinero.</div>');
+            container.html('<div class="text-danger py-2">Error al cargar los movimientos de dinero.</div>');
         }
     });
 }
 
 function loadGraficosCaja(cajaId) {
-    // JS para gráficos de utilidad (ejemplo simple con Chart.js)
+    const container = $('#graficosCaja-' + cajaId);
+    container.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>');
     $.ajax({
-        url: '/cajas/', // Ajusta si tienes un endpoint específico
+        url: '/cajas/',
         method: 'GET',
         data: {
             'ajax': 'true',
@@ -214,9 +219,7 @@ function loadGraficosCaja(cajaId) {
             'caja_id': cajaId
         },
         success: function(data) {
-            const container = $('#graficosCaja-' + cajaId);
             if (data.success && data.grafico) {
-                // Ejemplo: grafico de saldo por día
                 container.html('<canvas id="graficoCajaCanvas-' + cajaId + '" height="120"></canvas>');
                 const canvas = document.getElementById('graficoCajaCanvas-' + cajaId);
                 if (canvas) {
@@ -249,11 +252,11 @@ function loadGraficosCaja(cajaId) {
                     container.html('<div class="text-danger">No se pudo crear el gráfico (canvas no disponible).</div>');
                 }
             } else {
-                container.html('<div class="text-muted">No hay datos de gráficos disponibles.</div>');
+                container.html('<div class="text-muted py-2">No hay datos de gráficos disponibles.</div>');
             }
         },
         error: function() {
-            $('#graficosCaja-' + cajaId).html('<div class="text-danger">Error al cargar el gráfico.</div>');
+            container.html('<div class="text-danger py-2">Error al cargar el gráfico.</div>');
         }
     });
 }
