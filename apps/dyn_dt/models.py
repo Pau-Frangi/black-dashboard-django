@@ -159,7 +159,7 @@ class Concepto(models.Model):
     )
 
     def __str__(self):
-        return f"{self.nombre} {'*' if self.es_gasto else ''}"
+        return self.nombre
 
     class Meta:
         verbose_name = "Concepto"
@@ -235,7 +235,7 @@ class Caja(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} ({self.año}) - Saldo: {self.saldo_caja:.2f}€"
+        return f"{self.nombre} - {'Activa' if self.activa else 'Inactiva'}"
 
     def recalcular_saldo_caja(self):
         """
