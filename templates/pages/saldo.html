@@ -34,7 +34,8 @@
                             {% for ejercicio in ejercicios %}
                                 <option value="{{ ejercicio.id }}"
                                         data-nombre="{{ ejercicio.nombre }}"
-                                        data-año="{{ ejercicio.año }}">
+                                        data-año="{{ ejercicio.año }}"
+                                        {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
                                     {{ ejercicio.nombre }} ({{ ejercicio.año }})
                                 </option>
                             {% endfor %}
@@ -231,6 +232,11 @@
 
     $(document).ready(function() {
         console.log('Página de saldo cargada');
+        // Añadir preselección: si hay ejercicio preseleccionado, cargar datos automáticamente
+        const defaultEjercicioId = $('#ejercicioSelect').val();
+        if (defaultEjercicioId) {
+            loadSaldoData();
+        }
     });
 
     function loadSaldoData() {
