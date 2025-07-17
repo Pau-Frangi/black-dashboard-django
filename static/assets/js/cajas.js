@@ -2,14 +2,20 @@ $(document).ready(function() {
     const defaultEjercicioId = $('#ejercicioSelect').val();
     if (defaultEjercicioId) {
         loadCajasData();
+    } else {
+        $('#cajasTabsContainer').hide();
+        $('#noEjercicioMessage').show();
     }
-    $('#ejercicioSelect').on('change', loadCajasData);
+    $('#ejercicioSelect').on('change', function() {
+        loadCajasData();
+    });
 });
 
 function loadCajasData() {
     const ejercicioId = $('#ejercicioSelect').val();
     if (!ejercicioId) {
         $('#cajasTabsContainer').hide();
+        $('#noEjercicioMessage').show();
         return;
     }
     $.ajax({
@@ -23,12 +29,15 @@ function loadCajasData() {
             if (data.success && data.cajas && data.cajas.length > 0) {
                 renderCajasTabs(data.cajas);
                 $('#cajasTabsContainer').show();
+                $('#noEjercicioMessage').hide();
             } else {
                 $('#cajasTabsContainer').hide();
+                $('#noEjercicioMessage').show();
             }
         },
         error: function() {
             $('#cajasTabsContainer').hide();
+            $('#noEjercicioMessage').show();
         }
     });
 }
@@ -53,8 +62,11 @@ function renderCajasTabs(cajas) {
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card mt-3">
-                            <div class="card-header">
-                                <h5 class="card-title"><i class="tim-icons icon-coins"></i> Desglose de Caja</h5>
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0"><i class="tim-icons icon-coins"></i> Desglose de Caja</h5>
+                                <button class="btn btn-sm btn-info" onclick="openCambioDineroModal(${caja.id})">
+                                    <i class="tim-icons icon-refresh-01"></i> Cambio de Dinero
+                                </button>
                             </div>
                             <div class="card-body">
                                 <div id="desgloseCaja-${caja.id}">
@@ -104,6 +116,12 @@ function renderCajasTabs(cajas) {
         loadMovimientosDineroCaja(caja.id);
         loadGraficosCaja(caja.id);
     });
+
+    // Activar pestañas Bootstrap
+    tabs.find('a[data-toggle="tab"]').on('click', function(e) {
+        e.preventDefault();
+        $(this).tab('show');
+    });
 }
 
 function loadDesgloseCaja(cajaId) {
@@ -115,7 +133,8 @@ function loadDesgloseCaja(cajaId) {
         data: {
             'ajax': 'true',
             'action': 'get_desglose',
-            'caja_id': cajaId
+            'caja_id': cajaId,
+            'ejercicio_id': $('#ejercicioSelect').val()
         },
         success: function(data) {
             if (data.success && data.desglose && data.desglose.length > 0) {
@@ -150,7 +169,8 @@ function loadMovimientosCaja(cajaId) {
         data: {
             'ajax': 'true',
             'action': 'get_movimientos',
-            'caja_id': cajaId
+            'caja_id': cajaId,
+            'ejercicio_id': $('#ejercicioSelect').val()
         },
         success: function(data) {
             if (data.success && data.movimientos && data.movimientos.length > 0) {
@@ -183,7 +203,8 @@ function loadMovimientosDineroCaja(cajaId) {
         data: {
             'ajax': 'true',
             'action': 'get_movimientos_dinero',
-            'caja_id': cajaId
+            'caja_id': cajaId,
+            'ejercicio_id': $('#ejercicioSelect').val()
         },
         success: function(data) {
             if (data.success && data.movimientos_dinero && data.movimientos_dinero.length > 0) {
@@ -216,7 +237,8 @@ function loadGraficosCaja(cajaId) {
         data: {
             'ajax': 'true',
             'action': 'get_graficos',
-            'caja_id': cajaId
+            'caja_id': cajaId,
+            'ejercicio_id': $('#ejercicioSelect').val()
         },
         success: function(data) {
             if (data.success && data.grafico) {
@@ -240,11 +262,12 @@ function loadGraficosCaja(cajaId) {
                             responsive: true,
                             maintainAspectRatio: false,
                             scales: {
-                                yAxes: [{
+                                y: {
+                                    beginAtZero: true,
                                     ticks: {
                                         callback: function(value) { return value.toFixed(2) + '€'; }
                                     }
-                                }]
+                                }
                             }
                         }
                     });
@@ -263,8 +286,8 @@ function loadGraficosCaja(cajaId) {
 
 // Modal para cambio de dinero
 function openCambioDineroModal(cajaId) {
-    // Cargar denominaciones y desglose actual por AJAX
-    // Rellena #cambioDineroInputs
+    // Aquí podrías cargar denominaciones y desglose actual por AJAX si lo necesitas
+    $('#cambioDineroInputs').html('<div class="text-muted">Funcionalidad de cambio de dinero no implementada.</div>');
     $('#cambioDineroModal').modal('show');
 }
 
