@@ -17,7 +17,7 @@ from apps.dyn_dt.handlers.movement_handlers import MovementHandler
 from apps.dyn_dt.handlers.datatable_handlers import (
     DatatableHandler, FilterHandler, CRUDHandler, ExportHandler
 )
-from apps.dyn_dt.models import Ejercicio, Caja, Concepto, DenominacionEuro
+from apps.dyn_dt.models import Ejercicio, Caja, Concepto, DenominacionEuro, MovimientoCaja, MovimientoBanco
 
 
 # ================================
@@ -72,17 +72,163 @@ def registro(request):
 @login_required
 def saldo(request):
     """
-    Main view for balance/saldo operations.
-    
-    Args:
-        request: Django request object
-        
-    Returns:
-        Rendered saldo template
+    Vista principal para operaciones de saldo por ejercicio.
+    Permite seleccionar un ejercicio y muestra gráficos y estadísticas
+    agregadas de movimientos de caja y banco, así como desgloses.
     """
+    if request.method == 'GET' and request.GET.get('ajax') == 'true':
+        from django.http import JsonResponse
+        from django.db.models import Sum, Q, F
+
+        ejercicio_id = request.GET.get('ejercicio_id')
+        if not ejercicio_id:
+            return JsonResponse({'success': False, 'error': 'Ejercicio ID requerido'})
+
+        try:
+            ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+        except Ejercicio.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Ejercicio no encontrado'})
+
+        # Movimientos de caja y banco
+        movimientos_caja = MovimientoCaja.objects.filter(caja__ejercicio=ejercicio).select_related('caja', 'turno', 'concepto').order_by('-fecha')
+        movimientos_banco = MovimientoBanco.objects.filter(ejercicio=ejercicio).select_related('turno', 'concepto').order_by('-fecha')
+
+        # Unificar movimientos para gráficos de evolución
+        all_movimientos = []
+        for mov in movimientos_caja:
+            all_movimientos.append({
+                'id': mov.id,
+                'tipo': 'caja',
+                'fecha': mov.fecha.strftime('%Y-%m-%d'),
+                'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                'datetime_iso': mov.fecha.isoformat(),
+                'turno': mov.turno.nombre,
+                'turno_id': mov.turno.id,
+                'concepto': mov.concepto.nombre,
+                'concepto_id': mov.concepto.id,
+                'descripcion': mov.descripcion,
+                'cantidad': float(mov.cantidad),
+                'es_gasto': mov.concepto.es_gasto,
+                'justificante': mov.justificante,
+                'caja': mov.caja.nombre,
+                'caja_id': mov.caja.id,
+                'referencia_bancaria': None
+            })
+        for mov in movimientos_banco:
+            all_movimientos.append({
+                'id': mov.id,
+                'tipo': 'banco',
+                'fecha': mov.fecha.strftime('%Y-%m-%d'),
+                'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                'datetime_iso': mov.fecha.isoformat(),
+                'turno': mov.turno.nombre if mov.turno else 'N/A',
+                'turno_id': mov.turno.id if mov.turno else None,
+                'concepto': mov.concepto.nombre,
+                'concepto_id': mov.concepto.id,
+                'descripcion': mov.descripcion,
+                'cantidad': float(mov.cantidad),
+                'es_gasto': mov.concepto.es_gasto,
+                'justificante': '',
+                'caja': None,
+                'caja_id': None,
+                'referencia_bancaria': mov.referencia_bancaria
+            })
+        # Ordenar por fecha descendente
+        all_movimientos.sort(key=lambda x: x['datetime_iso'], reverse=True)
+
+        # Resumen de totales
+        total_ingresos_caja = movimientos_caja.filter(concepto__es_gasto=False).aggregate(total=Sum('cantidad'))['total'] or 0
+        total_gastos_caja = movimientos_caja.filter(concepto__es_gasto=True).aggregate(total=Sum('cantidad'))['total'] or 0
+        total_ingresos_banco = movimientos_banco.filter(concepto__es_gasto=False).aggregate(total=Sum('cantidad'))['total'] or 0
+        total_gastos_banco = movimientos_banco.filter(concepto__es_gasto=True).aggregate(total=Sum('cantidad'))['total'] or 0
+
+        total_ingresos = float(total_ingresos_caja + total_ingresos_banco)
+        total_gastos = float(total_gastos_caja + total_gastos_banco)
+        saldo_actual = float(ejercicio.saldo_total)
+        total_movimientos = len(all_movimientos)
+
+        resumen = {
+            'total_ingresos': total_ingresos,
+            'total_gastos': total_gastos,
+            'saldo_actual': saldo_actual,
+            'total_movimientos': total_movimientos
+        }
+
+        # Evolución del saldo (por día)
+        balance_evolution = []
+        movimientos_sorted = sorted(all_movimientos, key=lambda x: x['datetime_iso'])
+        running_balance = saldo_actual
+        for mov in reversed(movimientos_sorted):
+            balance_evolution.append({
+                'fecha': mov['fecha'],
+                'balance': running_balance,
+                'movimiento': mov['cantidad'] if not mov['es_gasto'] else -mov['cantidad'],
+                'tipo': mov['tipo'],
+                'concepto': mov['concepto'],
+            })
+            running_balance -= mov['cantidad'] if not mov['es_gasto'] else -mov['cantidad']
+
+        balance_evolution = list(reversed(balance_evolution))
+
+        # Desglose por conceptos (ingresos/gastos por concepto)
+        concept_data = {}
+        conceptos = Concepto.objects.all()
+        for concepto in conceptos:
+            total_caja = movimientos_caja.filter(concepto=concepto).aggregate(total=Sum('cantidad'))['total'] or 0
+            total_banco = movimientos_banco.filter(concepto=concepto).aggregate(total=Sum('cantidad'))['total'] or 0
+            total = float(total_caja + total_banco)
+            if total > 0:
+                concept_data[concepto.nombre] = {
+                    'total': total,
+                    'tipo': 'gasto' if concepto.es_gasto else 'ingreso'
+                }
+
+        # Desglose actual de todas las cajas del ejercicio
+        desglose_actual = []
+        cajas_ejercicio = Caja.objects.filter(ejercicio=ejercicio)
+        for caja in cajas_ejercicio:
+            for desglose in caja.obtener_desglose_actual():
+                desglose_actual.append({
+                    'caja': caja.nombre,
+                    'valor': float(desglose.denominacion.valor),
+                    'es_billete': desglose.denominacion.es_billete,
+                    'cantidad': desglose.cantidad,
+                    'valor_total': float(desglose.valor_total())
+                })
+
+        # Movimientos recientes (últimos 10)
+        recent_movements = all_movimientos[:10]
+
+        # Info de cajas y banco
+        caja_info = {
+            'cajas': [{
+                'id': caja.id,
+                'nombre': caja.nombre,
+                'saldo_actual': float(caja.saldo_caja)
+            } for caja in cajas_ejercicio],
+            'saldo_banco': float(ejercicio.saldo_banco),
+            'saldo_actual': saldo_actual
+        }
+
+        return JsonResponse({
+            'success': True,
+            'ejercicio': {
+                'id': ejercicio.id,
+                'nombre': ejercicio.nombre,
+                'año': ejercicio.año
+            },
+            'movimientos': all_movimientos,
+            'resumen': resumen,
+            'balance_evolution': balance_evolution,
+            'concept_data': concept_data,
+            'desglose_actual': desglose_actual,
+            'recent_movements': recent_movements,
+            'caja_info': caja_info,
+        })
+
+    # --- FIN AJAX ---
     context = {
         'ejercicios': Ejercicio.objects.all().order_by('-año', 'nombre'),
-        'cajas': Caja.objects.all().order_by('-año', 'nombre'),
         'segment': 'saldo'
     }
     return render(request, 'pages/saldo.html', context)

@@ -15,28 +15,27 @@
             <div class="page-header">
                 <h2 class="page-title">
                     <i class="tim-icons icon-chart-bar-32 mr-3"></i>
-                    Estado Económico de Caja
+                    Estado Económico por Ejercicio
                 </h2>
-                <p class="page-subtitle">Análisis detallado del estado financiero con gráficos y estadísticas</p>
+                <p class="page-subtitle">Análisis profesional del estado financiero por ejercicio, con gráficos y estadísticas agregadas</p>
             </div>
         </div>
     </div>
 
-    <!-- Selector de Caja -->
+    <!-- Selector de Ejercicio -->
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
                     <div class="form-group">
-                        <label for="cajaSelect" class="form-label">Seleccionar Caja:</label>
-                        <select class="form-control" id="cajaSelect" onchange="loadSaldoData()">
-                            <option value="">-- Selecciona una caja --</option>
-                            {% for caja in cajas %}
-                                <option value="{{ caja.id }}" 
-                                        data-saldo="{{ caja.saldo }}"
-                                        data-nombre="{{ caja.nombre }}"
-                                        data-año="{{ caja.año }}">
-                                    {{ caja.nombre }} ({{ caja.año }}) - {{ caja.saldo }}€
+                        <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
+                        <select class="form-control" id="ejercicioSelect" onchange="loadSaldoData()">
+                            <option value="">-- Selecciona un ejercicio --</option>
+                            {% for ejercicio in ejercicios %}
+                                <option value="{{ ejercicio.id }}"
+                                        data-nombre="{{ ejercicio.nombre }}"
+                                        data-año="{{ ejercicio.año }}">
+                                    {{ ejercicio.nombre }} ({{ ejercicio.año }})
                                 </option>
                             {% endfor %}
                         </select>
@@ -177,40 +176,21 @@
                 <div class="card-header">
                     <h4 class="card-title">
                         <i class="tim-icons icon-coins mr-2"></i>
-                        Desglose Actual de la Caja
+                        Desglose Actual de las Cajas
                     </h4>
                 </div>
                 <div class="card-body">
                     <div id="desgloseActualContainer">
                         <div class="text-center text-muted py-3" id="noDesgloseMessage">
                             <i class="tim-icons icon-wallet-43" style="font-size: 2rem;"></i>
-                            <p class="mt-2">Selecciona una caja para ver su desglose</p>
+                            <p class="mt-2">Selecciona un ejercicio para ver el desglose de sus cajas</p>
                         </div>
                         
                         <div id="desgloseContent" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="text-primary">
-                                        <i class="tim-icons icon-paper mr-1"></i>
-                                        Billetes
-                                    </h6>
-                                    <div id="billetesDesglose">
-                                        <!-- Los billetes se cargarán aquí -->
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="text-primary">
-                                        <i class="tim-icons icon-coins mr-1"></i>
-                                        Monedas
-                                    </h6>
-                                    <div id="monedasDesglose">
-                                        <!-- Las monedas se cargarán aquí -->
-                                    </div>
-                                </div>
+                            <div id="desgloseCajas">
+                                <!-- El desglose de todas las cajas se cargará aquí -->
                             </div>
-                            
                             <hr>
-                            
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="d-flex justify-content-between">
@@ -225,7 +205,6 @@
                                     </div>
                                 </div>
                             </div>
-                            
                             <div id="diferenciaSaldo" class="alert alert-warning mt-2" style="display: none;">
                                 <i class="tim-icons icon-alert-circle-exc mr-1"></i>
                                 <strong>Atención:</strong> Hay una diferencia entre el saldo oficial y el calculado desde el desglose.
@@ -237,11 +216,11 @@
         </div>
     </div>
 
-    <!-- Mensaje cuando no hay caja seleccionada -->
-    <div id="noCajaMessage" class="text-center py-5">
+    <!-- Mensaje cuando no hay ejercicio seleccionado -->
+    <div id="noEjercicioMessage" class="text-center py-5">
         <i class="tim-icons icon-chart-bar-32" style="font-size: 4rem; color: #ccc;"></i>
-        <h4 class="mt-3 text-muted">Selecciona una caja para ver su estado económico</h4>
-        <p class="text-muted">Elige una caja del selector superior para visualizar los gráficos y estadísticas</p>
+        <h4 class="mt-3 text-muted">Selecciona un ejercicio para ver su estado económico</h4>
+        <p class="text-muted">Elige un ejercicio del selector superior para visualizar los gráficos y estadísticas</p>
     </div>
 </div>
 {% endblock content %}
@@ -255,33 +234,31 @@
     });
 
     function loadSaldoData() {
-        const cajaId = $('#cajaSelect').val();
+        const ejercicioId = $('#ejercicioSelect').val();
         
-        if (!cajaId) {
+        if (!ejercicioId) {
             $('#totalsSection').hide();
             $('#chartsSection').hide();
             $('#detailChartsSection').hide();
-            $('#noCajaMessage').show();
+            $('#noEjercicioMessage').show();
             $('#saldoDisplay').text('--');
             return;
         }
 
-        const selectedOption = $('#cajaSelect option:selected');
-        const saldo = selectedOption.data('saldo');
-        $('#saldoDisplay').text(saldo + '€');
-        $('#noCajaMessage').hide();
+        $('#noEjercicioMessage').hide();
 
         // Load data via AJAX
         $.ajax({
             url: '{% url "saldo" %}',
             method: 'GET',
             data: {
-                'caja_id': cajaId,
+                'ejercicio_id': ejercicioId,
                 'ajax': 'true'
             },
             success: function(data) {
                 if (data.success) {
-                    updateTotals(data.totals);
+                    $('#saldoDisplay').text(data.resumen.saldo_actual.toFixed(2) + '€');
+                    updateTotals(data.resumen);
                     createCharts(data);
                     updateRecentMovements(data.recent_movements);
                     updateDesgloseActual(data.desglose_actual, data.caja_info.saldo_actual);
@@ -304,7 +281,6 @@
         $('#totalIngresos').text(totals.total_ingresos.toFixed(2) + '€');
         $('#totalGastos').text(totals.total_gastos.toFixed(2) + '€');
         $('#totalMovimientos').text(totals.total_movimientos);
-        $('#balanceFinal').text(totals.saldo_actual.toFixed(2) + '€');
     }
 
     function createCharts(data) {
@@ -325,60 +301,8 @@
 
     function createBalanceEvolutionChart(balanceData) {
         const ctx = document.getElementById('balanceEvolutionChart').getContext('2d');
-        
-        // Calculate balance evolution backwards from current balance
-        const processedData = [];
-        if (balanceData && balanceData.length > 0) {
-            // Get current balance from the selected caja
-            const selectedOption = $('#cajaSelect option:selected');
-            let currentBalance = parseFloat(selectedOption.data('saldo')) || 0;
-            
-            // Sort movements by date (most recent first)
-            const sortedMovements = [...balanceData].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-            
-            // Start with current balance and work backwards
-            let runningBalance = currentBalance;
-            
-            // Process movements in reverse chronological order
-            for (let i = 0; i < sortedMovements.length; i++) {
-                const movement = sortedMovements[i];
-                const date = new Date(movement.fecha);
-                
-                processedData.unshift({
-                    fecha: movement.fecha,
-                    balance: runningBalance,
-                    movimiento: movement.movimiento
-                });
-                
-                // Subtract this movement to get the balance before this movement
-                runningBalance -= movement.movimiento;
-            }
-            
-            // Add initial balance point if we have movements
-            if (sortedMovements.length > 0) {
-                const firstMovement = sortedMovements[sortedMovements.length - 1];
-                const firstDate = new Date(firstMovement.fecha);
-                firstDate.setDate(firstDate.getDate() - 1); // Day before first movement
-                
-                processedData.unshift({
-                    fecha: firstDate.toISOString().split('T')[0],
-                    balance: runningBalance,
-                    movimiento: 0
-                });
-            }
-        }
-        
-        const labels = processedData.map(item => {
-            const date = new Date(item.fecha);
-            return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-        });
-        
-        const balances = processedData.map(item => item.balance);
-        
-        const gradientStroke = ctx.createLinearGradient(0, 230, 0, 50);
-        gradientStroke.addColorStop(1, 'rgba(72,72,176,0.1)');
-        gradientStroke.addColorStop(0.4, 'rgba(72,72,176,0.0)');
-        gradientStroke.addColorStop(0, 'rgba(119,52,169,0)');
+        const labels = balanceData.map(item => item.fecha);
+        const balances = balanceData.map(item => item.balance);
 
         currentCharts.balanceEvolution = new Chart(ctx, {
             type: 'line',
@@ -388,7 +312,7 @@
                     label: 'Saldo',
                     data: balances,
                     fill: true,
-                    backgroundColor: gradientStroke,
+                    backgroundColor: 'rgba(72,72,176,0.1)',
                     borderColor: '#d346b1',
                     borderWidth: 2,
                     pointBackgroundColor: '#d346b1',
@@ -447,7 +371,6 @@
 
     function createConceptsChart(conceptData) {
         const ctx = document.getElementById('conceptsChart').getContext('2d');
-        
         const labels = Object.keys(conceptData);
         const values = Object.values(conceptData).map(item => item.total);
         const colors = Object.values(conceptData).map(item => 
@@ -820,7 +743,7 @@
             
             const row = `
                 <tr>
-                    <td>${mov.fecha}</td>
+                    <td>${mov.fecha_display}</td>
                     <td>${mov.concepto}</td>
                     <td>${mov.turno}</td>
                     <td class="text-center ${cantidadClass}">
@@ -833,8 +756,6 @@
     }
     
     function updateDesgloseActual(desglose, saldoOficial) {
-        console.log('Actualizando desglose actual:', desglose);
-        
         if (!desglose || desglose.length === 0) {
             $('#noDesgloseMessage').show();
             $('#desgloseContent').hide();
@@ -843,58 +764,65 @@
         
         $('#noDesgloseMessage').hide();
         $('#desgloseContent').show();
-        
-        // Separar billetes y monedas
-        const billetes = desglose.filter(item => item.es_billete);
-        const monedas = desglose.filter(item => !item.es_billete);
-        
-        // Actualizar billetes
-        const billetesContainer = $('#billetesDesglose');
-        billetesContainer.empty();
-        
-        if (billetes.length === 0) {
-            billetesContainer.append('<p class="text-muted small">No hay billetes</p>');
-        } else {
-            billetes.forEach(item => {
-                billetesContainer.append(`
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span>${item.valor}€:</span>
-                        <span>
-                            <strong>${item.cantidad}</strong> 
-                            <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small>
-                        </span>
+
+        // Agrupar desglose por caja
+        const cajas = {};
+        desglose.forEach(item => {
+            if (!cajas[item.caja]) cajas[item.caja] = { billetes: [], monedas: [] };
+            if (item.es_billete) {
+                cajas[item.caja].billetes.push(item);
+            } else {
+                cajas[item.caja].monedas.push(item);
+            }
+        });
+
+        const desgloseCajasContainer = $('#desgloseCajas');
+        desgloseCajasContainer.empty();
+
+        Object.keys(cajas).forEach(cajaNombre => {
+            const caja = cajas[cajaNombre];
+            desgloseCajasContainer.append(`
+                <div class="mb-3">
+                    <h6 class="text-primary"><i class="tim-icons icon-wallet-43 mr-1"></i> ${cajaNombre}</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Billetes:</strong>
+                            ${caja.billetes.length === 0 ? '<p class="text-muted small">No hay billetes</p>' : ''}
+                            ${caja.billetes.map(item => `
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span>${item.valor}€:</span>
+                                    <span>
+                                        <strong>${item.cantidad}</strong> 
+                                        <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small>
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Monedas:</strong>
+                            ${caja.monedas.length === 0 ? '<p class="text-muted small">No hay monedas</p>' : ''}
+                            ${caja.monedas.map(item => `
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span>${item.valor}€:</span>
+                                    <span>
+                                        <strong>${item.cantidad}</strong> 
+                                        <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small>
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                `);
-            });
-        }
-        
-        // Actualizar monedas
-        const monedasContainer = $('#monedasDesglose');
-        monedasContainer.empty();
-        
-        if (monedas.length === 0) {
-            monedasContainer.append('<p class="text-muted small">No hay monedas</p>');
-        } else {
-            monedas.forEach(item => {
-                monedasContainer.append(`
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span>${item.valor}€:</span>
-                        <span>
-                            <strong>${item.cantidad}</strong> 
-                            <small class="text-muted">(${item.valor_total.toFixed(2)}€)</small>
-                        </span>
-                    </div>
-                `);
-            });
-        }
-        
+                </div>
+            `);
+        });
+
         // Calcular total del desglose
         const totalDesglose = desglose.reduce((total, item) => total + item.valor_total, 0);
-        
+
         // Actualizar totales
         $('#totalDesglose').text(totalDesglose.toFixed(2) + '€');
         $('#saldoOficial').text(saldoOficial.toFixed(2) + '€');
-        
+
         // Verificar si hay diferencia
         const diferencia = Math.abs(totalDesglose - saldoOficial);
         if (diferencia > 0.01) {
