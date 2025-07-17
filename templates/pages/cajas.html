@@ -1,0 +1,104 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %} Gestión de Cajas {% endblock title %}
+
+{% block extrastyle %}
+<link href="{% static 'assets/css/registro.css' %}" rel="stylesheet" />
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="content">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="page-header">
+                <h2 class="page-title">
+                    <i class="tim-icons icon-wallet-43 mr-3"></i>
+                    Gestión de Cajas por Ejercicio
+                </h2>
+                <p class="page-subtitle">Visualiza y gestiona el desglose, movimientos y utilidades de cada caja asociada a un ejercicio</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selector de Ejercicio -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
+                        <select class="form-control" id="ejercicioSelect" onchange="loadCajasData()">
+                            <option value="">-- Selecciona un ejercicio --</option>
+                            {% for ejercicio in ejercicios %}
+                                <option value="{{ ejercicio.id }}"
+                                        data-nombre="{{ ejercicio.nombre }}"
+                                        data-año="{{ ejercicio.año }}"
+                                        {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
+                                    {{ ejercicio.nombre }} ({{ ejercicio.año }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pestañas de cajas -->
+    <div id="cajasTabsContainer" style="display: none;">
+        <ul class="nav nav-tabs" id="cajasTabs" role="tablist">
+            <!-- Las pestañas de cajas se generan dinámicamente -->
+        </ul>
+        <div class="tab-content" id="cajasTabContent">
+            <!-- El contenido de cada caja se genera dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Mensaje cuando no hay ejercicio seleccionado -->
+    <div id="noEjercicioMessage" class="text-center py-5">
+        <i class="tim-icons icon-wallet-43" style="font-size: 4rem; color: #ccc;"></i>
+        <h4 class="mt-3 text-muted">Selecciona un ejercicio para ver sus cajas</h4>
+        <p class="text-muted">Elige un ejercicio del selector superior para visualizar las cajas asociadas y sus utilidades</p>
+    </div>
+</div>
+
+<!-- Modal para cambio de dinero -->
+<div class="modal fade" id="cambioDineroModal" tabindex="-1" aria-labelledby="cambioDineroModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="cambioDineroForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cambioDineroModalLabel">
+                        <i class="tim-icons icon-refresh-01"></i>
+                        Cambio de Billetes y Monedas
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Inputs para seleccionar denominaciones que entran y salen -->
+                    <div id="cambioDineroInputs">
+                        <!-- Se generan dinámicamente según la caja -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="tim-icons icon-simple-remove"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="tim-icons icon-check-2"></i>
+                        Realizar Cambio
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extrajs %}
+<script src="{% static 'assets/js/cajas.js' %}"></script>
+{% endblock extrajs %}

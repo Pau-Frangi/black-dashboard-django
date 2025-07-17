@@ -265,6 +265,29 @@ def tables(request):
     return render(request, 'pages/tables.html', context)
 
 
+@login_required
+def cajas(request):
+    """
+    Vista principal para gestión de cajas por ejercicio.
+    Permite seleccionar un ejercicio y visualizar las cajas asociadas.
+    """
+    ejercicios = Ejercicio.objects.all().order_by('-año', 'nombre')
+    current_year = datetime.now().year
+    default_ejercicio = None
+    for ejercicio in ejercicios:
+        if ejercicio.año == current_year:
+            default_ejercicio = ejercicio
+            break
+    if not default_ejercicio and ejercicios.exists():
+        default_ejercicio = ejercicios.first()
+    context = {
+        'ejercicios': ejercicios,
+        'default_ejercicio_id': default_ejercicio.id if default_ejercicio else None,
+        'segment': 'cajas'
+    }
+    return render(request, 'pages/cajas.html', context)
+
+
 def _handle_ajax_requests(request):
     """
     Routes AJAX requests to appropriate handlers.

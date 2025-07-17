@@ -16,7 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework.authtoken.views import obtain_auth_token # <-- NEW
-from apps.dyn_dt.views import registro, saldo
+from apps.dyn_dt.views import registro, saldo, cajas
 
 urlpatterns = [
     path('', include('apps.pages.urls')),
@@ -27,6 +27,7 @@ urlpatterns = [
     path("", include('admin_black.urls')),
     path('registro/', registro, name='registro'),
     path('saldo/', saldo, name='saldo'),
+    path('cajas/', cajas, name='cajas'),  # <-- Añadido
     path('tables/', include('apps.dyn_dt.urls')),
 ]
 
