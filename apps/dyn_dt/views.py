@@ -292,7 +292,9 @@ def cajas(request):
                 'nombre': caja.nombre,
                 'año': caja.año,
                 'activa': caja.activa,
-                'saldo_caja': float(caja.saldo_caja)
+                'saldo_caja': float(caja.saldo_caja),
+                'ingresos_caja': float(caja.movimientos.filter(concepto__es_gasto=False).aggregate(Sum('cantidad'))['cantidad__sum'] or 0),
+                'gastos_caja': float(caja.movimientos.filter(concepto__es_gasto=True).aggregate(Sum('cantidad'))['cantidad__sum'] or 0)
             } for caja in cajas]
             return JsonResponse({'success': True, 'cajas': cajas_data})
         # Desglose de caja

@@ -48,10 +48,20 @@ function renderCajasTabs(cajas) {
     const tabContent = $('#cajasTabContent');
     tabContent.empty();
 
+    // Inicializa los totales con la primera caja
+    if (cajas.length > 0) {
+        updateTotalsDisplay(
+            cajas[0].ingresos_caja || 0,
+            cajas[0].gastos_caja || 0,
+            cajas[0].saldo_caja || 0
+        );
+    }
+
     cajas.forEach(function(caja, idx) {
         tabs.append(`
             <li class="nav-item">
-                <a class="nav-link ${idx === 0 ? 'active' : ''}" id="tab-caja-${caja.id}" data-toggle="tab" href="#caja-${caja.id}" role="tab">
+                <a class="nav-link ${idx === 0 ? 'active' : ''}" id="tab-caja-${caja.id}" data-toggle="tab" href="#caja-${caja.id}" role="tab"
+                   data-ingresos="${caja.ingresos_caja}" data-gastos="${caja.gastos_caja}" data-saldo="${caja.saldo_caja}">
                     <i class="tim-icons icon-wallet-43"></i> ${caja.nombre}
                 </a>
             </li>
@@ -139,17 +149,21 @@ function renderCajasTabs(cajas) {
                 </div>
             </div>
         `);
-
         loadDesgloseCaja(caja.id);
         loadMovimientosCaja(caja.id);
         loadMovimientosDineroCaja(caja.id);
         loadGraficosCaja(caja.id);
     });
 
-    // Activar pestañas Bootstrap
+    // Activar pestañas Bootstrap y actualizar totales al cambiar de caja
     tabs.find('a[data-toggle="tab"]').on('click', function(e) {
         e.preventDefault();
         $(this).tab('show');
+        // Actualizar totales con los datos de la caja activa
+        const ingresos = parseFloat($(this).data('ingresos')) || 0;
+        const gastos = parseFloat($(this).data('gastos')) || 0;
+        const saldo = parseFloat($(this).data('saldo')) || 0;
+        updateTotalsDisplay(ingresos, gastos, saldo);
     });
 }
 
@@ -328,37 +342,9 @@ function loadGraficosCaja(cajaId) {
     });
 }
 
-    /**
-     * Actualiza la visualización de los totales en el header
-     */
-    function updateTotalsDisplay(ingresos, gastos, saldo) {
-        $('#totalIngresosHeader').text(ingresos.toFixed(2) + '€');
-        $('#totalGastosHeader').text(gastos.toFixed(2) + '€');
-        $('#saldoActual').text(saldo.toFixed(2) + '€');
+function updateTotalsDisplay(ingresos, gastos, saldo) {
+    $('#totalIngresosHeader').text(ingresos.toFixed(2) + '€');
+    $('#totalGastosHeader').text(gastos.toFixed(2) + '€');
+    $('#saldoActual').text(saldo.toFixed(2) + '€');
+}
 
-        // Actualizar colores del saldo según el valor
-        const $saldoElement = $('#saldoActual');
-        $saldoElement.removeClass('text-success text-danger text-warning');
-        
-        if (saldo > 0) {
-            $saldoElement.addClass('text-success');
-        } else if (saldo < 0) {
-            $saldoElement.addClass('text-danger');
-        } else {
-            $saldoElement.addClass('text-warning');
-        }
-
-        // Indicar si los totales están filtrados
-        const isFiltered = currentTipoFilter !== 'todos' || 
-                          currentIngresosGastosFilter !== 'todos' || 
-                          $('#movementsSearch').val().trim() !== '';
-        
-        const $totalsSection = $('.totals-section');
-        if (isFiltered) {
-            $totalsSection.attr('title', 'Totales calculados sobre movimientos filtrados');
-            $totalsSection.addClass('filtered-totals');
-        } else {
-            $totalsSection.attr('title', 'Totales de todos los movimientos');
-            $totalsSection.removeClass('filtered-totals');
-        }
-    }
