@@ -13,57 +13,37 @@
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="page-header">
-                <h2 class="page-title">
-                    <i class="tim-icons icon-chart-bar-32 mr-3"></i>
-                    Estado Económico por Ejercicio
-                </h2>
-                <p class="page-subtitle">Análisis profesional del estado financiero por ejercicio, con gráficos y estadísticas agregadas</p>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="page-title">
+                            <i class="tim-icons icon-chart-bar-32 mr-3"></i>
+                            Estado Económico por Ejercicio
+                        </h2>
+                        <p class="page-subtitle">Análisis profesional del estado financiero por ejercicio, con gráficos y estadísticas agregadas</p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
+                            <select class="form-control" id="ejercicioSelect" onchange="loadSaldoData()">
+                                <option value="">-- Selecciona un ejercicio --</option>
+                                {% for ejercicio in ejercicios %}
+                                    <option value="{{ ejercicio.id }}"
+                                            data-nombre="{{ ejercicio.nombre }}"
+                                            data-año="{{ ejercicio.año }}"
+                                            {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
+                                        {{ ejercicio.nombre }} ({{ ejercicio.año }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Selector de Ejercicio -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
-                        <select class="form-control" id="ejercicioSelect" onchange="loadSaldoData()">
-                            <option value="">-- Selecciona un ejercicio --</option>
-                            {% for ejercicio in ejercicios %}
-                                <option value="{{ ejercicio.id }}"
-                                        data-nombre="{{ ejercicio.nombre }}"
-                                        data-año="{{ ejercicio.año }}"
-                                        {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
-                                    {{ ejercicio.nombre }} ({{ ejercicio.año }})
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card card-stats">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-5 col-md-4">
-                            <div class="icon-big text-center icon-warning">
-                                <i class="tim-icons icon-wallet-43 text-warning"></i>
-                            </div>
-                        </div>
-                        <div class="col-7 col-md-8">
-                            <div class="numbers">
-                                <p class="card-category">Saldo Actual</p>
-                                <p class="card-title" id="saldoDisplay">--</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Resumen de Totales -->
     <div class="row" id="totalsSection" style="display: none;">

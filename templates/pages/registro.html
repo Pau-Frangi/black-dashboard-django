@@ -14,12 +14,84 @@
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="page-header">
-                <h2 class="page-title">
-                    <i class="tim-icons icon-wallet-43 mr-3"></i>
-                    Registro de Movimientos
-                </h2>
-                <p class="page-subtitle">Gestiona los movimientos financieros de tu organización de forma eficiente</p>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="page-title">
+                            <i class="tim-icons icon-wallet-43 mr-3"></i>
+                            Registro de Movimientos
+                        </h2>
+                        <p class="page-subtitle">Gestiona los movimientos financieros de tu organización de forma eficiente</p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
+                                    <select class="form-control" id="ejercicioSelect" onchange="loadEjercicioData()">
+                                        <option value="">-- Selecciona un ejercicio --</option>
+                                        {% for ejercicio in ejercicios %}
+                                            <option value="{{ ejercicio.id }}" 
+                                                    data-saldo-total="{{ ejercicio.saldo_total }}"
+                                                    data-saldo-banco="{{ ejercicio.saldo_banco }}"
+                                                    data-nombre="{{ ejercicio.nombre }}"
+                                                    {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
+                                                {{ ejercicio.nombre }} ({{ ejercicio.año }}) - Total: {{ ejercicio.saldo_total }}€
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="totals-section">
+                                    <div class="total-item">
+                                        <span class="total-label">Ingresos</span>
+                                        <div class="total-value ingresos" id="totalIngresosHeader">--</div>
+                                    </div>
+                                    <div class="total-item">
+                                        <span class="total-label">Gastos</span>
+                                        <div class="total-value gastos" id="totalGastosHeader">--</div>
+                                    </div>
+                                    <div class="total-item">
+                                        <span class="total-label">Saldo</span>
+                                        <div class="total-value saldo" id="saldoActual">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>                       
+        </div>
+    </div>
+
+        <!-- Buscador de movimientos -->
+    <div class="row mb-3" id="searchSection" style="display: none;">
+        <div class="col-md-12">
+            <div class="movements-search-bar">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text search-icon">
+                            <i class="tim-icons icon-zoom-split"></i>
+                        </span>
+                    </div>
+                    <input type="text" 
+                        class="form-control search-input" 
+                        id="movementsSearch" 
+                        placeholder="Buscar por concepto, cantidad, justificante o descripción..."
+                        autocomplete="off">
+                    <div class="input-group-append">
+                        <button class="btn btn-clear" type="button" id="clearSearch" style="display: none;">
+                            <i class="tim-icons icon-simple-remove"></i>
+                        </button>
+                    </div>
+                    <div class="search-results-info" id="searchResultsInfo">
+                    <i class="tim-icons icon-check-2 text-success"></i>
+                    <span class="results-count" id="resultsCount">0</span> 
+                    <span id="resultsText">resultados encontrados</span>
             </div>
+                    </div>
+                </div>
+
         </div>
     </div>
 
@@ -28,25 +100,8 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <!-- Selector de Ejercicio -->
+                    <!-- Totales de Ingresos, Gastos y Saldo -->
                     <div class="row mb-4">
-                        <div class="col-md-8">
-                            <div class="form-group">
-                                <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
-                                <select class="form-control" id="ejercicioSelect" onchange="loadEjercicioData()">
-                                    <option value="">-- Selecciona un ejercicio --</option>
-                                    {% for ejercicio in ejercicios %}
-                                        <option value="{{ ejercicio.id }}" 
-                                                data-saldo-total="{{ ejercicio.saldo_total }}"
-                                                data-saldo-banco="{{ ejercicio.saldo_banco }}"
-                                                data-nombre="{{ ejercicio.nombre }}"
-                                                {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
-                                            {{ ejercicio.nombre }} ({{ ejercicio.año }}) - Total: {{ ejercicio.saldo_total }}€
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
                         <div class="col-md-4">
                             <div class="totals-section">
                                 <div class="total-item">
@@ -87,37 +142,6 @@
                                     <span id="sortAmountIcon" class="ml-1"></span>
                                 </button>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Buscador de movimientos -->
-                    <div class="row mb-3" id="searchSection" style="display: none;">
-                        <div class="col-md-12">
-                            <div class="movements-search-bar">
-                                <div class="input-group">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text search-icon">
-                                            <i class="tim-icons icon-zoom-split"></i>
-                                        </span>
-                                    </div>
-                                    <input type="text" 
-                                        class="form-control search-input" 
-                                        id="movementsSearch" 
-                                        placeholder="Buscar por concepto, cantidad, justificante o descripción..."
-                                        autocomplete="off">
-                                    <div class="input-group-append">
-                                        <button class="btn btn-clear" type="button" id="clearSearch" style="display: none;">
-                                            <i class="tim-icons icon-simple-remove"></i>
-                                        </button>
-                                    </div>
-                                    <div class="search-results-info" id="searchResultsInfo">
-                                    <i class="tim-icons icon-check-2 text-success"></i>
-                                    <span class="results-count" id="resultsCount">0</span> 
-                                    <span id="resultsText">resultados encontrados</span>
-                            </div>
-                                    </div>
-                                </div>
-
                         </div>
                     </div>
 
