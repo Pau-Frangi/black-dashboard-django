@@ -23,39 +23,18 @@
                         <p class="page-subtitle">Gestiona los movimientos financieros de tu organización de forma eficiente</p>
                     </div>
                     <div class="col-md-4">
-                        <div class="row align-items-center">
-                            <div class="col-md-2">
-                                <div class="form-group">
-                                    <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
-                                    <select class="form-control" id="ejercicioSelect" onchange="loadEjercicioData()">
-                                        <option value="">-- Selecciona un ejercicio --</option>
-                                        {% for ejercicio in ejercicios %}
-                                            <option value="{{ ejercicio.id }}" 
-                                                    data-saldo-total="{{ ejercicio.saldo_total }}"
-                                                    data-saldo-banco="{{ ejercicio.saldo_banco }}"
-                                                    data-nombre="{{ ejercicio.nombre }}"
-                                                    {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
-                                                {{ ejercicio.nombre }} ({{ ejercicio.año }}) - Total: {{ ejercicio.saldo_total }}€
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
+                        <div class="totals-section">
+                            <div class="total-item">
+                                <span class="total-label">Ingresos</span>
+                                <div class="total-value ingresos" id="totalIngresosHeader">--</div>
                             </div>
-                            <div class="col-md-2">
-                                <div class="totals-section">
-                                    <div class="total-item">
-                                        <span class="total-label">Ingresos</span>
-                                        <div class="total-value ingresos" id="totalIngresosHeader">--</div>
-                                    </div>
-                                    <div class="total-item">
-                                        <span class="total-label">Gastos</span>
-                                        <div class="total-value gastos" id="totalGastosHeader">--</div>
-                                    </div>
-                                    <div class="total-item">
-                                        <span class="total-label">Saldo</span>
-                                        <div class="total-value saldo" id="saldoActual">--</div>
-                                    </div>
-                                </div>
+                            <div class="total-item">
+                                <span class="total-label">Gastos</span>
+                                <div class="total-value gastos" id="totalGastosHeader">--</div>
+                            </div>
+                            <div class="total-item">
+                                <span class="total-label">Saldo</span>
+                                <div class="total-value saldo" id="saldoActual">--</div>
                             </div>
                         </div>
                     </div>
@@ -100,25 +79,6 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <!-- Totales de Ingresos, Gastos y Saldo -->
-                    <div class="row mb-4">
-                        <div class="col-md-4">
-                            <div class="totals-section">
-                                <div class="total-item">
-                                    <span class="total-label">Ingresos</span>
-                                    <div class="total-value ingresos" id="totalIngresosHeader">--</div>
-                                </div>
-                                <div class="total-item">
-                                    <span class="total-label">Gastos</span>
-                                    <div class="total-value gastos" id="totalGastosHeader">--</div>
-                                </div>
-                                <div class="total-item">
-                                    <span class="total-label">Saldo</span>
-                                    <div class="total-value saldo" id="saldoActual">--</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- Botón para añadir movimiento y controles de ordenamiento -->
                     <div class="row mb-3" id="addMovementSection" style="display: none;">

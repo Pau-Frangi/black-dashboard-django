@@ -328,17 +328,37 @@ function loadGraficosCaja(cajaId) {
     });
 }
 
-// Modal para cambio de dinero
-function openCambioDineroModal(cajaId) {
-    // Aquí podrías cargar denominaciones y desglose actual por AJAX si lo necesitas
-    $('#cambioDineroInputs').html('<div class="text-muted">Funcionalidad de cambio de dinero no implementada.</div>');
-    $('#cambioDineroModal').modal('show');
-}
+    /**
+     * Actualiza la visualización de los totales en el header
+     */
+    function updateTotalsDisplay(ingresos, gastos, saldo) {
+        $('#totalIngresosHeader').text(ingresos.toFixed(2) + '€');
+        $('#totalGastosHeader').text(gastos.toFixed(2) + '€');
+        $('#saldoActual').text(saldo.toFixed(2) + '€');
 
-// Manejo del formulario de cambio de dinero
-$('#cambioDineroForm').on('submit', function(e) {
-    e.preventDefault();
-    // Recoge datos y envía AJAX para realizar el cambio
-    // Actualiza desglose y movimientos tras éxito
-    $('#cambioDineroModal').modal('hide');
-});
+        // Actualizar colores del saldo según el valor
+        const $saldoElement = $('#saldoActual');
+        $saldoElement.removeClass('text-success text-danger text-warning');
+        
+        if (saldo > 0) {
+            $saldoElement.addClass('text-success');
+        } else if (saldo < 0) {
+            $saldoElement.addClass('text-danger');
+        } else {
+            $saldoElement.addClass('text-warning');
+        }
+
+        // Indicar si los totales están filtrados
+        const isFiltered = currentTipoFilter !== 'todos' || 
+                          currentIngresosGastosFilter !== 'todos' || 
+                          $('#movementsSearch').val().trim() !== '';
+        
+        const $totalsSection = $('.totals-section');
+        if (isFiltered) {
+            $totalsSection.attr('title', 'Totales calculados sobre movimientos filtrados');
+            $totalsSection.addClass('filtered-totals');
+        } else {
+            $totalsSection.attr('title', 'Totales de todos los movimientos');
+            $totalsSection.removeClass('filtered-totals');
+        }
+    }

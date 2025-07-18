@@ -22,19 +22,19 @@
                         <p class="page-subtitle">Análisis profesional del estado financiero por ejercicio, con gráficos y estadísticas agregadas</p>
                     </div>
                     <div class="col-md-4">
-                        <div class="form-group">
-                            <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
-                            <select class="form-control" id="ejercicioSelect" onchange="loadSaldoData()">
-                                <option value="">-- Selecciona un ejercicio --</option>
-                                {% for ejercicio in ejercicios %}
-                                    <option value="{{ ejercicio.id }}"
-                                            data-nombre="{{ ejercicio.nombre }}"
-                                            data-año="{{ ejercicio.año }}"
-                                            {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
-                                        {{ ejercicio.nombre }} ({{ ejercicio.año }})
-                                    </option>
-                                {% endfor %}
-                            </select>
+                        <div class="totals-section">
+                            <div class="total-item">
+                                <span class="total-label">Ingresos</span>
+                                <div class="total-value ingresos" id="totalIngresosHeader">--</div>
+                            </div>
+                            <div class="total-item">
+                                <span class="total-label">Gastos</span>
+                                <div class="total-value gastos" id="totalGastosHeader">--</div>
+                            </div>
+                            <div class="total-item">
+                                <span class="total-label">Saldo</span>
+                                <div class="total-value saldo" id="saldoActual">--</div>
+                            </div>
                         </div>
                     </div>
                 </div>
