@@ -13,33 +13,29 @@
     <div class="row mb-4">
         <div class="col-md-12">
             <div class="page-header">
-                <h2 class="page-title">
-                    <i class="tim-icons icon-wallet-43 mr-3"></i>
-                    Gestión de Cajas por Ejercicio
-                </h2>
-                <p class="page-subtitle">Visualiza y gestiona el desglose, movimientos y utilidades de cada caja asociada a un ejercicio</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Selector de Ejercicio -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <div class="form-group">
-                        <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
-                        <select class="form-control" id="ejercicioSelect">
-                            <option value="">-- Selecciona un ejercicio --</option>
-                            {% for ejercicio in ejercicios %}
-                                <option value="{{ ejercicio.id }}"
-                                        data-nombre="{{ ejercicio.nombre }}"
-                                        data-año="{{ ejercicio.año }}"
-                                        {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
-                                    {{ ejercicio.nombre }} ({{ ejercicio.año }})
-                                </option>
-                            {% endfor %}
-                        </select>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="page-title">
+                            <i class="tim-icons icon-wallet-43 mr-3"></i>
+                            Gestión de Cajas por Ejercicio
+                        </h2>
+                        <p class="page-subtitle">Visualiza y gestiona el desglose, movimientos y utilidades de cada caja asociada a un ejercicio</p>
+                    </div>
+                    <div class="col-md-4 text-md-right mt-3 mt-md-0">
+                        <div class="form-group">
+                            <label for="ejercicioSelect" class="form-label">Seleccionar Ejercicio:</label>
+                            <select class="form-control" id="ejercicioSelect">
+                                <option value="">-- Selecciona un ejercicio --</option>
+                                {% for ejercicio in ejercicios %}
+                                    <option value="{{ ejercicio.id }}"
+                                            data-nombre="{{ ejercicio.nombre }}"
+                                            data-año="{{ ejercicio.año }}"
+                                            {% if ejercicio.id == default_ejercicio_id %}selected{% endif %}>
+                                        {{ ejercicio.nombre }} ({{ ejercicio.año }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>

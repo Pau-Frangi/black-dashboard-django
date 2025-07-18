@@ -6,24 +6,36 @@
       <p>Dashboard</p>
     </a>
   </li>
+  <li class="{% if 'registro' in segment %} active {% endif %}">
+    <a href="{% url "registro" %}">
+      <i class="tim-icons icon-paper"></i>
+      <p>Registro de Movimientos</p>
+    </a>
+  </li>
+  <li class="{% if 'tables' in segment %} active {% endif %}">
+    <a href="{% url 'tables' %}">
+      <i class="tim-icons icon-puzzle-10"></i>
+      <p>Table List</p>
+    </a>
+  </li>
+  <li class="{% if 'cajas' in segment %} active {% endif %}">
+    <a href="{% url 'cajas' %}">
+      <i class="tim-icons icon-wallet-43"></i>
+      <p>Gestión de Cajas</p>
+    </a>
+  </li>  
+  <li class="{% if 'saldo' in segment %} active {% endif %}">
+    <a href="{% url 'saldo' %}">
+        <i class="tim-icons icon-chart-bar-32"></i>
+        <p>Estado Económico</p>
+    </a>
+  </li>
   <li class="{% if 'dynamic_dt' in segment %} active {% endif %}">
     <a href="{% url "dynamic_dt" %}">
       <i class="tim-icons icon-puzzle-10"></i>
       <p>Dynamic Tables</p>
     </a>
   </li>   
-  <li class="{% if 'registro' in segment %} active {% endif %}">
-    <a href="{% url "registro" %}">
-      <i class="tim-icons icon-wallet-43"></i>
-      <p>Registro de Movimientos</p>
-    </a>
-  </li>
-  <li class="{% if 'saldo' in segment %} active {% endif %}">
-    <a href="{% url 'saldo' %}">
-        <i class="tim-icons icon-chart-bar-32"></i>
-        <p>Estado Económico</p>
-    </a>
-</li>
   <li class="{% if 'dynamic_api' in segment %} active {% endif %}">
     <a href="{% url "dynamic_api" %}">
       <i class="tim-icons icon-send"></i>
@@ -96,12 +108,7 @@
       <p>User Profile</p>
     </a>
   </li>
-  <li class="{% if 'tables' in segment %} active {% endif %}">
-    <a href="{% url 'tables' %}">
-      <i class="tim-icons icon-puzzle-10"></i>
-      <p>Table List</p>
-    </a>
-  </li>
+
   <li class="{% if 'typography' in segment %} active {% endif %}">
     <a href="{% url 'typography' %}">
       <i class="tim-icons icon-align-center"></i>
@@ -114,11 +121,6 @@
       <p>RTL Support</p>
     </a>
   </li>
-  <li class="{% if 'cajas' in segment %} active {% endif %}">
-    <a href="{% url 'cajas' %}">
-      <i class="tim-icons icon-wallet-43"></i>
-      <p>Gestión de Cajas</p>
-    </a>
-  </li>
+
 
 </ul>
