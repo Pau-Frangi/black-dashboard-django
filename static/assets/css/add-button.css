@@ -42,7 +42,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: .2857rem;
+  border-top-left-radius: 0.2857rem;
+  border-bottom-left-radius: 0.2857rem;
   border: 1px solid #1a1e34;
 }
 
@@ -65,6 +66,7 @@
 .button:hover .button__icon {
   width: 221px;
   transform: translateX(-60);
+  border-radius: 0.2857rem; /* Borde redondeado completo */
   align-items: center;
   justify-content: center;
 }
