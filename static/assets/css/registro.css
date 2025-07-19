@@ -850,6 +850,12 @@ select.form-control {
     transform: scale(1.05);
 }
 
+.append-clear-button {
+    background-color: transparent;
+    display: flex;
+    transition: all 0.3s ease;
+}
+
 /* Estilos para la información de resultados de búsqueda */
 .search-results-info {
     background: linear-gradient(135deg, #27293d 0%, #344675 100%);
