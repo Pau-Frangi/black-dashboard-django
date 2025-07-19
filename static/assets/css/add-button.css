@@ -1,0 +1,83 @@
+.button {
+  position: relative;
+  width: 220px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border: 1px solid #1a1e34;
+  /* Gradiente estilo Black Dashboard */
+  background: linear-gradient(90deg, #e14eca 0%, #ba54f5 100%);
+  border-radius: .2857rem;
+  font-weight: 600;
+  transition: box-shadow 0.3s, transform 0.2s, background 0.3s;
+}
+
+.white-content .button {
+  border-color: #fff;
+}
+
+.white-content .button .button__icon {
+  border-color: #fff;
+}
+
+
+.button, .button__icon, .button__text {
+  transition: all 0.3s;
+}
+
+.button .button__text {
+  transform: translateX(50px);
+  color: #fff;
+  font-weight: 600;
+}
+
+.button .button__icon {
+  position: absolute;
+  left: -110px;
+  transform: translateX(109px);
+  height: 40px;
+  width: 39px;
+  background-color: #e14eca;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .2857rem;
+  border: 1px solid #1a1e34;
+}
+
+
+.button .svg {
+  width: 30px;
+  stroke: #fff;
+}
+
+.button:hover {
+  /* Gradiente hover estilo Black Dashboard */
+  background: linear-gradient(90deg, #db2dc0 0%, #ba54f5 100%);
+  transform: translateY(-2px); /* desplazamiento al hacer hover */
+}
+
+.button:hover .button__text {
+  color: transparent;
+}
+
+.button:hover .button__icon {
+  width: 221px;
+  transform: translateX(-60);
+  align-items: center;
+  justify-content: center;
+}
+
+.button:active .button__icon {
+  background-color: #e14eca;
+}
+
+.button:active {
+  border: 1px solid #dee14e;
+  transform: translateY(0); /* vuelve a posición normal */
+}
+
+.button:focus {
+  outline: none;
+}

@@ -6,6 +6,7 @@
 {% block extrastyle %}
 <link href="{% static 'assets/css/registro.css' %}" rel="stylesheet" />
 <link href="{% static 'assets/css/alerts-enhanced.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/css/add-button.css' %}" rel="stylesheet" />
 {% endblock extrastyle %}
 
 {% block content %}
@@ -83,10 +84,11 @@
                     <!-- Botón para añadir movimiento y controles de ordenamiento -->
                     <div class="row mb-3" id="addMovementSection" style="display: none;">
                         <div class="col-md-6">
-                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
-                                <i class="tim-icons icon-simple-add"></i>
-                                Añadir Movimiento
+                            <button type="button" class="button" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
+                            <span class="button__text">Añadir Movimiento</span>
+                            <span class="button__icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke="currentColor" height="24" fill="none" class="svg"><line y2="19" y1="5" x2="12" x1="12"></line><line y2="12" y1="12" x2="19" x1="5"></line></svg></span>
                             </button>
+                            
                         </div>
                         <div class="col-md-6 d-flex justify-content-end align-items-center" id="sortControls" style="display: none !important;">
                             <label class="form-label mb-0 mr-3">Ordenar por:</label>
@@ -102,20 +104,12 @@
                                     <span id="sortAmountIcon" class="ml-1"></span>
                                 </button>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Controles de filtrado -->
-                    <div class="row mb-3" id="filterControls" style="display: none;">
-                        <div class="col-md-6">
                             <div class="btn-group" role="group" aria-label="Filtros de tipo">
                                 <button type="button" class="btn btn-outline-info btn-sm" id="filterTipo" data-filter="todos">
                                     <i class="tim-icons icon-atom"></i>
                                     <span id="filterTipoText">Todos</span>
                                 </button>
                             </div>
-                        </div>
-                        <div class="col-md-6 d-flex justify-content-end">
                             <div class="btn-group" role="group" aria-label="Filtros de ingreso/gasto">
                                 <button type="button" class="btn btn-outline-success btn-sm" id="filterIngresosGastos" data-filter="todos">
                                     <i class="tim-icons icon-chart-pie-36"></i>

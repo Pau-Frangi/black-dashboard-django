@@ -2067,7 +2067,7 @@ pre code {
 .form-control {
     display: block;
     width: 100%;
-    height: calc(2.249999625rem + 2px);
+    /*height: calc(2.249999625rem + 2px);*/
     padding: .5rem .7rem;
     font-size: .875rem;
     font-weight: 400;
@@ -18889,7 +18889,7 @@ code {
 
 .input-group .form-control:not(:first-child):not(:last-child),
 .input-group-btn:not(:first-child):not(:last-child) {
-    border-radius: .4285rem;
+    /*border-radius: .4285rem;*/
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     border-left: 0 none

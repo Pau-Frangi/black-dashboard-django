@@ -853,7 +853,6 @@ select.form-control {
 /* Estilos para la información de resultados de búsqueda */
 .search-results-info {
     background: linear-gradient(135deg, #27293d 0%, #344675 100%);
-    border-radius: 8px;
     padding: 10px 15px;
     border: none;
     font-size: 0.85rem;
