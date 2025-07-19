@@ -23,7 +23,7 @@
 
 
 .button, .button__icon, .button__text {
-  transition: all 0.3s;
+  transition: all 0.4s;
 }
 
 .button .button__text {
@@ -83,3 +83,18 @@
 .button:focus {
   outline: none;
 }
+
+.button__text-wrapper {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.button:hover .button__text-wrapper {
+  mask-image: linear-gradient(to left, transparent 0%, black 25%, black 100%);
+  -webkit-mask-image: linear-gradient(to left, transparent 0%, black 25%, black 100%);
+}
+

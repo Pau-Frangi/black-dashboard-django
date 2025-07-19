@@ -45,7 +45,7 @@
     <!-- Selector de Ejercicio -->
 
 
-    <!-- Resumen de Totales -->
+    <!-- Graficos de Ingresos, Gastos y Movimientos -->
     <div class="row" id="totalsSection" style="display: none;">
         <div class="col-lg-4">
             <div class="card card-chart">
@@ -244,11 +244,12 @@
             success: function(data) {
                 if (data.success) {
                     $('#saldoDisplay').text(data.resumen.saldo_actual.toFixed(2) + '€');
-                    updateTotals(data.resumen);
                     createCharts(data);
                     updateRecentMovements(data.recent_movements);
                     updateDesgloseActual(data.desglose_actual, data.caja_info.saldo_actual);
-                    
+                    updateTotals(data.resumen);
+                    updateTotalsHeader(data.resumen);
+
                     $('#totalsSection').show();
                     $('#chartsSection').show();
                     $('#detailChartsSection').show();
@@ -267,6 +268,12 @@
         $('#totalIngresos').text(totals.total_ingresos.toFixed(2) + '€');
         $('#totalGastos').text(totals.total_gastos.toFixed(2) + '€');
         $('#totalMovimientos').text(totals.total_movimientos);
+    }
+
+    function updateTotalsHeader(totals) {
+        $('#totalIngresosHeader').text(totals.total_ingresos.toFixed(2) + '€');
+        $('#totalGastosHeader').text(totals.total_gastos.toFixed(2) + '€');
+        $('#saldoActual').text(totals.saldo_actual.toFixed(2) + '€');
     }
 
     function createCharts(data) {

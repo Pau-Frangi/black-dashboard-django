@@ -870,6 +870,15 @@ select.form-control {
     transition: all 0.3s ease;
 }
 
+.search-border {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(29, 37, 59, 0.2);
+    border-radius: 5px;
+    padding: 5px;
+}
+
 .search-results-info.text-success {
     border: none;
     color: #27c24c !important;

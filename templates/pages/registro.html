@@ -51,7 +51,7 @@
                 <div class="input-group">
                     <div class="input-group-prepend">
                         <span class="input-group-text search-icon">
-                            <i class="tim-icons icon-zoom-split"></i>
+                                <i class="tim-icons icon-zoom-split"></i>
                         </span>
                     </div>
                     <input type="text" 
@@ -83,10 +83,18 @@
                     <!-- Botón para añadir movimiento y controles de ordenamiento -->
                     <div class="row mb-3" id="addMovementSection" style="display: none;">
                         <div class="col-md-6">
-                            <button type="button" class="button" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
-                            <span class="button__text">Añadir Movimiento</span>
-                            <span class="button__icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke="currentColor" height="24" fill="none" class="svg"><line y2="19" y1="5" x2="12" x1="12"></line><line y2="12" y1="12" x2="19" x1="5"></line></svg></span>
-                            </button>
+<button type="button" class="button" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
+  <span class="button__icon">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke="currentColor" height="24" fill="none" class="svg">
+      <line y2="19" y1="5" x2="12" x1="12"></line>
+      <line y2="12" y1="12" x2="19" x1="5"></line>
+    </svg>
+  </span>
+  <span class="button__text-wrapper">
+    <span class="button__text">Añadir Movimiento</span>
+  </span>
+</button>
+
                             
                         </div>
                         <div class="col-md-6 d-flex justify-content-end align-items-center" id="sortControls" style="display: none !important;">
