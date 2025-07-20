@@ -4699,6 +4699,10 @@ input[type=button].btn-block {
     border-bottom: .0625rem solid #e3e3e3
 }
 
+.white-content .nav-tabs {
+    border-bottom: .0625rem solid #222a42b3
+}
+
 .nav-tabs .nav-item {
     margin-bottom: -.0625rem
 }
@@ -4711,7 +4715,14 @@ input[type=button].btn-block {
 
 .nav-tabs .nav-link:hover,
 .nav-tabs .nav-link:focus {
-    border-color: #e9ecef #e9ecef #e3e3e3
+    border-color: #232337 #232337 #e3e3e3;
+    background-color: #232337;
+}
+
+.white-content .nav-tabs .nav-link:hover,
+.white-content .nav-tabs .nav-link:focus {
+    border-color:  #ebedf5 #ebedf5 #222a42b3;
+    background-color: #ebedf5;
 }
 
 .nav-tabs .nav-link.disabled {
@@ -4725,6 +4736,13 @@ input[type=button].btn-block {
     color: #525f7f;
     background-color: #1e1e2f;
     border-color: #e3e3e3 #e3e3e3 #1e1e2f
+}
+
+.white-content .nav-tabs .nav-link.active,
+.white-content .nav-tabs .nav-item.show .nav-link {
+    color: #000;
+    background-color: transparent;
+    border-color: #222a42b3 #222a42b3 #f5f6fa
 }
 
 .nav-tabs .dropdown-menu {
