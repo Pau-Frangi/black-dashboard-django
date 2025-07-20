@@ -892,19 +892,16 @@ select.form-control {
 /* Estilos para la información de resultados de búsqueda - modo claro */
 .white-content .search-results-info {
     background: linear-gradient(135deg, #ffffff 0%, #f0f2f7 100%);
-    border: 1px solid rgba(29, 37, 59, 0.2);
     box-shadow: 0 2px 10px rgba(29, 37, 59, 0.1);
     color: rgba(29, 37, 59, 0.7);
 }
 
 .white-content .search-results-info.text-success {
-    border: 1px solid rgba(39, 194, 76, 0.3);
     background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
     color: #27c24c !important;
 }
 
 .white-content .search-results-info.text-warning {
-    border: 1px solid rgba(255, 149, 0, 0.3);
     background: linear-gradient(135deg, #fff8f0 0%, #ffffff 100%);
     color: #ff9500 !important;
 }
@@ -1570,22 +1567,6 @@ select.form-control {
     color: #fff !important;
     line-height: 1.2 !important;
     margin: 0 !important;
-}
-
-.white-content .total-value {
-    color: #1d253b !important;
-}
-
-.total-entrada .total-value {
-    color: #27c24c !important;
-}
-
-.total-salida .total-value {
-    color: #fd5d93 !important;
-}
-
-.total-neto .total-value {
-    color: #51cbce !important;
 }
 
 /* Botones de acciones del desglose mejorados */
