@@ -10,10 +10,16 @@ admin.site.register(ModelFilter)
 
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'ejercicio', 'ejercicio_año')
+    list_display = ('nombre', 'ejercicio', 'ejercicio_año', 'creado_por', 'creado_en')
     list_filter = ('ejercicio', 'ejercicio__año')
     search_fields = ('nombre', 'ejercicio__nombre')
     ordering = ('ejercicio__nombre', 'nombre')
+    readonly_fields = ('creado_por', 'creado_en')
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
     
     def ejercicio_año(self, obj):
         return obj.ejercicio.año
@@ -22,19 +28,25 @@ class TurnoAdmin(admin.ModelAdmin):
 
 @admin.register(Concepto)
 class ConceptoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'es_gasto')
+    list_display = ('nombre', 'es_gasto', 'creado_por', 'creado_en')
     list_filter = ('es_gasto',)
     search_fields = ('nombre',)
     ordering = ('nombre',)
+    readonly_fields = ('creado_por', 'creado_en')
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Caja)
 class CajaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'ejercicio', 'año', 'saldo_caja', 'saldo_desglose', 'activa', 'total_movimientos_caja', 'total_turnos_ejercicio')
+    list_display = ('nombre', 'ejercicio', 'año', 'saldo_caja', 'saldo_desglose', 'activa', 'creado_por', 'creado_en')
     list_filter = ('año', 'activa', 'ejercicio')
     search_fields = ('nombre', 'ejercicio__nombre')
     ordering = ('-año', 'nombre')
-    readonly_fields = ('saldo_caja', 'saldo_desglose')  # Los saldos no se pueden modificar manualmente
+    readonly_fields = ('saldo_caja', 'saldo_desglose', 'creado_por', 'creado_en')  # Los saldos no se pueden modificar manualmente
     
     fieldsets = (
         ('Información Básica', {
@@ -47,6 +59,10 @@ class CajaAdmin(admin.ModelAdmin):
         }),
         ('Observaciones', {
             'fields': ('observaciones',),
+            'classes': ('collapse',)
+        }),
+        ('Información de Creación', {
+            'fields': ('creado_por', 'creado_en'),
             'classes': ('collapse',)
         }),
     )
@@ -99,11 +115,33 @@ class CajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoCaja)
 class MovimientoCajaAdmin(admin.ModelAdmin):
-    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante_display', 'tiene_archivo', 'tiene_desglose')
+    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante_display', 'tiene_archivo', 'tiene_desglose', 'creado_por', 'creado_en')
     list_filter = ('fecha', 'caja', 'turno', 'concepto__es_gasto')
     search_fields = ('descripcion', 'justificante')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
+    readonly_fields = ('creado_por', 'creado_en')
+
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('caja', 'turno', 'concepto', 'cantidad', 'fecha')
+        }),
+        ('Justificante', {
+            'fields': ('justificante', 'archivo_justificante')
+        }),
+        ('Descripción', {
+            'fields': ('descripcion',)
+        }),
+        ('Información de Creación', {
+            'fields': ('creado_por', 'creado_en'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
     
     def fecha_display(self, obj):
         return obj.fecha.strftime('%d/%m/%Y %H:%M')
@@ -137,12 +175,13 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoBanco)
 class MovimientoBancoAdmin(admin.ModelAdmin):
-    list_display = ('fecha_display', 'ejercicio', 'turno', 'concepto', 'cantidad_display', 'referencia_bancaria', 'tiene_archivo')
+    list_display = ('fecha_display', 'ejercicio', 'turno', 'concepto', 'cantidad_display', 'referencia_bancaria', 'tiene_archivo', 'creado_por', 'creado_en')
     list_filter = ('fecha', 'concepto__es_gasto', 'ejercicio', 'turno')
     search_fields = ('descripcion', 'referencia_bancaria', 'ejercicio__nombre', 'concepto__nombre', 'turno__nombre')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
-    
+    readonly_fields = ('creado_por', 'creado_en')
+
     fieldsets = (
         ('Información Básica', {
             'fields': ('ejercicio', 'turno', 'concepto', 'cantidad', 'fecha', 'referencia_bancaria')
@@ -154,7 +193,16 @@ class MovimientoBancoAdmin(admin.ModelAdmin):
             'fields': ('archivo_justificante',),
             'description': 'Archivo de justificante para el movimiento bancario'
         }),
+        ('Información de Creación', {
+            'fields': ('creado_por', 'creado_en'),
+            'classes': ('collapse',)
+        }),
     )
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
     
     def fecha_display(self, obj):
         return obj.fecha.strftime('%d/%m/%Y %H:%M')
@@ -173,18 +221,28 @@ class MovimientoBancoAdmin(admin.ModelAdmin):
 
 @admin.register(DenominacionEuro)
 class DenominacionEuroAdmin(admin.ModelAdmin):
-    list_display = ('valor', 'es_billete', 'activa')
+    list_display = ('valor', 'es_billete', 'activa', 'creado_por', 'creado_en')
     list_filter = ('es_billete', 'activa')
     ordering = ('-valor',)
+    readonly_fields = ('creado_por', 'creado_en')
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(DesgloseCaja)
 class DesgloseCajaAdmin(admin.ModelAdmin):
-    list_display = ('caja', 'denominacion', 'cantidad', 'valor_total', 'denominacion_tipo')
+    list_display = ('caja', 'denominacion', 'cantidad', 'valor_total', 'denominacion_tipo', 'creado_por', 'creado_en')
     list_filter = ('caja', 'denominacion__es_billete')
     ordering = ('caja', '-denominacion__valor')
-    readonly_fields = ('valor_total',)
-    search_fields = ('caja__nombre',)
+    readonly_fields = ('valor_total', 'creado_por', 'creado_en')
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
     
     def denominacion_tipo(self, obj):
         return "Billete" if obj.denominacion.es_billete else "Moneda"
@@ -252,19 +310,24 @@ class DesgloseCajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoDinero)
 class MovimientoDineroAdmin(admin.ModelAdmin):
-    list_display = ('movimiento_caja', 'denominacion', 'cantidad_entrada', 'cantidad_salida', 'cantidad_neta', 'valor_neto')
+    list_display = ('movimiento_caja', 'denominacion', 'cantidad_entrada', 'cantidad_salida', 'cantidad_neta', 'valor_neto', 'creado_por', 'creado_en')
     list_filter = ('denominacion__es_billete', 'denominacion')
     ordering = ('-movimiento_caja__fecha',)
-    readonly_fields = ('cantidad_neta', 'valor_neto')
+    readonly_fields = ('cantidad_neta', 'valor_neto', 'creado_por', 'creado_en')
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Ejercicio)
 class EjercicioAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'año', 'saldo_banco', 'saldo_cajas', 'saldo_total_display', 'activo', 'total_cajas')
+    list_display = ('nombre', 'año', 'saldo_banco', 'saldo_cajas', 'saldo_total_display', 'activo', 'total_cajas', 'creado_por', 'creado_en')
     list_filter = ('año', 'activo')
     search_fields = ('nombre',)
     ordering = ('-año', 'nombre')
-    readonly_fields = ('saldo_cajas', 'saldo_total_display')
+    readonly_fields = ('saldo_cajas', 'saldo_total_display', 'creado_por', 'creado_en')
     
     fieldsets = (
         ('Información Básica', {
@@ -276,6 +339,10 @@ class EjercicioAdmin(admin.ModelAdmin):
         }),
         ('Descripción', {
             'fields': ('descripcion',),
+            'classes': ('collapse',)
+        }),
+        ('Información de Creación', {
+            'fields': ('creado_por', 'creado_en'),
             'classes': ('collapse',)
         }),
     )

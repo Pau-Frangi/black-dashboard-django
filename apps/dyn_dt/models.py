@@ -69,6 +69,21 @@ class Ejercicio(models.Model):
         verbose_name="Descripción",
         help_text="Descripción adicional del ejercicio"
     )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
+    )
 
     def calcular_saldo_cajas(self):
         """
@@ -128,6 +143,21 @@ class Turno(models.Model):
         max_length=100,
         verbose_name="Nombre del turno"
     )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
+    )
 
     def __str__(self):
         return f"{self.nombre} ({self.ejercicio.nombre})"
@@ -156,6 +186,21 @@ class Concepto(models.Model):
         default=False,
         verbose_name="¿Es gasto?",
         help_text="Marca si este concepto representa una salida de dinero"
+    )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
     )
 
     def __str__(self):
@@ -211,6 +256,21 @@ class Caja(models.Model):
         blank=True,
         null=True,
         verbose_name="Observaciones"
+    )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
     )
 
     def clean(self):
@@ -381,6 +441,21 @@ class MovimientoCaja(models.Model):
         verbose_name="Descripción",
         help_text="Descripción detallada del movimiento"
     )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
+    )
 
     def clean(self):
         """Validación de datos antes de guardar"""
@@ -498,6 +573,21 @@ class MovimientoBanco(models.Model):
         verbose_name="Descripción",
         help_text="Descripción detallada del movimiento bancario"
     )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
+    )
 
     def clean(self):
         """Validación de datos antes de guardar"""
@@ -572,6 +662,21 @@ class DenominacionEuro(models.Model):
         help_text="Solo las denominaciones activas aparecerán en los formularios"
     )
     
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
+    )
+    
     def __str__(self):
         tipo = "billete" if self.es_billete else "moneda"
         return f"{self.valor}€ ({tipo})"
@@ -602,6 +707,21 @@ class DesgloseCaja(models.Model):
     cantidad = models.PositiveIntegerField(
         default=0,
         verbose_name="Cantidad de unidades"
+    )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
     )
     
     def valor_total(self):
@@ -645,6 +765,21 @@ class MovimientoDinero(models.Model):
         default=0,
         verbose_name="Cantidad que sale",
         help_text="Billetes/monedas que salen de la caja (cambio)"
+    )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este ejercicio"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del ejercicio"
     )
     
     def cantidad_neta(self):
