@@ -7,6 +7,7 @@ from django.db.models.signals import post_save, pre_delete, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 import os
+from .mixins import UserTrackingMixin
 
 # Create your models here.
 
@@ -31,7 +32,7 @@ class ModelFilter(models.Model):
 		return self.key
 
 
-class Ejercicio(models.Model):
+class Ejercicio(UserTrackingMixin, models.Model):
     """
     Representa un ejercicio económico que agrupa varias cajas.
     Cada ejercicio tiene su propio saldo bancario y calcula el saldo total
@@ -125,7 +126,7 @@ class Ejercicio(models.Model):
 
 
 
-class Turno(models.Model):
+class Turno(UserTrackingMixin, models.Model):
     """
     Representa un turno del campamento (por ejemplo: 'Primer turno chicas').
     Cada turno debe estar asociado a un ejercicio específico.
@@ -170,7 +171,7 @@ class Turno(models.Model):
 
 
 
-class Concepto(models.Model):
+class Concepto(UserTrackingMixin, models.Model):
     """
     Representa un concepto económico, como 'Alimentos', 'Inscripciones', etc.
     Puede ser de tipo ingreso o gasto.
@@ -213,7 +214,7 @@ class Concepto(models.Model):
 
         
 
-class Caja(models.Model):
+class Caja(UserTrackingMixin, models.Model):
     """
     Representa una caja general para un año o una campaña económica.
     Por ejemplo: 'Caja 2025'.
@@ -390,7 +391,7 @@ class Caja(models.Model):
         
 
 
-class MovimientoCaja(models.Model):
+class MovimientoCaja(UserTrackingMixin, models.Model):
     caja = models.ForeignKey(
         Caja,
         on_delete=models.CASCADE,
@@ -517,7 +518,7 @@ class MovimientoCaja(models.Model):
         ordering = ['-fecha']
 
 
-class MovimientoBanco(models.Model):
+class MovimientoBanco(UserTrackingMixin, models.Model):
     """
     Representa un movimiento bancario asociado a un ejercicio.
     Los movimientos bancarios afectan el saldo_banco del ejercicio, no de una caja específica.
@@ -639,7 +640,7 @@ class MovimientoBanco(models.Model):
         ordering = ['-fecha']
 
 
-class DenominacionEuro(models.Model):
+class DenominacionEuro(UserTrackingMixin, models.Model):
     """
     Representa las diferentes denominaciones de euros (billetes y monedas)
     """
@@ -687,7 +688,7 @@ class DenominacionEuro(models.Model):
         ordering = ['-valor']
 
 
-class DesgloseCaja(models.Model):
+class DesgloseCaja(UserTrackingMixin, models.Model):
     """
     Representa la cantidad de cada denominación en una caja específica
     """
@@ -738,7 +739,7 @@ class DesgloseCaja(models.Model):
         ordering = ['-denominacion__valor']
 
 
-class MovimientoDinero(models.Model):
+class MovimientoDinero(UserTrackingMixin, models.Model):
     """
     Representa el movimiento específico de denominaciones en un movimiento de caja
     """

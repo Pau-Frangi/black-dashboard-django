@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from apps.dyn_dt.models import (
     Caja, Concepto, MovimientoCaja, MovimientoBanco, 
-    MovimientoDinero, DesgloseCaja, Ejercicio
+    MovimientoDinero, DesgloseCaja, Ejercicio, Turno
 )
 from apps.dyn_dt.forms import DesgloseDineroForm
 from apps.dyn_dt.utils import combine_date_time
@@ -65,11 +65,10 @@ class MovementHandler:
                     request, caja, concepto, cantidad_decimal, fecha_datetime
                 )
             
-            # Validate and save
-            movimiento.full_clean()
-            movimiento.save()
+            # Set user before saving
+            movimiento.save(user=request.user)  # Pass user explicitly
             
-            # Process money breakdown for cash movements
+            # Process money breakdown if needed
             if tipo_operacion == 'efectivo':
                 MovementCreator.process_money_breakdown(request, movimiento)
             
@@ -174,37 +173,32 @@ class MovementCreator:
     """Helper class for creating movements."""
     
     @staticmethod
-    def create_bank_movement(request, caja, concepto, cantidad, fecha):
-        """
-        Creates a bank movement.
+    def create_bank_movement(request, caja, concepto, cantidad_decimal, fecha_datetime):
+        """Creates a bank movement with proper turno handling"""
+        ejercicio = caja.ejercicio
+        turno_id = request.POST.get('turno')
         
-        Args:
-            request: Django request object
-            caja: Caja instance
-            concepto: Concepto instance
-            cantidad: Movement amount
-            fecha: Movement datetime
-            
-        Returns:
-            MovimientoBanco instance
-        """
-        ejercicio_id = request.POST.get('ejercicio_id', caja.ejercicio.id)
-        ejercicio = get_object_or_404(Ejercicio, id=ejercicio_id)
-        
-        movimiento = MovimientoBanco(
+        # Get or create default turno if none specified
+        if not turno_id:
+            turno, _ = Turno.objects.get_or_create(
+                ejercicio=ejercicio,
+                nombre="General",
+                defaults={'creado_por': request.user}
+            )
+        else:
+            turno = get_object_or_404(Turno, id=turno_id)
+
+        return MovimientoBanco(
             ejercicio=ejercicio,
+            turno=turno,  # Now we always have a turno
             concepto=concepto,
-            cantidad=cantidad,
-            fecha=fecha,
-            descripcion=request.POST.get('descripcion') or None,
-            referencia_bancaria=request.POST.get('referencia_bancaria') or None
+            cantidad=cantidad_decimal,
+            fecha=fecha_datetime,
+            descripcion=request.POST.get('descripcion'),
+            referencia_bancaria=request.POST.get('referencia_bancaria'),
+            archivo_justificante=request.FILES.get('archivo_justificante_banco'),
+            creado_por=request.user
         )
-        
-        # Handle file upload
-        if 'archivo_justificante_banco' in request.FILES:
-            movimiento.archivo_justificante = request.FILES['archivo_justificante_banco']
-        
-        return movimiento
     
     @staticmethod
     def create_cash_movement(request, caja, concepto, cantidad, fecha):
@@ -368,4 +362,10 @@ class MovementUpdater:
             raise ValidationError('El desglose de dinero es inválido o está incompleto')
         
         # Recalculate caja saldo
+        movimiento.caja.recalcular_saldo_caja()
+        movimiento.caja.recalcular_saldo_caja()
+        raise ValidationError('El desglose de dinero es inválido o está incompleto')
+        
+        # Recalculate caja saldo
+        movimiento.caja.recalcular_saldo_caja()
         movimiento.caja.recalcular_saldo_caja()

@@ -318,48 +318,20 @@ class MovimientoBancoForm(forms.ModelForm):
             self.fields['turno'].queryset = Turno.objects.filter(ejercicio=self.instance.ejercicio)
         else:
             self.fields['turno'].queryset = Turno.objects.none()
-        
-        # Set default values
-        if not self.instance.pk:
-            from datetime import datetime
-            now = datetime.now()
-            self.fields['fecha_date'].initial = now.date()
-            self.fields['fecha_time'].initial = now.time()
-        else:
-            self.fields['fecha_date'].initial = self.instance.fecha.date()
-            self.fields['fecha_time'].initial = self.instance.fecha.time()
-
-    def clean_archivo_justificante(self):
-        """Validate uploaded file"""
-        archivo = self.cleaned_data.get('archivo_justificante')
-        
-        if archivo:
-            ext = os.path.splitext(archivo.name)[1].lower()
-            valid_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp']
-            
-            if ext not in valid_extensions:
-                raise forms.ValidationError(
-                    f"El archivo debe ser una imagen (JPG, PNG, GIF, BMP) o un PDF. "
-                    f"Extensión recibida: {ext}"
-                )
-            
-            # Limitar tamaño de archivo a 10MB
-            if archivo.size > 10 * 1024 * 1024:
-                raise forms.ValidationError("El archivo no puede superar los 10MB")
-        
-        return archivo
 
     def clean(self):
-        """Validación adicional para campos de justificante"""
+        """Additional validation for bank movements"""
         cleaned_data = super().clean()
-        concepto = cleaned_data.get('concepto')
-        archivo_justificante = cleaned_data.get('archivo_justificante')
-        
-        # Si el concepto es un gasto, limpiar campos de justificante si no son gastos
-        if concepto and not concepto.es_gasto:
-            # Para ingresos, limpiar campos de justificante
-            cleaned_data['archivo_justificante'] = None
-        
+        # If no turno is selected, create a default "General" turno for this ejercicio
+        if not cleaned_data.get('turno') and cleaned_data.get('ejercicio'):
+            turno, created = Turno.objects.get_or_create(
+                ejercicio=cleaned_data['ejercicio'],
+                nombre="General",
+                defaults={
+                    'creado_por': self.instance.creado_por if self.instance.pk else None
+                }
+            )
+            cleaned_data['turno'] = turno
         return cleaned_data
 
 
@@ -530,17 +502,16 @@ class MovimientoCajaFilterForm(forms.Form):
         fecha_hasta = cleaned_data.get('fecha_hasta')
         solo_gastos = cleaned_data.get('solo_gastos')
         solo_ingresos = cleaned_data.get('solo_ingresos')
-        
+
         if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
             raise forms.ValidationError(
-                "La fecha 'desde' no puede ser posterior a la fecha 'hasta'"
+                "La fecha 'desde' no puede ser posterior a la fecha 'hasta'."
             )
-        
+
         if solo_gastos and solo_ingresos:
             raise forms.ValidationError(
-                "No se pueden seleccionar 'Solo gastos' y 'Solo ingresos' al mismo tiempo"
+                "No se pueden seleccionar 'Solo gastos' y 'Solo ingresos' al mismo tiempo."
             )
-        
+
         return cleaned_data
-        
-        return cleaned_data
+

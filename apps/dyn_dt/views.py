@@ -425,7 +425,7 @@ def _handle_movement_operations(request):
     action = request.POST.get('action')
     
     if action == 'add':
-        return MovementHandler.create_movement(request)
+        return MovementHandler.create_movement(request)  # request contains user
     elif action == 'delete':
         return MovementHandler.delete_movement(request)
     elif action == 'edit':
