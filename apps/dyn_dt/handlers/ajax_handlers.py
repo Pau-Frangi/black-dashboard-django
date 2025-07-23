@@ -109,7 +109,7 @@ class RegistroAjaxHandler:
             return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
         
         cajas = Caja.objects.filter(ejercicio_id=ejercicio_id).values(
-            'id', 'nombre', 'año', 'saldo_caja'
+            'id', 'nombre', 'año', 'saldo_caja', 'activa'
         )
         return JsonResponse({
             'success': True,

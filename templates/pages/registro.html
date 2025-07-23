@@ -2885,6 +2885,7 @@
                         const disabled = !caja.activa ? 'disabled style="background-color: #eee; color: #888;"' : '';
                         const label = caja.nombre + ' (' + caja.año + ') - ' + caja.saldo_caja + '€' + (!caja.activa ? ' [INACTIVA]' : '');
                         cajaSelect.append(`<option value="${caja.id}" data-saldo="${caja.saldo_caja}" ${disabled}>${label}</option>`);
+                        console.log(`Caja cargada: ${caja.nombre} - ${caja.activa ? 'ACTIVA' : 'INACTIVA'} - Saldo: ${caja.saldo_caja}€`);
                     });
 
                     console.log('Cajas cargadas:', data.cajas.length);

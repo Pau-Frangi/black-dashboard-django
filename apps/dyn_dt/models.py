@@ -296,7 +296,7 @@ class Caja(UserTrackingMixin, models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} - {'Activa' if self.activa else 'Inactiva'}"
+        return f"{self.nombre} - {'Activa' if self.activa else 'Inactiva'} ({self.ejercicio.nombre})"
 
     def recalcular_saldo_caja(self):
         """
