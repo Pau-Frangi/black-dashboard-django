@@ -98,26 +98,26 @@
                         <div class="col-md-6 d-flex justify-content-end align-items-center" id="sortControls" style="display: none !important;">
                             <label class="form-label mb-0 mr-3">Ordenar por:</label>
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortMovimientos('fecha')" id="sortByDate">
-                                    <i class="tim-icons icon-calendar-60"></i>
-                                    Fecha
-                                    <span id="sortDateIcon" class="ml-1"></span>
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="sortMovimientos('cantidad')" id="sortByAmount">
-                                    <i class="tim-icons icon-coins"></i>
-                                    Cantidad
-                                    <span id="sortAmountIcon" class="ml-1"></span>
-                                </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="sortMovimientos('fecha')" id="sortByDate">
+                                <i class="tim-icons icon-calendar-60 mr-1"></i>
+                                <span>Fecha</span>
+                                <span id="sortDateIcon" class="ml-2 d-inline"></span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="sortMovimientos('cantidad')" id="sortByAmount">
+                                <i class="tim-icons icon-coins mr-1"></i>
+                                <span>Cantidad</span>
+                                <span id="sortAmountIcon" class="ml-2 d-inline"></span>
+                            </button>
                             </div>
                             <div class="btn-group" role="group" aria-label="Filtros de tipo">
-                                <button type="button" class="btn btn-outline-info btn-sm" id="filterTipo" data-filter="todos">
-                                    <i class="tim-icons icon-atom"></i>
+                                <button type="button" class="btn btn-outline-info btn-sm d-inline-flex align-items-center" id="filterTipo" data-filter="todos">
+                                    <i class="tim-icons icon-atom mr-1"></i>
                                     <span id="filterTipoText">Todos</span>
                                 </button>
                             </div>
                             <div class="btn-group" role="group" aria-label="Filtros de ingreso/gasto">
-                                <button type="button" class="btn btn-outline-success btn-sm" id="filterIngresosGastos" data-filter="todos">
-                                    <i class="tim-icons icon-chart-pie-36"></i>
+                                <button type="button" class="btn btn-outline-success btn-sm d-inline-flex align-items-center" id="filterIngresosGastos" data-filter="todos">
+                                    <i class="tim-icons icon-chart-pie-36 mr-1"></i>
                                     <span id="filterIngresosGastosText">Todos</span>
                                 </button>
                             </div>
