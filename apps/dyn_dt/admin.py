@@ -61,10 +61,6 @@ class CajaAdmin(admin.ModelAdmin):
             'fields': ('observaciones',),
             'classes': ('collapse',)
         }),
-        ('Información de Creación', {
-            'fields': ('creado_por', 'creado_en'),
-            'classes': ('collapse',)
-        }),
     )
     
     def total_movimientos_caja(self, obj):
