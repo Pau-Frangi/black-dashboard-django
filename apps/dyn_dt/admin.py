@@ -108,6 +108,11 @@ class CajaAdmin(admin.ModelAdmin):
             return self.readonly_fields
         return ('saldo_desglose',)  # Al crear, se permite establecer saldos iniciales
 
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(MovimientoCaja)
 class MovimientoCajaAdmin(admin.ModelAdmin):

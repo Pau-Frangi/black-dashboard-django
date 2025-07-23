@@ -332,7 +332,8 @@ class Caja(UserTrackingMixin, models.Model):
             DesgloseCaja.objects.get_or_create(
                 caja=self,
                 denominacion=denominacion,
-                defaults={'cantidad': 0}
+                defaults={'cantidad': 0},
+                creado_por=self.creado_por
             )
 
     def actualizar_desglose_movimiento(self, movimiento_caja):
@@ -860,10 +861,9 @@ def actualizar_desglose_on_movimiento_dinero_delete(sender, instance, **kwargs):
     ).first()
     if desglose:
         desglose.cantidad -= instance.cantidad_neta()
-        if desglose.cantidad <= 0:
-            desglose.delete()
-        else:
-            desglose.save()
+        if desglose.cantidad < 0:
+            desglose.cantidad = 0
+        desglose.save()
 
 
 @receiver(post_save, sender=Caja)
@@ -895,19 +895,3 @@ def actualizar_saldo_on_desglose_delete(sender, instance, **kwargs):
     if instance.caja.saldo_caja != nuevo_saldo_caja:
         instance.caja.saldo_caja = nuevo_saldo_caja
         instance.caja.save(skip_validation=True)
-
-
-@receiver(post_save, sender=Caja)
-def actualizar_ejercicio_on_caja_save(sender, instance, created, **kwargs):
-    """Actualiza el ejercicio cuando se modifica el saldo de una caja"""
-    # Si la caja pertenece a un ejercicio, no necesitamos hacer nada especial
-    # ya que el saldo_total del ejercicio se calcula dinámicamente
-    pass
-
-
-@receiver(post_delete, sender=Caja)
-def actualizar_ejercicio_on_caja_delete(sender, instance, **kwargs):
-    """Se ejecuta cuando se elimina una caja del ejercicio"""
-    # Si la caja pertenece a un ejercicio, no necesitamos hacer nada especial
-    # ya que el saldo_total del ejercicio se calcula dinámicamente
-    pass
