@@ -70,7 +70,7 @@ class MovementHandler:
             # Set user before saving
             movimiento.save(user=request.user)  # Pass user explicitly
             
-            # Process money breakdown if needed
+            # Process money breakdown if needed (to create the MovimientoDinero)
             if tipo_operacion == 'efectivo':
                 MovementCreator.process_money_breakdown(request, movimiento)
             
@@ -242,7 +242,8 @@ class MovementCreator:
                     movimiento_caja=movimiento,
                     denominacion=mov_data['denominacion'],
                     cantidad_entrada=mov_data['cantidad_entrada'],
-                    cantidad_salida=mov_data['cantidad_salida']
+                    cantidad_salida=mov_data['cantidad_salida'],
+                    creado_por=request.user
                 )
 
 
@@ -355,6 +356,3 @@ class MovementUpdater:
         movimiento.caja.recalcular_saldo_caja()
         raise ValidationError('El desglose de dinero es inválido o está incompleto')
         
-        # Recalculate caja saldo
-        movimiento.caja.recalcular_saldo_caja()
-        movimiento.caja.recalcular_saldo_caja()

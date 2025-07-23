@@ -829,21 +829,7 @@ def actualizar_saldo_caja_on_save(sender, instance, created, **kwargs):
 
 @receiver(pre_delete, sender=MovimientoCaja)
 def actualizar_saldo_caja_on_delete(sender, instance, **kwargs):
-    """Actualiza el saldo de caja cuando se elimina un movimiento de caja"""
-    # Revertir el movimiento del desglose antes de eliminar
-    for mov_dinero in instance.movimientos_dinero.all():
-        desglose = DesgloseCaja.objects.filter(
-            caja=instance.caja,
-            denominacion=mov_dinero.denominacion
-        ).first()
-        
-        if desglose:
-            # Revertir el cambio
-            desglose.cantidad -= mov_dinero.cantidad_neta()
-            if desglose.cantidad < 0:
-                desglose.cantidad = 0
-            desglose.save()
-    
+    """Actualiza el saldo de caja cuando se elimina un movimiento de caja""" 
     # Actualizar saldo de caja
     instance.caja.saldo_caja -= instance.cantidad_real()
     instance.caja.save(skip_validation=True)
@@ -863,6 +849,21 @@ def actualizar_desglose_on_movimiento_dinero_save(sender, instance, created, **k
         if desglose.cantidad < 0:
             desglose.cantidad = 0
         desglose.save()
+
+
+@receiver(post_delete, sender=MovimientoDinero)
+def actualizar_desglose_on_movimiento_dinero_delete(sender, instance, **kwargs):
+    """Actualiza el desglose cuando se elimina un MovimientoDinero"""
+    desglose = DesgloseCaja.objects.filter(
+        caja=instance.movimiento_caja.caja,
+        denominacion=instance.denominacion
+    ).first()
+    if desglose:
+        desglose.cantidad -= instance.cantidad_neta()
+        if desglose.cantidad <= 0:
+            desglose.delete()
+        else:
+            desglose.save()
 
 
 @receiver(post_save, sender=Caja)
