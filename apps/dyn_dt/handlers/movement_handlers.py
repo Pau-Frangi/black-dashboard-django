@@ -29,15 +29,6 @@ class MovementHandler:
             JsonResponse indicating success or failure
         """
         try:
-            caja_id = request.POST.get('caja_id')
-            caja = get_object_or_404(Caja, id=caja_id)
-            
-            # Validate caja is active
-            if not caja.activa:
-                return JsonResponse({
-                    'success': False, 
-                    'error': 'No se pueden añadir movimientos a una caja inactiva'
-                })
             
             # Get operation type and validate
             tipo_operacion = request.POST.get('tipo_operacion')
@@ -52,17 +43,28 @@ class MovementHandler:
                 request.POST.get('fecha'), 
                 request.POST.get('hora', '12:00')
             )
+            turno = get_object_or_404(Turno, id=request.POST.get('turno'))
             concepto = get_object_or_404(Concepto, id=request.POST.get('concepto'))
             cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
             
             # Create movement based on type
             if tipo_operacion == 'transferencia':
+                ejercicio = get_object_or_404(Ejercicio, id=request.POST.get('ejercicio_id'))
                 movimiento = MovementCreator.create_bank_movement(
-                    request, caja, concepto, cantidad_decimal, fecha_datetime
+                    request, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime
                 )
             else:
+                caja = get_object_or_404(Caja, id=request.POST.get('caja_id'))
+
+                # Validate caja is active
+                if not caja.activa:
+                    return JsonResponse({
+                        'success': False, 
+                        'error': 'No se pueden añadir movimientos a una caja inactiva'
+                    })
+                    
                 movimiento = MovementCreator.create_cash_movement(
-                    request, caja, concepto, cantidad_decimal, fecha_datetime
+                    request, caja, turno, concepto, cantidad_decimal, fecha_datetime
                 )
             
             # Set user before saving
@@ -173,35 +175,22 @@ class MovementCreator:
     """Helper class for creating movements."""
     
     @staticmethod
-    def create_bank_movement(request, caja, concepto, cantidad_decimal, fecha_datetime):
-        """Creates a bank movement with proper turno handling"""
-        ejercicio = caja.ejercicio
-        turno_id = request.POST.get('turno')
-        
-        # Get or create default turno if none specified
-        if not turno_id:
-            turno, _ = Turno.objects.get_or_create(
-                ejercicio=ejercicio,
-                nombre="General",
-                defaults={'creado_por': request.user}
-            )
-        else:
-            turno = get_object_or_404(Turno, id=turno_id)
+    def create_bank_movement(request, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime):
+        """Creates a bank movement"""
 
         return MovimientoBanco(
             ejercicio=ejercicio,
-            turno=turno,  # Now we always have a turno
+            turno=turno,
             concepto=concepto,
             cantidad=cantidad_decimal,
             fecha=fecha_datetime,
-            descripcion=request.POST.get('descripcion'),
+            descripcion=request.POST.get('descripcion') or None,
             referencia_bancaria=request.POST.get('referencia_bancaria'),
             archivo_justificante=request.FILES.get('archivo_justificante_banco'),
-            creado_por=request.user
         )
     
     @staticmethod
-    def create_cash_movement(request, caja, concepto, cantidad, fecha):
+    def create_cash_movement(request, caja, turno, concepto, cantidad, fecha):
         """
         Creates a cash movement.
         
@@ -217,7 +206,7 @@ class MovementCreator:
         """
         movimiento = MovimientoCaja(
             caja=caja,
-            turno_id=request.POST.get('turno'),
+            turno=turno,
             concepto=concepto,
             cantidad=cantidad,
             fecha=fecha,

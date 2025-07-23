@@ -1074,7 +1074,7 @@
         console.log('Tipo de operación seleccionado:', tipoOperacion);
 
         // Verificar que se ha seleccionado un turno
-        const turnoId = $('#turnoSelect').val();
+        const turnoId = $('#turno').val();
         if (!turnoId) {
             showWarning('Por favor selecciona un turno', {floating: true});
             return;
@@ -1141,6 +1141,18 @@
         }
         
         formData.append('tipo_operacion', tipoOperacion);
+
+        console.log('Datos del formulario preparados para enviar:', {
+            action: formData.get('action'),
+            ejercicio_id: formData.get('ejercicio_id'),
+            tipo_operacion: formData.get('tipo_operacion'),
+            caja_id: formData.get('caja_id'),
+            turno_id: formData.get('turno'),
+            concepto_id: formData.get('concepto'),
+            cantidad: formData.get('cantidad'),
+            justificante: formData.get('justificante') || 'No seleccionado',
+            archivo_justificante: formData.get('archivo_justificante') ? 'Archivo adjunto' : 'No adjunto'
+        });
         
         $.ajax({
             url: '{% url "registro" %}',
@@ -2863,16 +2875,18 @@
             },
             success: function(data) {
                 if (data.success) {
-                    // Clear and populate cajas
+                    // FIX: Initialize cajaSelect first
+                    const cajaSelect = $('#cajaSelect');
+                    cajaSelect.empty();
+                    cajaSelect.append('<option value="">-- Selecciona una caja --</option>');
+
+                    // Now populate cajas
                     data.cajas.forEach(function(caja) {
                         const disabled = !caja.activa ? 'disabled style="background-color: #eee; color: #888;"' : '';
                         const label = caja.nombre + ' (' + caja.año + ') - ' + caja.saldo_caja + '€' + (!caja.activa ? ' [INACTIVA]' : '');
                         cajaSelect.append(`<option value="${caja.id}" data-saldo="${caja.saldo_caja}" ${disabled}>${label}</option>`);
                     });
-                    const cajaSelect = $('#cajaSelect');
-                    cajaSelect.empty();
-                    cajaSelect.append('<option value="">-- Selecciona una caja --</option>');
-                    
+
                     console.log('Cajas cargadas:', data.cajas.length);
                 } else {
                     showError('Error al cargar las cajas: ' + data.error);
