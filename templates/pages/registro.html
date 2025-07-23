@@ -236,7 +236,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="turno" class="form-label">Turno</label>
-                                <select class="form-control" name="turno" id="turno" required>
+                                <select class="form-control" name="turno_id" id="turno" required>
                                     <option value="">-- Selecciona un turno --</option>
                                 </select>
                             </div>
@@ -244,7 +244,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="concepto" class="form-label">Concepto</label>
-                                <select class="form-control" name="concepto" id="concepto" required>
+                                <select class="form-control" name="concepto_id" id="concepto" required>
                                     <option value="">-- Selecciona un concepto --</option>
                                     {% for concepto in conceptos %}
                                         <option value="{{ concepto.id }}" data-es-gasto="{{ concepto.es_gasto }}">
@@ -1147,8 +1147,8 @@
             ejercicio_id: formData.get('ejercicio_id'),
             tipo_operacion: formData.get('tipo_operacion'),
             caja_id: formData.get('caja_id'),
-            turno_id: formData.get('turno'),
-            concepto_id: formData.get('concepto'),
+            turno_id: formData.get('turno_id'),
+            concepto_id: formData.get('concepto_id'),
             cantidad: formData.get('cantidad'),
             justificante: formData.get('justificante') || 'No seleccionado',
             archivo_justificante: formData.get('archivo_justificante') ? 'Archivo adjunto' : 'No adjunto'

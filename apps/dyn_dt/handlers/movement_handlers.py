@@ -43,8 +43,8 @@ class MovementHandler:
                 request.POST.get('fecha'), 
                 request.POST.get('hora', '12:00')
             )
-            turno = get_object_or_404(Turno, id=request.POST.get('turno'))
-            concepto = get_object_or_404(Concepto, id=request.POST.get('concepto'))
+            turno = get_object_or_404(Turno, id=request.POST.get('turno_id'))
+            concepto = get_object_or_404(Concepto, id=request.POST.get('concepto_id'))
             cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
             
             # Create movement based on type
