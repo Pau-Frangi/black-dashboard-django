@@ -83,19 +83,17 @@
                     <!-- Botón para añadir movimiento y controles de ordenamiento -->
                     <div class="row mb-3" id="addMovementSection" style="display: none;">
                         <div class="col-md-6">
-<button type="button" class="button" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
-  <span class="button__icon">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke="currentColor" height="24" fill="none" class="svg">
-      <line y2="19" y1="5" x2="12" x1="12"></line>
-      <line y2="12" y1="12" x2="19" x1="5"></line>
-    </svg>
-  </span>
-  <span class="button__text-wrapper">
-    <span class="button__text">Añadir Movimiento</span>
-  </span>
-</button>
-
-                            
+                            <button type="button" class="button" data-toggle="modal" data-target="#addMovementModal" onclick="prepareModal()">
+                            <span class="button__icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke="currentColor" height="24" fill="none" class="svg">
+                                <line y2="19" y1="5" x2="12" x1="12"></line>
+                                <line y2="12" y1="12" x2="19" x1="5"></line>
+                                </svg>
+                            </span>
+                            <span class="button__text-wrapper">
+                                <span class="button__text">Añadir Movimiento</span>
+                            </span>
+                            </button>                            
                         </div>
                         <div class="col-md-6 d-flex justify-content-end align-items-center" id="sortControls" style="display: none !important;">
                             <label class="form-label mb-0 mr-3">Ordenar por:</label>
@@ -1058,6 +1056,14 @@
         e.preventDefault();
         
         console.log('Enviando formulario de movimiento');
+
+        // Verificar que hay un ejercicio seleccionado
+        const ejercicioId = $('#ejercicioSelect').val();
+        if (!ejercicioId) {
+            showWarning('Por favor selecciona un ejercicio', {floating: true});
+            return;
+        } 
+        console.log('Ejercicio ID seleccionado:', ejercicioId);
         
         // Verificar que se ha seleccionado un tipo de operación
         const tipoOperacion = $('#tipo_operacion').val();
@@ -1065,13 +1071,31 @@
             showWarning('Por favor selecciona el tipo de operación', {floating: true});
             return;
         }
-        
-        // Verificar que hay un ejercicio seleccionado
-        const ejercicioId = $('#ejercicioSelect').val();
-        if (!ejercicioId) {
-            showWarning('Por favor selecciona un ejercicio', {floating: true});
+        console.log('Tipo de operación seleccionado:', tipoOperacion);
+
+        // Verificar que se ha seleccionado un turno
+        const turnoId = $('#turnoSelect').val();
+        if (!turnoId) {
+            showWarning('Por favor selecciona un turno', {floating: true});
             return;
         }
+        console.log('Turno ID seleccionado:', turnoId);
+
+        // Verificar que se ha seleccionado un concepto
+        const conceptoId = $('#concepto').val();
+        if (!conceptoId) {
+            showWarning('Por favor selecciona un concepto', {floating: true});
+            return;
+        }
+        console.log('Concepto ID seleccionado:', conceptoId);
+
+        // Verificar que se ha introducido una cantidad
+        const cantidad = $('#cantidad').val();
+        if (!cantidad || isNaN(cantidad) || parseFloat(cantidad) <= 0) {
+            showWarning('Por favor introduce una cantidad válida', {floating: true});
+            return;
+        }
+        console.log('Cantidad introducida:', cantidad);
         
         // =============================================================================
         // VALIDACIÓN ESPECÍFICA SEGÚN EL TIPO DE OPERACIÓN
@@ -1084,6 +1108,7 @@
                 showWarning('Por favor selecciona una caja para movimientos de efectivo', {floating: true});
                 return;
             }
+            console.log('Caja seleccionada para efectivo:', cajaId);
             
             // Validar desglose para movimientos de efectivo (tanto nuevos como editados)
             const validationResult = validateCompleteMoneyBreakdown();
@@ -1102,8 +1127,6 @@
             console.log('Datos bancarios validados correctamente');
         }
         
-        console.log('Ejercicio ID:', ejercicioId);
-        console.log('Tipo de operación:', tipoOperacion);
         
         // Create FormData object to handle file upload
         const formData = new FormData(this);
