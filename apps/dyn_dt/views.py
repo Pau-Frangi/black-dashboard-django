@@ -8,7 +8,6 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.conf import settings
-from django.db import models
 from datetime import datetime
 
 # Import modular handlers
@@ -17,7 +16,7 @@ from apps.dyn_dt.handlers.movement_handlers import MovementHandler
 from apps.dyn_dt.handlers.datatable_handlers import (
     DatatableHandler, FilterHandler, CRUDHandler, ExportHandler
 )
-from apps.dyn_dt.models import Ejercicio, Caja, Concepto, DenominacionEuro, MovimientoCaja, MovimientoBanco
+from apps.dyn_dt.models import Ejercicio, Caja, Concepto, MovimientoCaja, MovimientoBanco, Campamento, DenominacionEuro
 
 
 # ================================
@@ -433,6 +432,10 @@ def _get_registro_context():
     Returns:
         Dictionary with context data for the template
     """
+    
+    campamentos = Campamento.objects.all().order_by('nombre')
+    default_campamento = campamentos.first() if campamentos.exists() else None
+    
     ejercicios = Ejercicio.objects.all().order_by('-año', 'nombre')
     
     # Determine default ejercicio - current year first, then highest year
@@ -450,6 +453,8 @@ def _get_registro_context():
         default_ejercicio = ejercicios.first()  # Already ordered by -año
     
     return {
+        'campamentos': campamentos,
+        'default_campamento_id': default_campamento.id if default_campamento else None,
         'ejercicios': ejercicios,
         'cajas': Caja.objects.all().order_by('nombre'),
         'conceptos': Concepto.objects.all(),
@@ -653,6 +658,7 @@ def _get_tables_context():
         default_ejercicio = ejercicios.first()  # Already ordered by -año
     
     return {
+        'campamentos': Campamento.objects.all().order_by('nombre'),
         'ejercicios': ejercicios,
         'default_ejercicio_id': default_ejercicio.id if default_ejercicio else None,
         'routes': settings.DYNAMIC_DATATB.keys(),

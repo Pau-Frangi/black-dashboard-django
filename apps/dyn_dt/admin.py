@@ -10,9 +10,9 @@ admin.site.register(ModelFilter)
 
 @admin.register(Turno)
 class TurnoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'ejercicio', 'ejercicio_año', 'creado_por', 'creado_en')
-    list_filter = ('ejercicio', 'ejercicio__año')
-    search_fields = ('nombre', 'ejercicio__nombre')
+    list_display = ('campamento', 'nombre', 'ejercicio', 'ejercicio_año', 'creado_por', 'creado_en')
+    list_filter = ('ejercicio', 'ejercicio__año', 'campamento')
+    search_fields = ('nombre', 'ejercicio__nombre', 'campamento__nombre')
     ordering = ('ejercicio__nombre', 'nombre')
     readonly_fields = ('creado_por', 'creado_en')
     
@@ -42,15 +42,15 @@ class ConceptoAdmin(admin.ModelAdmin):
 
 @admin.register(Caja)
 class CajaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'saldo_caja', 'saldo_desglose', 'activa', 'creado_por', 'creado_en')
-    list_filter = ('activa',)
-    search_fields = ('nombre',)
+    list_display = ('campamento', 'nombre', 'saldo_caja', 'saldo_desglose', 'activa', 'creado_por', 'creado_en')
+    list_filter = ('activa', 'campamento')
+    search_fields = ('nombre', 'campamento__nombre')
     ordering = ('-nombre',)
     readonly_fields = ('saldo_caja', 'saldo_desglose', 'creado_por', 'creado_en')  # Los saldos no se pueden modificar manualmente
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'activa')
+            'fields': ('campamento', 'nombre', 'activa')
         }),
         ('Saldos', {
             'fields': ('saldo_caja',),
@@ -176,16 +176,16 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoBanco)
 class MovimientoBancoAdmin(admin.ModelAdmin):
-    list_display = ('fecha_display', 'ejercicio', 'turno', 'concepto', 'cantidad_display', 'referencia_bancaria', 'tiene_archivo', 'creado_por', 'creado_en')
-    list_filter = ('fecha', 'concepto__es_gasto', 'ejercicio', 'turno')
-    search_fields = ('descripcion', 'referencia_bancaria', 'ejercicio__nombre', 'concepto__nombre', 'turno__nombre')
+    list_display = ('campamento', 'fecha_display', 'ejercicio', 'turno', 'concepto', 'cantidad_display', 'referencia_bancaria', 'tiene_archivo', 'creado_por', 'creado_en')
+    list_filter = ('fecha', 'concepto__es_gasto', 'ejercicio', 'turno', 'campamento')
+    search_fields = ('descripcion', 'referencia_bancaria', 'ejercicio__nombre', 'concepto__nombre', 'turno__nombre', 'campamento__nombre')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
     readonly_fields = ('creado_por', 'creado_en')
 
     fieldsets = (
         ('Información Básica', {
-            'fields': ('ejercicio', 'turno', 'concepto', 'cantidad', 'fecha', 'referencia_bancaria')
+            'fields': ('campamento', 'ejercicio', 'turno', 'concepto', 'cantidad', 'fecha', 'referencia_bancaria')
         }),
         ('Descripción', {
             'fields': ('descripcion',)

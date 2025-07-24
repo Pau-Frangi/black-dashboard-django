@@ -1058,6 +1058,13 @@
         
         console.log('Enviando formulario de movimiento');
 
+        const campamento_id = $('#campamentoIdInput').val();
+        if (!campamento_id) {
+            showWarning('Por favor selecciona un campamento', {floating: true});
+            return;
+        }
+        console.log('Campamento ID:', campamento_id);
+
         // Verificar que hay un ejercicio seleccionado
         const ejercicioId = $('#ejercicioSelect').val();
         if (!ejercicioId) {
@@ -1142,9 +1149,11 @@
         }
         
         formData.append('tipo_operacion', tipoOperacion);
+        formData.append('campamento_id', campamento_id);
 
         console.log('Datos del formulario preparados para enviar:', {
             action: formData.get('action'),
+            campamento_id: formData.get('campamento_id'),
             ejercicio_id: formData.get('ejercicio_id'),
             tipo_operacion: formData.get('tipo_operacion'),
             caja_id: formData.get('caja_id'),
@@ -2808,6 +2817,16 @@
 
     function loadEjercicioMovimientos(ejercicioId) {
         console.log('Cargando movimientos para ejercicio ID:', ejercicioId);
+
+        const campamento_id = $('#campamentoIdInput').val();
+        if (!ejercicioId) {
+            console.log('No hay ejercicio seleccionado, no se pueden cargar movimientos');
+            currentMovimientos = [];
+            filteredMovimientos = [];
+            updateTotalsDisplay(0, 0, 0);
+            $('#movimientosContainer').hide();
+            return;
+        }
         
         $.ajax({
             url: '{% url "registro" %}',
@@ -2815,6 +2834,7 @@
             data: {
                 'ajax': 'true',
                 'get_ejercicio_movimientos': 'true',
+                'campamento_id': campamento_id,
                 'ejercicio_id': ejercicioId
             },
             success: function(data) {
@@ -2858,8 +2878,15 @@
     }
 
     function loadCajasForEjercicio() {
+
+        const campamento_id = $('#campamentoIdInput').val();
         const ejercicioId = $('#ejercicioSelect').val();
         
+        if (!campamento_id) {
+            console.log('No hay campamento seleccionado');
+            return;
+        }
+
         if (!ejercicioId) {
             console.log('No hay ejercicio seleccionado');
             return;
@@ -2873,6 +2900,7 @@
             data: {
                 'ajax': 'true',
                 'get_cajas': 'true',
+                'campamento_id': campamento_id,
                 'ejercicio_id': ejercicioId
             },
             success: function(data) {
@@ -2903,12 +2931,20 @@
     }
 
     function loadTurnosForEjercicio(ejercicioId, callback) {
+
+        const campamentoId = $('#campamentoIdInput').val();
+        if (!campamentoId) {
+            console.log('No hay campamento seleccionado');
+            return;
+        }
+
         $.ajax({
             url: '{% url "registro" %}',
             method: 'GET',
             data: {
                 'ajax': 'true',
                 'get_turnos': 'true',
+                'campamento_id': campamentoId,
                 'ejercicio_id': ejercicioId
             },
             success: function(data) {

@@ -24,39 +24,47 @@ class RegistroAjaxHandler:
             JsonResponse with movements data and summary
         """
         ejercicio_id = request.GET.get('ejercicio_id')
+        campamento_id = request.GET.get('campamento_id')
+
         if not ejercicio_id:
             return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
-        
+
         try:
-            ejercicio = get_object_or_404(Ejercicio, id=ejercicio_id)
-            
-            # Get all movements for the ejercicio
-            movimientos_caja = MovimientoCaja.objects.filter(
-                ejercicio=ejercicio
-            ).select_related('caja', 'turno', 'concepto').order_by('-fecha')
-            movimientos_banco = MovimientoBanco.objects.filter(
-                ejercicio=ejercicio
-            ).select_related('concepto').order_by('-fecha')
-            
-            # Format movements data
+            ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+
+            # Si se especifica campamento, filtrar por cajas de ese campamento
+            if campamento_id:
+                # Buscar cajas asociadas al campamento
+                cajas_campamento = Caja.objects.filter(campamento_id=campamento_id)
+                movimientos_caja = MovimientoCaja.objects.filter(
+                    ejercicio=ejercicio,
+                    caja__in=cajas_campamento
+                ).select_related('caja', 'turno', 'concepto').order_by('-fecha')
+                movimientos_banco = MovimientoBanco.objects.filter(
+                    ejercicio=ejercicio,
+                    campamento_id=campamento_id
+                ).select_related('concepto').order_by('-fecha')
+            else:
+                # Si no hay campamento, mostrar todos los movimientos del ejercicio
+                movimientos_caja = MovimientoCaja.objects.filter(
+                    ejercicio=ejercicio
+                ).select_related('caja', 'turno', 'concepto').order_by('-fecha')
+                movimientos_banco = MovimientoBanco.objects.filter(
+                    ejercicio=ejercicio
+                ).select_related('concepto').order_by('-fecha')
+
             movimientos_data = []
-            
-            # Add cash movements
             for mov in movimientos_caja:
                 movimientos_data.append(format_movement_data(mov, 'caja'))
-            
-            # Add bank movements
             for mov in movimientos_banco:
                 movimientos_data.append(format_movement_data(mov, 'banco'))
-            
-            # Sort by date (most recent first)
+
             movimientos_data.sort(key=lambda x: x['datetime_iso'], reverse=True)
-            
-            # Calculate summary
+
             all_movimientos = list(movimientos_caja) + list(movimientos_banco)
             resumen = calculate_movements_summary(all_movimientos)
             resumen['saldo_actual'] = float(ejercicio.saldo_total)
-            
+
             return JsonResponse({
                 'success': True,
                 'movimientos': movimientos_data,
@@ -68,7 +76,7 @@ class RegistroAjaxHandler:
                     'saldo_total': float(ejercicio.saldo_total)
                 }
             })
-            
+
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     
@@ -212,5 +220,7 @@ class LegacyAjaxHandler:
                 'desglose_actual': desglose_actual
             })
             
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})

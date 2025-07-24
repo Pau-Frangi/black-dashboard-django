@@ -158,6 +158,14 @@ class Turno(UserTrackingMixin, models.Model):
     Cada turno debe estar asociado a un ejercicio específico.
     """
     
+    campamento = models.ForeignKey(
+        'Campamento',
+        on_delete=models.CASCADE,
+        verbose_name="Campamento",
+        related_name="turnos",
+        help_text="Campamento al que pertenece este turno"
+    )
+    
     ejercicio = models.ForeignKey(
         'Ejercicio',
         on_delete=models.CASCADE,
@@ -187,7 +195,7 @@ class Turno(UserTrackingMixin, models.Model):
     )
 
     def __str__(self):
-        return f"{self.nombre} ({self.ejercicio.nombre})"
+        return f"{self.nombre} ({self.ejercicio.nombre}) - {self.campamento.nombre})"
 
     class Meta:
         verbose_name = "Turno"
@@ -244,6 +252,14 @@ class Caja(UserTrackingMixin, models.Model):
     """
     Representa una caja general
     """
+    
+    campamento = models.ForeignKey(
+        'Campamento',
+        on_delete=models.CASCADE,
+        verbose_name="Campamento",
+        related_name="cajas",
+        help_text="Campamento al que pertenece esta caja"
+    )
 
     nombre = models.CharField(
         max_length=100,
@@ -309,7 +325,7 @@ class Caja(UserTrackingMixin, models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} - {'Activa' if self.activa else 'Inactiva'}"
+        return f"{self.nombre} - {'Activa' if self.activa else 'Inactiva'} - Saldo: {self.saldo_caja:.2f}€"
 
     def recalcular_saldo_caja(self):
         """
@@ -546,6 +562,15 @@ class MovimientoBanco(Movimiento):
     Representa un movimiento bancario asociado a un ejercicio.
     Los movimientos bancarios afectan el saldo_banco del ejercicio, no de una caja específica.
     """
+    
+    campamento = models.ForeignKey(
+        'Campamento',
+        on_delete=models.CASCADE,
+        verbose_name="Campamento",
+        related_name="movimientos_banco",
+        help_text="Campamento al que pertenece este movimiento bancario"
+    )
+    
     ejercicio = models.ForeignKey(
         'Ejercicio',
         on_delete=models.CASCADE,
