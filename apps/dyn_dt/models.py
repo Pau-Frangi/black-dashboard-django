@@ -392,23 +392,12 @@ class Caja(UserTrackingMixin, models.Model):
         
 
 
-class MovimientoCaja(UserTrackingMixin, models.Model):
-    caja = models.ForeignKey(
-        Caja,
-        on_delete=models.CASCADE,
-        verbose_name="Caja",
-        related_name="movimientos"
-    )
-
-    turno = models.ForeignKey(
-        Turno,
-        on_delete=models.CASCADE,
-        verbose_name="Turno",
-        related_name="movimientos"
-    )
-
+class Movimiento(UserTrackingMixin, models.Model):
+    """
+    Modelo abstracto para movimientos económicos (caja o banco).
+    """
     concepto = models.ForeignKey(
-        Concepto,
+        'Concepto',
         on_delete=models.PROTECT,
         verbose_name="Concepto"
     )
@@ -422,21 +411,6 @@ class MovimientoCaja(UserTrackingMixin, models.Model):
     fecha = models.DateTimeField(
         default=timezone.now,
         verbose_name="Fecha y hora del movimiento"
-    )
-
-    justificante = models.CharField(
-        max_length=5,
-        blank=True,
-        null=True,
-        verbose_name="Nº Justificante"
-    )
-
-    archivo_justificante = models.FileField(
-        upload_to='justificantes/',
-        blank=True,
-        null=True,
-        verbose_name="Archivo justificante",
-        help_text="Sube un PDF o imagen del justificante (opcional)"
     )
 
     descripcion = models.TextField(
@@ -457,6 +431,48 @@ class MovimientoCaja(UserTrackingMixin, models.Model):
         auto_now_add=True,
         verbose_name="Creado en",
         help_text="Fecha y hora de creación del ejercicio"
+    )
+
+    class Meta:
+        abstract = True
+
+    def es_gasto(self):
+        """Determina si el movimiento es un gasto"""
+        return self.concepto.es_gasto
+
+    def cantidad_real(self):
+        """Devuelve la cantidad con signo correcto para cálculos de saldo"""
+        return -self.cantidad if self.es_gasto() else self.cantidad
+
+
+class MovimientoCaja(Movimiento):
+    caja = models.ForeignKey(
+        Caja,
+        on_delete=models.CASCADE,
+        verbose_name="Caja",
+        related_name="movimientos"
+    )
+
+    turno = models.ForeignKey(
+        Turno,
+        on_delete=models.CASCADE,
+        verbose_name="Turno",
+        related_name="movimientos"
+    )
+
+    justificante = models.CharField(
+        max_length=5,
+        blank=True,
+        null=True,
+        verbose_name="Nº Justificante"
+    )
+
+    archivo_justificante = models.FileField(
+        upload_to='justificantes/',
+        blank=True,
+        null=True,
+        verbose_name="Archivo justificante",
+        help_text="Sube un PDF o imagen del justificante (opcional)"
     )
 
     def clean(self):
@@ -490,24 +506,12 @@ class MovimientoCaja(UserTrackingMixin, models.Model):
             if self.archivo_justificante.size > 10 * 1024 * 1024:
                 raise ValidationError("El archivo no puede superar los 10MB")
     
-
-
     def save(self, *args, **kwargs):
-        """Valida los datos antes de guardar"""
-        self.full_clean()  # Ejecuta las validaciones
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """Elimina el movimiento"""
         super().delete(*args, **kwargs)
-
-    def es_gasto(self):
-        """Determina si el movimiento es un gasto"""
-        return self.concepto.es_gasto
-
-    def cantidad_real(self):
-        """Devuelve la cantidad con signo correcto para cálculos de saldo"""
-        return -self.cantidad if self.es_gasto() else self.cantidad
 
     def __str__(self):
         signo = "-" if self.es_gasto() else "+"
@@ -518,8 +522,7 @@ class MovimientoCaja(UserTrackingMixin, models.Model):
         verbose_name_plural = "Movimientos de caja"
         ordering = ['-fecha']
 
-
-class MovimientoBanco(UserTrackingMixin, models.Model):
+class MovimientoBanco(Movimiento):
     """
     Representa un movimiento bancario asociado a un ejercicio.
     Los movimientos bancarios afectan el saldo_banco del ejercicio, no de una caja específica.
@@ -538,23 +541,6 @@ class MovimientoBanco(UserTrackingMixin, models.Model):
         related_name="movimientos_banco"
     )
 
-    concepto = models.ForeignKey(
-        Concepto,
-        on_delete=models.PROTECT,
-        verbose_name="Concepto"
-    )
-
-    cantidad = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name="Cantidad (€)"
-    )
-
-    fecha = models.DateTimeField(
-        default=timezone.now,
-        verbose_name="Fecha y hora del movimiento"
-    )
-
     referencia_bancaria = models.CharField(
         max_length=50,
         blank=True,
@@ -569,26 +555,6 @@ class MovimientoBanco(UserTrackingMixin, models.Model):
         null=True,
         verbose_name="Archivo justificante",
         help_text="Sube un PDF o imagen del justificante (opcional)"
-    )
-
-    descripcion = models.TextField(
-        verbose_name="Descripción",
-        help_text="Descripción detallada del movimiento bancario"
-    )
-    
-    creado_por = models.ForeignKey(
-        'auth.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="Creado por",
-        help_text="Usuario que creó este ejercicio"
-    )
-
-    creado_en = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="Creado en",
-        help_text="Fecha y hora de creación del ejercicio"
     )
 
     def clean(self):
@@ -615,21 +581,11 @@ class MovimientoBanco(UserTrackingMixin, models.Model):
                 raise ValidationError("El archivo no puede superar los 10MB")
 
     def save(self, *args, **kwargs):
-        """Valida los datos antes de guardar"""
-        self.full_clean()  # Ejecuta las validaciones
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """Elimina el movimiento"""
         super().delete(*args, **kwargs)
-
-    def es_gasto(self):
-        """Determina si el movimiento es un gasto"""
-        return self.concepto.es_gasto
-
-    def cantidad_real(self):
-        """Devuelve la cantidad con signo correcto para cálculos de saldo"""
-        return -self.cantidad if self.es_gasto() else self.cantidad
 
     def __str__(self):
         signo = "-" if self.es_gasto() else "+"
