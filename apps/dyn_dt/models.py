@@ -85,13 +85,39 @@ class Ejercicio(UserTrackingMixin, models.Model):
         verbose_name="Creado en",
         help_text="Fecha y hora de creación del ejercicio"
     )
+    
+    def calcular_resultado_caja_ejercicio(self):
+        """
+        Calcula la suma de todos los resultados de las cajas asociadas a este ejercicio.
+        """
+        total = Decimal('0.00')
+        for movimiento_caja in MovimientoCaja.objects.filter(ejercicio=self):
+            total += movimiento_caja.cantidad_real()
+        return total
+    
+    def calcular_resultado_banco_ejercicio(self):
+        """
+        Calcula la suma de todos los resultados de los movimientos bancarios asociados a este ejercicio.
+        """
+        total = Decimal('0.00')
+        for movimiento_banco in MovimientoBanco.objects.filter(ejercicio=self):
+            total += movimiento_banco.cantidad_real()
+        return total
+    
+    def calcular_resultado_ejercicio(self):
+        """
+        Calcula el resultado total del ejercicio como la suma de los resultados de caja y banco.
+        """
+        resultado_caja = self.calcular_resultado_caja_ejercicio()
+        resultado_banco = self.calcular_resultado_banco_ejercicio()
+        return resultado_caja + resultado_banco
 
     def calcular_saldo_cajas(self):
         """
-        Calcula la suma de todos los saldos de las cajas asociadas
+        Calcula la suma de todos los saldos de las cajas
         """
         total = Decimal('0.00')
-        for caja in self.cajas.all():
+        for caja in Caja.objects.filter(activa=True):
             total += caja.saldo_caja
         return total
 
@@ -219,13 +245,6 @@ class Caja(UserTrackingMixin, models.Model):
     Representa una caja general para un año o una campaña económica.
     Por ejemplo: 'Caja 2025'.
     """
-    ejercicio = models.ForeignKey(
-        'Ejercicio',
-        on_delete=models.CASCADE,
-        verbose_name="Ejercicio",
-        related_name="cajas",
-        help_text="Ejercicio al que pertenece esta caja"
-    )
 
     nombre = models.CharField(
         max_length=100,
@@ -265,13 +284,13 @@ class Caja(UserTrackingMixin, models.Model):
         null=True,
         blank=True,
         verbose_name="Creado por",
-        help_text="Usuario que creó este ejercicio"
+        help_text="Usuario que creó esta caja"
     )
 
     creado_en = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Creado en",
-        help_text="Fecha y hora de creación del ejercicio"
+        help_text="Fecha y hora de creación de la caja"
     )
 
     def clean(self):
@@ -296,7 +315,7 @@ class Caja(UserTrackingMixin, models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.nombre} - {'Activa' if self.activa else 'Inactiva'} ({self.ejercicio.nombre})"
+        return f"{self.nombre} - {'Activa' if self.activa else 'Inactiva'}"
 
     def recalcular_saldo_caja(self):
         """

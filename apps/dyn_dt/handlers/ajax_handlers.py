@@ -32,7 +32,7 @@ class RegistroAjaxHandler:
             
             # Get all movements for the ejercicio
             movimientos_caja = MovimientoCaja.objects.filter(
-                caja__ejercicio=ejercicio
+                ejercicio=ejercicio
             ).select_related('caja', 'turno', 'concepto').order_by('-fecha')
             movimientos_banco = MovimientoBanco.objects.filter(
                 ejercicio=ejercicio
@@ -96,7 +96,7 @@ class RegistroAjaxHandler:
     @staticmethod
     def handle_get_cajas(request):
         """
-        Returns cajas for a specific ejercicio.
+        Returns list of cajas
         
         Args:
             request: Django request object with ejercicio_id parameter
@@ -104,13 +104,9 @@ class RegistroAjaxHandler:
         Returns:
             JsonResponse with cajas list
         """
-        ejercicio_id = request.GET.get('ejercicio_id')
-        if not ejercicio_id:
-            return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
         
-        cajas = Caja.objects.filter(ejercicio_id=ejercicio_id).values(
-            'id', 'nombre', 'año', 'saldo_caja', 'activa'
-        )
+        cajas = Caja.objects.values('id', 'nombre', 'saldo_caja', 'activa')
+            
         return JsonResponse({
             'success': True,
             'cajas': list(cajas)
@@ -169,16 +165,18 @@ class LegacyAjaxHandler:
             JsonResponse with caja movements and breakdown
         """
         caja_id = request.GET.get('caja_id')
+        ejercicio_id = request.GET.get('ejercicio_id')
         if not caja_id:
             return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
         
         try:
             caja = get_object_or_404(Caja, id=caja_id)
+            ejercicio = get_object_or_404(Ejercicio, id=ejercicio_id)
             
             # Get movements for this caja and its ejercicio
-            movimientos_caja = MovimientoCaja.objects.filter(caja=caja).order_by('-id')
+            movimientos_caja = MovimientoCaja.objects.filter(caja=caja, ejercicio=ejercicio).order_by('-id')
             movimientos_banco = MovimientoBanco.objects.filter(
-                ejercicio=caja.ejercicio
+                ejercicio=ejercicio
             ).order_by('-id')
             
             # Format movements data

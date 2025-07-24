@@ -42,15 +42,15 @@ class ConceptoAdmin(admin.ModelAdmin):
 
 @admin.register(Caja)
 class CajaAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'ejercicio', 'año', 'saldo_caja', 'saldo_desglose', 'activa', 'creado_por', 'creado_en')
-    list_filter = ('año', 'activa', 'ejercicio')
-    search_fields = ('nombre', 'ejercicio__nombre')
+    list_display = ('nombre', 'año', 'saldo_caja', 'saldo_desglose', 'activa', 'creado_por', 'creado_en')
+    list_filter = ('año', 'activa')
+    search_fields = ('nombre',)
     ordering = ('-año', 'nombre')
     readonly_fields = ('saldo_caja', 'saldo_desglose', 'creado_por', 'creado_en')  # Los saldos no se pueden modificar manualmente
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre', 'ejercicio', 'año', 'activa')
+            'fields': ('nombre', 'año', 'activa')
         }),
         ('Saldos', {
             'fields': ('saldo_caja',),

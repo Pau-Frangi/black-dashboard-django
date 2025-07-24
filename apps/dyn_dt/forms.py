@@ -52,11 +52,8 @@ class CajaForm(forms.ModelForm):
     
     class Meta:
         model = Caja
-        fields = ['ejercicio', 'nombre', 'año', 'activa', 'saldo_caja', 'observaciones']
+        fields = ['nombre', 'año', 'activa', 'saldo_caja', 'observaciones']
         widgets = {
-            'ejercicio': forms.Select(attrs={
-                'class': 'form-select'
-            }),
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nombre de la caja (ej. Caja 2025)'
@@ -82,7 +79,6 @@ class CajaForm(forms.ModelForm):
             })
         }
         labels = {
-            'ejercicio': 'Ejercicio',
             'nombre': 'Nombre de la caja',
             'año': 'Año',
             'activa': '¿Caja activa?',
@@ -170,6 +166,7 @@ class MovimientoCajaForm(forms.ModelForm):
             })
         }
         labels = {
+            'ejercicio': 'Ejercicio',
             'caja': 'Caja',
             'turno': 'Turno',
             'concepto': 'Concepto',

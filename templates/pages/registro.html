@@ -1326,13 +1326,14 @@
     // Handle caja selection changes for money breakdown
     $(document).on('change', '#cajaSelect', function() {
         const cajaId = $(this).val();
+        const ejercicio_id = $('#ejercicioSelect').val();
         const tipoOperacion = $('#tipo_operacion').val();
         
         console.log('Caja seleccionada:', cajaId, 'Tipo operación:', tipoOperacion);
         
         if (cajaId && tipoOperacion === 'efectivo') {
             // Load money breakdown data for the selected caja and show the desglose section
-            loadCajaMoneyBreakdown(cajaId);
+            loadCajaMoneyBreakdown(cajaId, ejercicio_id);
         } else if (tipoOperacion === 'efectivo') {
             // Hide breakdown if no caja selected
             $('#desgloseDineroSection').hide();
@@ -2884,7 +2885,7 @@
                     // Now populate cajas
                     data.cajas.forEach(function(caja) {
                         const disabled = !caja.activa ? 'disabled style="background-color: #eee; color: #888;"' : '';
-                        const label = caja.nombre + ' (' + caja.año + ') - ' + caja.saldo_caja + '€' + (!caja.activa ? ' [INACTIVA]' : '');
+                        const label = caja.nombre + ' - ' + caja.saldo_caja + '€' + (!caja.activa ? ' [INACTIVA]' : '');
                         cajaSelect.append(`<option value="${caja.id}" data-saldo="${caja.saldo_caja}" ${disabled}>${label}</option>`);
                         console.log(`Caja cargada: ${caja.nombre} - ${caja.activa ? 'ACTIVA' : 'INACTIVA'} - Saldo: ${caja.saldo_caja}€`);
                     });
@@ -2935,7 +2936,7 @@
         });
     }
 
-    function loadCajaMoneyBreakdown(cajaId) {
+    function loadCajaMoneyBreakdown(cajaId, ejercicioId) {
         console.log('Cargando desglose de caja para ID:', cajaId);
         
         $.ajax({
@@ -2943,7 +2944,8 @@
             method: 'GET',
             data: {
                 'ajax': 'true',
-                'caja_id': cajaId
+                'caja_id': cajaId,
+                'ejercicio_id': ejercicioId,
             },
             success: function(data) {
                 if (data.success && data.desglose_actual) {
