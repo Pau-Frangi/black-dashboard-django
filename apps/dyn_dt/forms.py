@@ -134,8 +134,11 @@ class MovimientoCajaForm(forms.ModelForm):
     
     class Meta:
         model = MovimientoCaja
-        fields = ['caja', 'turno', 'concepto', 'cantidad', 'justificante', 'archivo_justificante', 'descripcion']
+        fields = ['ejercicio', 'caja', 'turno', 'concepto', 'cantidad', 'justificante', 'archivo_justificante', 'descripcion']
         widgets = {
+            'ejercicio': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             'caja': forms.Select(attrs={
                 'class': 'form-select'
             }),

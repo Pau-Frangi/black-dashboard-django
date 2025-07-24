@@ -446,6 +446,14 @@ class Movimiento(UserTrackingMixin, models.Model):
 
 
 class MovimientoCaja(Movimiento):
+    
+    ejercicio = models.ForeignKey(
+        'Ejercicio',
+        on_delete=models.CASCADE,
+        verbose_name="Ejercicio",
+        related_name="movimientos_caja"
+    )
+    
     caja = models.ForeignKey(
         Caja,
         on_delete=models.CASCADE,

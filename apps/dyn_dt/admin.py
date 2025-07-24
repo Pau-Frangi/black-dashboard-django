@@ -116,8 +116,8 @@ class CajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoCaja)
 class MovimientoCajaAdmin(admin.ModelAdmin):
-    list_display = ('fecha_display', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante_display', 'tiene_archivo', 'tiene_desglose', 'creado_por', 'creado_en')
-    list_filter = ('fecha', 'caja', 'turno', 'concepto__es_gasto')
+    list_display = ('fecha_display', 'ejercicio', 'caja', 'turno', 'concepto', 'cantidad_display', 'justificante_display', 'tiene_archivo', 'tiene_desglose', 'creado_por', 'creado_en')
+    list_filter = ('fecha', 'caja', 'turno', 'concepto__es_gasto', 'ejercicio')
     search_fields = ('descripcion', 'justificante')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
@@ -125,7 +125,7 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Información Básica', {
-            'fields': ('caja', 'turno', 'concepto', 'cantidad', 'fecha')
+            'fields': ('ejercicio', 'caja', 'turno', 'concepto', 'cantidad', 'fecha')
         }),
         ('Justificante', {
             'fields': ('justificante', 'archivo_justificante')

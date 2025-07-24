@@ -46,10 +46,11 @@ class MovementHandler:
             turno = get_object_or_404(Turno, id=request.POST.get('turno_id'))
             concepto = get_object_or_404(Concepto, id=request.POST.get('concepto_id'))
             cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
+            ejercicio = get_object_or_404(Ejercicio, id=request.POST.get('ejercicio_id'))
+
             
             # Create movement based on type
             if tipo_operacion == 'transferencia':
-                ejercicio = get_object_or_404(Ejercicio, id=request.POST.get('ejercicio_id'))
                 movimiento = MovementCreator.create_bank_movement(
                     request, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime
                 )
@@ -64,7 +65,7 @@ class MovementHandler:
                     })
                     
                 movimiento = MovementCreator.create_cash_movement(
-                    request, caja, turno, concepto, cantidad_decimal, fecha_datetime
+                    request, ejercicio, caja, turno, concepto, cantidad_decimal, fecha_datetime
                 )
             
             # Set user before saving
@@ -190,7 +191,7 @@ class MovementCreator:
         )
     
     @staticmethod
-    def create_cash_movement(request, caja, turno, concepto, cantidad, fecha):
+    def create_cash_movement(request, ejercicio, caja, turno, concepto, cantidad, fecha):
         """
         Creates a cash movement.
         
@@ -205,6 +206,7 @@ class MovementCreator:
             MovimientoCaja instance
         """
         movimiento = MovimientoCaja(
+            ejercicio=ejercicio,
             caja=caja,
             turno=turno,
             concepto=concepto,
