@@ -460,7 +460,7 @@ def _get_registro_context():
     
     return {
         'ejercicios': ejercicios,
-        'cajas': Caja.objects.all().order_by('-año', 'nombre'),
+        'cajas': Caja.objects.all().order_by('nombre'),
         'conceptos': Concepto.objects.all(),
         'denominaciones': DenominacionEuro.objects.filter(activa=True).order_by('-valor'),
         'default_ejercicio_id': default_ejercicio.id if default_ejercicio else None,

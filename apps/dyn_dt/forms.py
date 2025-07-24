@@ -52,17 +52,11 @@ class CajaForm(forms.ModelForm):
     
     class Meta:
         model = Caja
-        fields = ['nombre', 'año', 'activa', 'saldo_caja', 'observaciones']
+        fields = ['nombre', 'activa', 'saldo_caja', 'observaciones']
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Nombre de la caja (ej. Caja 2025)'
-            }),
-            'año': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': 2020,
-                'max': 2030,
-                'value': date.today().year
             }),
             'activa': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
@@ -80,23 +74,10 @@ class CajaForm(forms.ModelForm):
         }
         labels = {
             'nombre': 'Nombre de la caja',
-            'año': 'Año',
             'activa': '¿Caja activa?',
             'saldo_caja': 'Saldo inicial (€)',
             'observaciones': 'Observaciones'
         }
-
-    def clean_año(self):
-        """Validate that the year is reasonable."""
-        año = self.cleaned_data.get('año')
-        current_year = date.today().year
-        
-        if año < 2020 or año > current_year + 5:
-            raise forms.ValidationError(
-                f"El año debe estar entre 2020 y {current_year + 5}"
-            )
-        
-        return año
     
     def save(self, commit=True):
         """Sobrescribir save para asegurar que la caja nueva tenga desglose inicializado"""

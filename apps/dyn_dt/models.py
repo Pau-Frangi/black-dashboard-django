@@ -242,20 +242,14 @@ class Concepto(UserTrackingMixin, models.Model):
 
 class Caja(UserTrackingMixin, models.Model):
     """
-    Representa una caja general para un año o una campaña económica.
-    Por ejemplo: 'Caja 2025'.
+    Representa una caja general
     """
 
     nombre = models.CharField(
         max_length=100,
         unique=True,
         verbose_name="Nombre de la caja",
-        help_text="Ej: 'Caja 2025'"
-    )
-
-    año = models.PositiveIntegerField(
-        verbose_name="Año",
-        help_text="Año correspondiente a esta caja (ej. 2025)"
+        help_text="Ej: 'Caja 1"
     )
 
     activa = models.BooleanField(
@@ -406,9 +400,7 @@ class Caja(UserTrackingMixin, models.Model):
     class Meta:
         verbose_name = "Caja"
         verbose_name_plural = "Cajas"
-        ordering = ['-año']
-        
-        
+        ordering = ['-nombre']
 
 
 class Movimiento(UserTrackingMixin, models.Model):
