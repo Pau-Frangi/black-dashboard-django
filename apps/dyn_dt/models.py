@@ -801,6 +801,130 @@ class MovimientoDinero(UserTrackingMixin, models.Model):
         unique_together = [['movimiento_caja', 'denominacion']]
 
 
+class FormatoMovimientoBanco(UserTrackingMixin, models.Model):
+    """
+    Representa el formato de un movimiento bancario
+    """
+
+    formato = models.CharField(
+        max_length=100,
+        verbose_name="Formato",
+        help_text="Formato del movimiento bancario"
+    )
+
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este formato"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del formato"
+    )
+
+    def __str__(self):
+        return self.formato
+
+    class Meta:
+        verbose_name = "Formato de Movimiento Bancario"
+        verbose_name_plural = "Formatos de Movimiento Bancario"
+        
+        
+class CuentaBancaria(UserTrackingMixin, models.Model):
+    """
+    Representa una cuenta bancaria concreta.
+    """
+    
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Nombre de la cuenta",
+        help_text="Ej: 'Asociación la Forja'"
+    )
+
+    titular = models.CharField(
+        max_length=100,
+        verbose_name="Titular",
+        help_text="Nombre del titular de la cuenta"
+    )
+
+    IBAN = models.CharField(
+        max_length=34,
+        unique=True,
+        verbose_name="IBAN",
+        help_text="Número de cuenta IBAN"
+    )
+
+    activo = models.BooleanField(
+        default=True,
+        verbose_name="¿Cuenta activa?",
+        help_text="Marca si esta cuenta está actualmente en uso"
+    )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó esta cuenta"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación de la cuenta"
+    )
+
+    def __str__(self):
+        return f"{self.nombre} - *{self.IBAN[-4:]}" 
+
+    class Meta:
+        verbose_name = "Cuenta Bancaria"
+        verbose_name_plural = "Cuentas Bancarias"
+        ordering = ['nombre']
+    
+    
+class Campamento(UserTrackingMixin, models.Model):
+    """
+    Representa un campamento específico.
+    """
+
+    nombre = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name="Nombre del campamento"
+    )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este campamento"
+    )
+
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del campamento"
+    )
+
+    def __str__(self):
+        return f"{self.nombre}"
+
+    class Meta:
+        verbose_name = "Campamento"
+        verbose_name_plural = "Campamentos"
+        ordering = ['nombre']
+
+
 @receiver(post_save, sender=MovimientoBanco)
 def actualizar_saldo_banco_on_save(sender, instance, created, **kwargs):
     """Actualiza el saldo bancario del ejercicio cuando se crea un movimiento de banco"""

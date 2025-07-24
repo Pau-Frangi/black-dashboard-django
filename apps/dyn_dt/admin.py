@@ -320,3 +320,43 @@ class EjercicioAdmin(admin.ModelAdmin):
         if not change:  # Solo en creación
             obj.creado_por = request.user
         super().save_model(request, obj, form, change)
+
+
+@admin.register(FormatoMovimientoBanco)
+class FormatoMovimientoBancoAdmin(admin.ModelAdmin):
+    list_display = ('formato', 'creado_por', 'creado_en')
+    list_filter = ('formato',)
+    ordering = ('-creado_en',)
+    readonly_fields = ('creado_por', 'creado_en')
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Solo en creación
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
+     
+        
+@admin.register(CuentaBancaria)
+class CuentaBancariaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'IBAN', 'activo', 'creado_por', 'creado_en')
+    list_filter = ('activo',)
+    search_fields = ('nombre', 'IBAN')
+    ordering = ('-creado_en',)
+    readonly_fields = ('creado_por', 'creado_en')
+
+    def save_model(self, request, obj, form, change):
+        if not change:  # Only on creation
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
+        
+        
+@admin.register(Campamento)
+class CampamentoAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'creado_por', 'creado_en')
+    list_filter = ('nombre',)
+    search_fields = ('nombre',)
+    readonly_fields = ('creado_por', 'creado_en')
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
