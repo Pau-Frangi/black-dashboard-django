@@ -90,7 +90,7 @@ def saldo(request):
             return JsonResponse({'success': False, 'error': 'Ejercicio no encontrado'})
 
         # Movimientos de caja y banco
-        movimientos_caja = MovimientoCaja.objects.filter(caja__ejercicio=ejercicio).select_related('caja', 'turno', 'concepto').order_by('-fecha')
+        movimientos_caja = MovimientoCaja.objects.filter(ejercicio=ejercicio).select_related('caja', 'turno', 'concepto').order_by('-fecha')
         movimientos_banco = MovimientoBanco.objects.filter(ejercicio=ejercicio).select_related('turno', 'concepto').order_by('-fecha')
 
         # Unificar movimientos para gráficos de evolución
@@ -185,8 +185,8 @@ def saldo(request):
 
         # Desglose actual de todas las cajas del ejercicio
         desglose_actual = []
-        cajas_ejercicio = Caja.objects.filter(ejercicio=ejercicio)
-        for caja in cajas_ejercicio:
+        cajas = Caja.objects.all()
+        for caja in cajas:
             for desglose in caja.obtener_desglose_actual():
                 desglose_actual.append({
                     'caja': caja.nombre,
@@ -205,7 +205,7 @@ def saldo(request):
                 'id': caja.id,
                 'nombre': caja.nombre,
                 'saldo_actual': float(caja.saldo_caja)
-            } for caja in cajas_ejercicio],
+            } for caja in cajas],
             'saldo_banco': float(ejercicio.saldo_banco),
             'saldo_actual': saldo_actual
         }
@@ -268,29 +268,20 @@ def tables(request):
 @login_required
 def cajas(request):
     """
-    Vista principal para gestión de cajas por ejercicio.
-    Permite seleccionar un ejercicio y visualizar las cajas asociadas.
+    Vista principal para gestión de cajas.
     También responde a AJAX para datos de cajas, desglose, movimientos, etc.
     """
     from django.http import JsonResponse
     from django.db.models import Sum
     # AJAX handler
     if request.method == 'GET' and request.GET.get('ajax') == 'true':
-        ejercicio_id = request.GET.get('ejercicio_id')
         action = request.GET.get('action')
-        if not ejercicio_id:
-            return JsonResponse({'success': False, 'error': 'Ejercicio ID requerido'})
-        try:
-            ejercicio = Ejercicio.objects.get(id=ejercicio_id)
-        except Ejercicio.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Ejercicio no encontrado'})
-        # Obtener cajas del ejercicio
+
         if not action:
-            cajas = Caja.objects.filter(ejercicio=ejercicio)
+            cajas = Caja.objects.all()
             cajas_data = [{
                 'id': caja.id,
                 'nombre': caja.nombre,
-                'año': caja.año,
                 'activa': caja.activa,
                 'saldo_caja': float(caja.saldo_caja),
                 'ingresos_caja': float(caja.movimientos.filter(concepto__es_gasto=False).aggregate(Sum('cantidad'))['cantidad__sum'] or 0),
@@ -507,7 +498,7 @@ def _handle_ejercicio_tables_request(request, ejercicio_id):
         ejercicio = Ejercicio.objects.get(id=ejercicio_id)
         
         # Get all movements for this ejercicio (both caja and banco)
-        movimientos_caja = MovimientoCaja.objects.filter(caja__ejercicio=ejercicio)
+        movimientos_caja = MovimientoCaja.objects.filter(ejercicio=ejercicio)
         movimientos_banco = MovimientoBanco.objects.filter(ejercicio=ejercicio)
         
         # Calculate conceptos data
