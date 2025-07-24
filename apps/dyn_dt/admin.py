@@ -265,7 +265,7 @@ class MovimientoDineroAdmin(admin.ModelAdmin):
 
 @admin.register(Ejercicio)
 class EjercicioAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'año', 'saldo_banco', 'saldo_cajas', 'saldo_total_display', 'activo', 'total_cajas', 'creado_por', 'creado_en')
+    list_display = ('nombre', 'año', 'saldo_banco', 'saldo_cajas', 'saldo_total_display', 'activo', 'creado_por', 'creado_en')
     list_filter = ('año', 'activo')
     search_fields = ('nombre',)
     ordering = ('-año', 'nombre')
