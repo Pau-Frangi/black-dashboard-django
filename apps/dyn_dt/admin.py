@@ -322,10 +322,10 @@ class EjercicioAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(FormatoMovimientoBanco)
-class FormatoMovimientoBancoAdmin(admin.ModelAdmin):
-    list_display = ('formato', 'creado_por', 'creado_en')
-    list_filter = ('formato',)
+@admin.register(ViaMovimientoBanco)
+class ViaMovimientoBancoAdmin(admin.ModelAdmin):
+    list_display = ('via', 'creado_por', 'creado_en')
+    list_filter = ('via',)
     ordering = ('-creado_en',)
     readonly_fields = ('creado_por', 'creado_en')
 

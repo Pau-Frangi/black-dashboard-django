@@ -812,15 +812,15 @@ class MovimientoDinero(UserTrackingMixin, models.Model):
         unique_together = [['movimiento_caja', 'denominacion']]
 
 
-class FormatoMovimientoBanco(UserTrackingMixin, models.Model):
+class ViaMovimientoBanco(UserTrackingMixin, models.Model):
     """
-    Representa el formato de un movimiento bancario
+    Representa el medio de un movimiento bancario
     """
 
-    formato = models.CharField(
+    via = models.CharField(
         max_length=100,
-        verbose_name="Formato",
-        help_text="Formato del movimiento bancario"
+        verbose_name="Vía",
+        help_text="Vía del movimiento bancario"
     )
 
     creado_por = models.ForeignKey(
@@ -829,22 +829,22 @@ class FormatoMovimientoBanco(UserTrackingMixin, models.Model):
         null=True,
         blank=True,
         verbose_name="Creado por",
-        help_text="Usuario que creó este formato"
+        help_text="Usuario que creó esta vía de movimiento bancario"
     )
 
     creado_en = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Creado en",
-        help_text="Fecha y hora de creación del formato"
+        help_text="Fecha y hora de creación de la vía de movimiento bancario"
     )
 
     def __str__(self):
-        return self.formato
+        return self.via
 
     class Meta:
-        verbose_name = "Formato de Movimiento Bancario"
-        verbose_name_plural = "Formatos de Movimiento Bancario"
-        
+        verbose_name = "Vía de Movimiento Bancario"
+        verbose_name_plural = "Vías de Movimiento Bancario"
+
         
 class CuentaBancaria(UserTrackingMixin, models.Model):
     """
