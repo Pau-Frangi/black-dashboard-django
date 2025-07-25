@@ -595,6 +595,20 @@ class MovimientoBanco(Movimiento):
         verbose_name="Turno",
         related_name="movimientos_banco"
     )
+    
+    cuenta_bancaria = models.ForeignKey(
+        'CuentaBancaria',
+        on_delete=models.CASCADE,
+        verbose_name="Cuenta bancaria",
+        related_name="movimientos_banco"
+    )
+    
+    via = models.ForeignKey(
+        'ViaMovimientoBanco',
+        on_delete=models.CASCADE,
+        verbose_name="Vía de movimiento",
+        related_name="movimientos_banco"
+    )
 
     referencia_bancaria = models.CharField(
         max_length=50,
@@ -835,7 +849,7 @@ class ViaMovimientoBanco(UserTrackingMixin, models.Model):
     creado_en = models.DateTimeField(
         auto_now_add=True,
         verbose_name="Creado en",
-        help_text="Fecha y hora de creación de la vía de movimiento bancario"
+        help_text="Fecha y hora de creación de la vía"
     )
 
     def __str__(self):
@@ -845,7 +859,7 @@ class ViaMovimientoBanco(UserTrackingMixin, models.Model):
         verbose_name = "Vía de Movimiento Bancario"
         verbose_name_plural = "Vías de Movimiento Bancario"
 
-        
+
 class CuentaBancaria(UserTrackingMixin, models.Model):
     """
     Representa una cuenta bancaria concreta.

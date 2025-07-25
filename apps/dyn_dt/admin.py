@@ -176,19 +176,23 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoBanco)
 class MovimientoBancoAdmin(admin.ModelAdmin):
-    list_display = ('campamento', 'fecha_display', 'ejercicio', 'turno', 'concepto', 'cantidad_display', 'referencia_bancaria', 'tiene_archivo', 'creado_por', 'creado_en')
-    list_filter = ('fecha', 'concepto__es_gasto', 'ejercicio', 'turno', 'campamento')
-    search_fields = ('descripcion', 'referencia_bancaria', 'ejercicio__nombre', 'concepto__nombre', 'turno__nombre', 'campamento__nombre')
+    list_display = ('campamento', 'fecha_display', 'ejercicio', 'turno', 'concepto', 'cantidad_display', 'cuenta_bancaria', 'via', 'referencia_bancaria', 'tiene_archivo', 'creado_por', 'creado_en')
+    list_filter = ('fecha', 'concepto__es_gasto', 'ejercicio', 'turno', 'campamento', 'cuenta_bancaria', 'via')
+    search_fields = ('descripcion', 'referencia_bancaria', 'ejercicio__nombre', 'concepto__nombre', 'turno__nombre', 'campamento__nombre', 'cuenta_bancaria__nombre', 'via__nombre')
     ordering = ('-fecha',)
     date_hierarchy = 'fecha'
     readonly_fields = ('creado_por', 'creado_en')
 
     fieldsets = (
         ('Información Básica', {
-            'fields': ('campamento', 'ejercicio', 'turno', 'concepto', 'cantidad', 'fecha', 'referencia_bancaria')
+            'fields': ('campamento', 'ejercicio', 'turno', 'concepto', 'cantidad', 'fecha')
         }),
         ('Descripción', {
             'fields': ('descripcion',)
+        }),
+        ('Detalles Bancarios', {
+            'fields': ('cuenta_bancaria', 'via', 'referencia_bancaria'),
+            'description': 'Información relacionada con el movimiento bancario'
         }),
         ('Justificante', {
             'fields': ('archivo_justificante',),
