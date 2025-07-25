@@ -174,6 +174,71 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
     tiene_desglose.short_description = 'Desglose'
 
 
+@admin.register(MovimientoCajaDeposito)
+class MovimientoCajaDepositoAdmin(admin.ModelAdmin):
+    list_display = ('fecha_display', 'ejercicio', 'caja', 'cantidad_display', 'creado_por', 'creado_en')
+    list_filter = ('fecha', 'caja', 'ejercicio')
+    search_fields = ('ejercicio__nombre', 'caja__nombre')
+    ordering = ('-fecha',)
+    date_hierarchy = 'fecha'
+    readonly_fields = ('creado_por', 'creado_en')
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('ejercicio', 'caja', 'cantidad', 'fecha')
+        }),
+        ('Información de Creación', {
+            'fields': ('creado_por', 'creado_en'),
+            'classes': ('collapse',)
+        }),
+    )
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
+        
+    def fecha_display(self, obj):
+        return obj.fecha.strftime('%d/%m/%Y %H:%M')
+    fecha_display.short_description = 'Fecha y Hora'
+    
+    def cantidad_display(self, obj):
+        return f"{obj.cantidad:.2f}€"
+    cantidad_display.short_description = 'Cantidad'
+    
+    
+@admin.register(MovimientoCajaRetiro)
+class MovimientoCajaRetiroAdmin(admin.ModelAdmin):
+    list_display = ('fecha_display', 'ejercicio', 'caja', 'cantidad_display', 'retirado_por', 'creado_por', 'creado_en')
+    list_filter = ('fecha', 'caja', 'ejercicio')
+    search_fields = ('ejercicio__nombre', 'caja__nombre')
+    ordering = ('-fecha',)
+    date_hierarchy = 'fecha'
+    readonly_fields = ('creado_por', 'creado_en')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('ejercicio', 'caja', 'cantidad', 'fecha', 'retirado_por')
+        }),
+        ('Información de Creación', {
+            'fields': ('creado_por', 'creado_en'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.creado_por = request.user
+        super().save_model(request, obj, form, change)
+        
+    def fecha_display(self, obj):
+        return obj.fecha.strftime('%d/%m/%Y %H:%M')
+    fecha_display.short_description = 'Fecha y Hora'
+    
+    def cantidad_display(self, obj):
+        return f"{obj.cantidad:.2f}€"
+    cantidad_display.short_description = 'Cantidad'
+
+
+
 @admin.register(MovimientoBanco)
 class MovimientoBancoAdmin(admin.ModelAdmin):
     list_display = ('campamento', 'fecha_display', 'ejercicio', 'turno', 'concepto', 'cantidad_display', 'cuenta_bancaria', 'via', 'referencia_bancaria', 'tiene_archivo', 'creado_por', 'creado_en')

@@ -567,6 +567,158 @@ class MovimientoCaja(Movimiento):
         verbose_name = "Movimiento de caja"
         verbose_name_plural = "Movimientos de caja"
         ordering = ['-fecha']
+        
+        
+class MovimientoCajaDeposito(UserTrackingMixin, models.Model):
+    """
+    Representa un movimiento de depósito en caja.
+    """
+
+    campamento = models.ForeignKey(
+        'Campamento',
+        on_delete=models.CASCADE,
+        verbose_name="Campamento",
+        related_name="movimientos_caja_deposito",
+        help_text="Campamento al que pertenece este movimiento de depósito"
+    )
+    
+    ejercicio = models.ForeignKey(
+        'Ejercicio',
+        on_delete=models.CASCADE,
+        verbose_name="Ejercicio",
+        related_name="movimientos_caja_deposito"
+    )
+    
+    caja = models.ForeignKey(
+        Caja,
+        on_delete=models.CASCADE,
+        verbose_name="Caja",
+        related_name="movimientos_caja_deposito"
+    )
+    
+    cantidad = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Cantidad (€)",
+        help_text="Cantidad de dinero del movimiento de depósito"
+    )
+    
+    fecha = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha y hora del movimiento de depósito",
+        help_text="Fecha y hora en que se realizó el movimiento de depósito"
+    )
+  
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este movimiento de depósito"
+    )
+    
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del movimiento de depósito"
+    )
+    
+    def clean(self):
+        """Validación de datos antes de guardar"""
+        if self.cantidad <= 0:
+            raise ValidationError("La cantidad debe ser positiva")
+        
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        
+    def __str__(self):
+        return f"{self.fecha.strftime('%Y-%m-%d %H:%M')} | {self.caja.nombre} | +{self.cantidad:.2f}€"
+    
+    class Meta:
+        verbose_name = "Movimiento de depósito en caja"
+        verbose_name_plural = "Movimientos de depósito en caja"
+        ordering = ['-fecha']
+    
+class MovimientoCajaRetiro(UserTrackingMixin, models.Model):
+    """
+    Representa un movimiento de retiro de caja.
+    """
+
+    campamento = models.ForeignKey(
+        'Campamento',
+        on_delete=models.CASCADE,
+        verbose_name="Campamento",
+        related_name="movimientos_caja_retiro",
+        help_text="Campamento al que pertenece este movimiento de retiro"
+    )
+    
+    ejercicio = models.ForeignKey(
+        'Ejercicio',
+        on_delete=models.CASCADE,
+        verbose_name="Ejercicio",
+        related_name="movimientos_caja_retiro"
+    )
+    
+    caja = models.ForeignKey(
+        Caja,
+        on_delete=models.CASCADE,
+        verbose_name="Caja",
+        related_name="movimientos_caja_retiro"
+    )
+    
+    cantidad = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        verbose_name="Cantidad (€)",
+        help_text="Cantidad de dinero del movimiento de retiro"
+    )
+    
+    fecha = models.DateTimeField(
+        default=timezone.now,
+        verbose_name="Fecha y hora del movimiento de retiro",
+        help_text="Fecha y hora en que se realizó el movimiento de retiro"
+    )
+  
+    retirado_por = models.CharField(
+        max_length=100,
+        verbose_name="Retirado por",
+        help_text="Nombre de la persona que realizó el retiro"
+    )
+    
+    creado_por = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Creado por",
+        help_text="Usuario que creó este movimiento de retiro"
+    )
+    
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Creado en",
+        help_text="Fecha y hora de creación del movimiento de retiro"
+    )
+    
+    def clean(self):
+        """Validación de datos antes de guardar"""
+        if self.cantidad <= 0:
+            raise ValidationError("La cantidad debe ser positiva")
+        
+        if not self.caja.activa:
+            raise ValidationError("No se pueden añadir movimientos a una caja inactiva")
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        
+    class Meta:
+        verbose_name = "Movimiento de retiro en caja"
+        verbose_name_plural = "Movimientos de retiro en caja"
+        ordering = ['-fecha']
+    
 
 class MovimientoBanco(Movimiento):
     """
