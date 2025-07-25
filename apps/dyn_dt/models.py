@@ -86,46 +86,57 @@ class Ejercicio(UserTrackingMixin, models.Model):
         help_text="Fecha y hora de creación del ejercicio"
     )
     
-    def calcular_resultado_caja_ejercicio(self):
+    def calcular_resultado_caja_ejercicio(self, campamento=None):
         """
-        Calcula la suma de todos los resultados de las cajas asociadas a este ejercicio.
+        Calcula la suma del importe de todos los movimientos de caja asociados a este ejercicio.
         """
         total = Decimal('0.00')
-        for movimiento_caja in MovimientoCaja.objects.filter(ejercicio=self):
+        for movimiento_caja in MovimientoCaja.objects.filter(ejercicio=self, caja__campamento=campamento):
             total += movimiento_caja.cantidad_real()
         return total
-    
-    def calcular_resultado_banco_ejercicio(self):
+
+    def calcular_resultado_banco_ejercicio(self, campamento=None):
         """
-        Calcula la suma de todos los resultados de los movimientos bancarios asociados a este ejercicio.
+        Calcula la suma del importe de todos los movimientos bancarios asociados a este ejercicio.
         """
         total = Decimal('0.00')
-        for movimiento_banco in MovimientoBanco.objects.filter(ejercicio=self):
+        for movimiento_banco in MovimientoBanco.objects.filter(ejercicio=self, campamento=campamento):
             total += movimiento_banco.cantidad_real()
         return total
-    
-    def calcular_resultado_ejercicio(self):
+
+    def calcular_resultado_ejercicio(self, campamento=None):
         """
         Calcula el resultado total del ejercicio como la suma de los resultados de caja y banco.
         """
-        resultado_caja = self.calcular_resultado_caja_ejercicio()
-        resultado_banco = self.calcular_resultado_banco_ejercicio()
+        resultado_caja = self.calcular_resultado_caja_ejercicio(campamento=campamento)
+        resultado_banco = self.calcular_resultado_banco_ejercicio(campamento=campamento)
         return resultado_caja + resultado_banco
 
-    def calcular_saldo_cajas(self):
+    def calcular_saldo_cajas(self, campamento=None):
         """
-        Calcula la suma de todos los saldos de las cajas
+        Calcula la suma de todos los resultados de caja de los ejercicios desde el primero año hasta el actual.
         """
         total = Decimal('0.00')
-        for caja in Caja.objects.filter(activa=True):
-            total += caja.saldo_caja
+        for ejercicio in Ejercicio.objects.filter(año__lte=self.año):
+            total += ejercicio.calcular_resultado_caja_ejercicio(campamento=campamento)
         return total
 
-    def calcular_saldo_total(self):
+    def calcular_saldo_banco(self, campamento=None):
         """
-        Calcula el saldo total del ejercicio (suma de cajas + saldo banco del ejercicio)
+        Calcula la suma de todos los resultados de banco de los ejercicios desde el primero año hasta el actual.
         """
-        return self.calcular_saldo_cajas() + self.saldo_banco
+        total = Decimal('0.00')
+        for ejercicio in Ejercicio.objects.filter(año__lte=self.año):
+            total += ejercicio.calcular_resultado_banco_ejercicio(campamento=campamento)
+        return total
+
+    def calcular_saldo_total(self, campamento=None):
+        """
+        Calcula el saldo total del banco para el ejercicio actual.
+        """
+        calcular_saldo_cajas = self.calcular_saldo_cajas(campamento=campamento)
+        calcular_saldo_banco = self.calcular_saldo_banco(campamento=campamento)
+        return calcular_saldo_cajas + calcular_saldo_banco
 
     @property
     def saldo_total(self):
@@ -473,7 +484,7 @@ class Movimiento(UserTrackingMixin, models.Model):
 
 
 class MovimientoCaja(Movimiento):
-    
+        
     ejercicio = models.ForeignKey(
         'Ejercicio',
         on_delete=models.CASCADE,

@@ -244,6 +244,27 @@
         }
       });
 
+
+      function loadCampamentoEjercicioData() {
+        const campamentoId = $('#campamentoSelect').val();
+        const ejercicioId = $('#ejercicioSelect').val();
+
+        console.log('Cargando datos para Campamento:', campamentoId, 'Ejercicio:', ejercicioId);
+
+        if (!campamentoId || !ejercicioId) {
+          console.warn('Faltan datos de campamento o ejercicio, no se puede cargar la tabla');
+          $('#tableTypeSection').hide();
+          $('#conceptosTable').hide();
+          $('#turnosTable').hide();
+          $('#noEjercicioMessage').show();
+          return;
+        }
+
+        // Load tables data
+        loadTablesData();
+      }
+
+
       function updateSaldoDisplay() {
         const selectedOption = $('#ejercicioSelect option:selected');
         const saldoTotal = selectedOption.data('saldo-total');
@@ -302,9 +323,11 @@
       }
 
       function loadTablesData() {
+
+        const campamentoId = $('#campamentoSelect').val();
         const ejercicioId = $('#ejercicioSelect').val();
 
-        if (!ejercicioId) {
+        if (!ejercicioId || !campamentoId) {
           $('#tableTypeSection').hide();
           $('#conceptosTable').hide();
           $('#turnosTable').hide();
@@ -316,6 +339,8 @@
           return;
         }
 
+        console.log('Cargando datos de tablas para Ejercicio:', ejercicioId, 'Campamento:', campamentoId);
+
         // Update saldo display
         updateSaldoDisplay();
         $('#noEjercicioMessage').hide();
@@ -326,6 +351,7 @@
           method: 'GET',
           data: {
             'ejercicio_id': ejercicioId,
+            'campamento_id': campamentoId,
             'ajax': 'true'
           },
           success: function (data) {

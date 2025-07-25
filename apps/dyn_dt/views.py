@@ -474,17 +474,19 @@ def _handle_tables_ajax_requests(request):
     Returns:
         JsonResponse from appropriate handler
     """
+    
+    campamento_id = request.GET.get('campamento_id')
     ejercicio_id = request.GET.get('ejercicio_id')
     
-    if ejercicio_id:
+    if ejercicio_id and campamento_id:
         # Handle ejercicio-based tables request
-        return _handle_ejercicio_tables_request(request, ejercicio_id)
+        return _handle_campamento_ejercicio_tables_request(request, ejercicio_id, campamento_id)
     else:
         from django.http import JsonResponse
-        return JsonResponse({'success': False, 'error': 'Ejercicio ID requerido'})
+        return JsonResponse({'success': False, 'error': 'Ejercicio ID y Campamento ID requeridos'})
 
 
-def _handle_ejercicio_tables_request(request, ejercicio_id):
+def _handle_campamento_ejercicio_tables_request(request, ejercicio_id, campamento_id):
     """
     Handle tables data request for a specific ejercicio.
     
@@ -500,12 +502,14 @@ def _handle_ejercicio_tables_request(request, ejercicio_id):
     from apps.dyn_dt.models import MovimientoCaja, MovimientoBanco
     
     try:
+        
+        campamento = Campamento.objects.get(id=campamento_id)
         ejercicio = Ejercicio.objects.get(id=ejercicio_id)
         
         # Get all movements for this ejercicio (both caja and banco)
-        movimientos_caja = MovimientoCaja.objects.filter(ejercicio=ejercicio)
-        movimientos_banco = MovimientoBanco.objects.filter(ejercicio=ejercicio)
-        
+        movimientos_caja = MovimientoCaja.objects.filter(ejercicio=ejercicio, caja__campamento=campamento)
+        movimientos_banco = MovimientoBanco.objects.filter(ejercicio=ejercicio, campamento=campamento)
+
         # Calculate conceptos data
         conceptos_data = []
         
@@ -555,10 +559,10 @@ def _handle_ejercicio_tables_request(request, ejercicio_id):
         # Calculate turnos data (combine both caja and banco movements)
         turnos_data = []
         
-        # Get all turnos for this ejercicio
-        turnos_ejercicio = ejercicio.turnos.all()
-        
-        for turno in turnos_ejercicio:
+        # Get all turnos for the currento ejercicio of the campamento
+        turnos_ejercicio_campamento = ejercicio.turnos.filter(campamento=campamento)
+
+        for turno in turnos_ejercicio_campamento:
             # Calculate totals for this turno from caja movements
             caja_ingresos = movimientos_caja.filter(
                 turno=turno, concepto__es_gasto=False
@@ -605,8 +609,8 @@ def _handle_ejercicio_tables_request(request, ejercicio_id):
         
         total_ingresos = float(total_ingresos_caja + total_ingresos_banco)
         total_gastos = float(total_gastos_caja + total_gastos_banco)
-        saldo_actual = float(ejercicio.saldo_total)
-        
+        saldo_actual = float(ejercicio.calcular_resultado_ejercicio(campamento=campamento))
+
         resumen = {
             'total_ingresos': total_ingresos,
             'total_gastos': total_gastos,
@@ -629,7 +633,7 @@ def _handle_ejercicio_tables_request(request, ejercicio_id):
         return JsonResponse({'success': False, 'error': 'Ejercicio no encontrado'})
     except Exception as e:
         import traceback
-        print(f"Error in _handle_ejercicio_tables_request: {e}")
+        print(f"Error in _handle_campamento_ejercicio_tables_request: {e}")
         print(traceback.format_exc())
         return JsonResponse({'success': False, 'error': str(e)})
 
