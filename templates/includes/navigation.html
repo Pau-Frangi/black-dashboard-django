@@ -21,7 +21,7 @@
             <ul class="navbar-nav ml-auto">
                 <!-- Selector de Campamento -->
                 <li class="w-auto mx-1">
-                    <select class="form-control" id="campamentoSelect" name="campamento_id">
+                    <select class="form-control" id="campamentoSelect" onchange="loadCampamentoEjercicioData()" style="min-width:120px;">
                         <option value="">-- Selecciona un campamento --</option>
                         {% for campamento in campamentos %}
                             <option value="{{ campamento.id }}"
@@ -34,7 +34,7 @@
                 </li>
                 <!-- Selector de Ejercicio -->
                 <li class="w-auto mx-1">
-                        <select class="form-control" id="ejercicioSelect" onchange="loadEjercicioData()" style="min-width:120px;">
+                        <select class="form-control" id="ejercicioSelect" onchange="loadCampamentoEjercicioData()" style="min-width:120px;">
                             <option value="">-- Selecciona un ejercicio --</option>
                             {% for ejercicio in ejercicios %}
                                 <option value="{{ ejercicio.id }}" 

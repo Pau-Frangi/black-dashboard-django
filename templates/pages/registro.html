@@ -148,7 +148,7 @@
                     </div>
 
                     <!-- Mensaje cuando no hay ejercicio seleccionado -->
-                    <div id="noCajaMessage" class="text-center py-5">
+                    <div id="noEjercicioMessage" class="text-center py-5">
                         <i class="tim-icons icon-wallet-43" style="font-size: 4rem; color: #ccc;"></i>
                         <h4 class="mt-3 text-muted">Selecciona un ejercicio para ver todos sus movimientos</h4>
                         <p class="text-muted">Elige un ejercicio del selector superior para visualizar todos los movimientos de caja y banco asociados</p>
@@ -560,7 +560,7 @@
         const defaultEjercicioId = $('#ejercicioSelect').val();
         if (defaultEjercicioId) {
             console.log('Ejercicio preseleccionado detectado:', defaultEjercicioId);
-            loadEjercicioData(); // This will call loadEjercicioMovimientos
+            loadCampamentoEjercicioData(); // This will call loadEjercicioMovimientos
         }
 
         // File upload handler
@@ -845,7 +845,7 @@
             tbody.append(`
                 <tr>
                     <td colspan="8" class="text-center text-muted">
-                        No hay movimientos registrados para esta caja
+                        No hay movimientos registrados para el campamento y ejercicio seleccionados.
                     </td>
                 </tr>
             `);
@@ -1058,7 +1058,7 @@
         
         console.log('Enviando formulario de movimiento');
 
-        const campamento_id = $('#campamentoIdInput').val();
+        const campamento_id = $('#campamentoSelect').val();
         if (!campamento_id) {
             showWarning('Por favor selecciona un campamento', {floating: true});
             return;
@@ -1268,7 +1268,7 @@
             $('#desgloseDineroSection').hide();
             
             // Cargar cajas del ejercicio seleccionado
-            loadCajasForEjercicio();
+            loadCajasForCampamento();
             
             // Si hay un concepto seleccionado, aplicar lógica de justificante para efectivo
             const concepto = $('#concepto').find('option:selected');
@@ -2760,12 +2760,16 @@
         $('#tipo_operacion').trigger('change');
     }
 
-    function loadEjercicioData() {
+    function loadCampamentoEjercicioData() {
+
         const ejercicioId = $('#ejercicioSelect').val();
+        const campamentoId = $('#campamentoSelect').val();
+
+        console.log('Cargando datos del campamento ID:', campamentoId);
         
         console.log('Cargando datos para ejercicio ID:', ejercicioId);
         
-        if (!ejercicioId) {
+        if (!ejercicioId || !campamentoId) {
             // No ejercicio selected
             console.log('No hay ejercicio seleccionado, ocultando elementos');
             $('#movimientosContainer').hide();
@@ -2773,17 +2777,7 @@
             $('#searchSection').hide();
             $('#filterControls').hide();
             $('#addMovementSection').hide();
-            $('#noCajaMessage').show();
-            
-            // Clear caja dropdown
-            const cajaSelect = $('#cajaSelect');
-            cajaSelect.empty();
-            cajaSelect.append('<option value="">-- Selecciona un ejercicio primero --</option>');
-            
-            // Clear turnos dropdown
-            const turnoSelect = $('#turno');
-            turnoSelect.empty();
-            turnoSelect.append('<option value="">-- Selecciona un turno --</option>');
+            $('#noEjercicioMessage').show();
             
             // Limpiar los campos del header
             updateTotalsDisplay(0, 0, 0);
@@ -2802,14 +2796,8 @@
         loadTurnosForEjercicio(ejercicioId);
         
         // Hide no ejercicio message and show add movement section
-        $('#noCajaMessage').hide();
+        $('#noEjercicioMessage').hide();
         $('#addMovementSection').show();
-
-        // Cargar cajas del ejercicio si el tipo de operación es efectivo
-        const tipoOperacion = $('#tipo_operacion').val();
-        if (tipoOperacion === 'efectivo') {
-            loadCajasForEjercicio();
-        }
 
         // Cargar todos los movimientos del ejercicio
         loadEjercicioMovimientos(ejercicioId);
@@ -2818,7 +2806,7 @@
     function loadEjercicioMovimientos(ejercicioId) {
         console.log('Cargando movimientos para ejercicio ID:', ejercicioId);
 
-        const campamento_id = $('#campamentoIdInput').val();
+        const campamento_id = $('#campamentoSelect').val();
         if (!ejercicioId) {
             console.log('No hay ejercicio seleccionado, no se pueden cargar movimientos');
             currentMovimientos = [];
@@ -2877,22 +2865,16 @@
         });
     }
 
-    function loadCajasForEjercicio() {
+    function loadCajasForCampamento() {
 
-        const campamento_id = $('#campamentoIdInput').val();
-        const ejercicioId = $('#ejercicioSelect').val();
+        const campamento_id = $('#campamentoSelect').val();
         
         if (!campamento_id) {
             console.log('No hay campamento seleccionado');
             return;
         }
 
-        if (!ejercicioId) {
-            console.log('No hay ejercicio seleccionado');
-            return;
-        }
-
-        console.log('Cargando cajas para ejercicio ID:', ejercicioId);
+        console.log('Cargando cajas para campamento ID:', campamento_id);
 
         $.ajax({
             url: '{% url "registro" %}',
@@ -2901,7 +2883,6 @@
                 'ajax': 'true',
                 'get_cajas': 'true',
                 'campamento_id': campamento_id,
-                'ejercicio_id': ejercicioId
             },
             success: function(data) {
                 if (data.success) {
@@ -2932,11 +2913,8 @@
 
     function loadTurnosForEjercicio(ejercicioId, callback) {
 
-        const campamentoId = $('#campamentoIdInput').val();
-        if (!campamentoId) {
-            console.log('No hay campamento seleccionado');
-            return;
-        }
+        const campamentoId = $('#campamentoSelect').val();
+        console.log('Cargando turnos para ejercicio ID:', ejercicioId, 'y campamento ID:', campamentoId);
 
         $.ajax({
             url: '{% url "registro" %}',

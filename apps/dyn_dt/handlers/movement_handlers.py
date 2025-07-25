@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from apps.dyn_dt.models import (
     Caja, Concepto, MovimientoCaja, MovimientoBanco, 
-    MovimientoDinero, DesgloseCaja, Ejercicio, Turno
+    MovimientoDinero, DesgloseCaja, Ejercicio, Turno, Campamento
 )
 from apps.dyn_dt.forms import DesgloseDineroForm
 from apps.dyn_dt.utils import combine_date_time
@@ -47,12 +47,13 @@ class MovementHandler:
             concepto = get_object_or_404(Concepto, id=request.POST.get('concepto_id'))
             cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
             ejercicio = get_object_or_404(Ejercicio, id=request.POST.get('ejercicio_id'))
+            campamento = get_object_or_404(Campamento, id=request.POST.get('campamento_id'))
 
             
             # Create movement based on type
             if tipo_operacion == 'transferencia':
                 movimiento = MovementCreator.create_bank_movement(
-                    request, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime
+                    request, campamento, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime
                 )
             else:
                 caja = get_object_or_404(Caja, id=request.POST.get('caja_id'))
@@ -176,10 +177,11 @@ class MovementCreator:
     """Helper class for creating movements."""
     
     @staticmethod
-    def create_bank_movement(request, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime):
+    def create_bank_movement(request, campamento, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime):
         """Creates a bank movement"""
 
         return MovimientoBanco(
+            campamento=campamento,
             ejercicio=ejercicio,
             turno=turno,
             concepto=concepto,

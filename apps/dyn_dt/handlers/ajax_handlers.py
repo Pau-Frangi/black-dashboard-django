@@ -4,7 +4,7 @@ AJAX request handlers for the dynamic datatables application.
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from apps.dyn_dt.models import (
-    Ejercicio, MovimientoCaja, MovimientoBanco, Turno, Caja
+    Ejercicio, MovimientoCaja, MovimientoBanco, Turno, Caja, Campamento
 )
 from apps.dyn_dt.utils import format_movement_data, calculate_movements_summary
 
@@ -113,8 +113,11 @@ class RegistroAjaxHandler:
             JsonResponse with cajas list
         """
         
-        cajas = Caja.objects.values('id', 'nombre', 'saldo_caja', 'activa')
-            
+        campamento_id = request.GET.get('campamento_id')
+        campamento = get_object_or_404(Campamento, id=campamento_id) 
+
+        cajas = Caja.objects.filter(campamento=campamento).values('id', 'nombre', 'saldo_caja', 'activa')
+
         return JsonResponse({
             'success': True,
             'cajas': list(cajas)
