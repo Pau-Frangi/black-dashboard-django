@@ -16,7 +16,7 @@ from apps.dyn_dt.handlers.movement_handlers import MovementHandler
 from apps.dyn_dt.handlers.datatable_handlers import (
     DatatableHandler, FilterHandler, CRUDHandler, ExportHandler
 )
-from apps.dyn_dt.models import Ejercicio, Caja, Concepto, MovimientoCaja, MovimientoBanco, Campamento, DenominacionEuro
+from apps.dyn_dt.models import Ejercicio, Caja, Concepto, MovimientoCaja, MovimientoBanco, Campamento, DenominacionEuro, CuentaBancaria, ViaMovimientoBanco
 
 
 # ================================
@@ -397,6 +397,8 @@ def _handle_ajax_requests(request):
         return RegistroAjaxHandler.handle_get_cajas(request)
     elif request.GET.get('get_movimiento_desglose') == 'true':
         return RegistroAjaxHandler.handle_get_movimiento_desglose(request)
+    elif request.GET.get('get_cuentas_vias') == 'true':
+        return RegistroAjaxHandler.handle_get_cuentas_vias(request)
     else:
         # Legacy caja-specific requests for backward compatibility
         return LegacyAjaxHandler.handle_legacy_caja_request(request)

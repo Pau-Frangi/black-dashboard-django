@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from apps.dyn_dt.models import (
     Caja, Concepto, MovimientoCaja, MovimientoBanco, 
-    MovimientoDinero, DesgloseCaja, Ejercicio, Turno, Campamento
+    MovimientoDinero, DesgloseCaja, Ejercicio, Turno, Campamento, CuentaBancaria, ViaMovimientoBanco
 )
 from apps.dyn_dt.forms import DesgloseDineroForm
 from apps.dyn_dt.utils import combine_date_time
@@ -52,8 +52,10 @@ class MovementHandler:
             
             # Create movement based on type
             if tipo_operacion == 'transferencia':
+                cuenta_bancaria = get_object_or_404(CuentaBancaria, id=request.POST.get('cuenta_bancaria_id'))
+                via_movimiento_bancario = ViaMovimientoBanco.objects.get(id=request.POST.get('via_movimiento_bancario_id'))
                 movimiento = MovementCreator.create_bank_movement(
-                    request, campamento, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime
+                    request, campamento, ejercicio, turno, concepto, cuenta_bancaria, via_movimiento_bancario, cantidad_decimal, fecha_datetime
                 )
             else:
                 caja = get_object_or_404(Caja, id=request.POST.get('caja_id'))
@@ -177,7 +179,7 @@ class MovementCreator:
     """Helper class for creating movements."""
     
     @staticmethod
-    def create_bank_movement(request, campamento, ejercicio, turno, concepto, cantidad_decimal, fecha_datetime):
+    def create_bank_movement(request, campamento, ejercicio, turno, concepto, cuenta_bancaria, via_movimiento_bancario, cantidad_decimal, fecha_datetime):
         """Creates a bank movement"""
 
         return MovimientoBanco(
@@ -188,6 +190,8 @@ class MovementCreator:
             cantidad=cantidad_decimal,
             fecha=fecha_datetime,
             descripcion=request.POST.get('descripcion') or None,
+            cuenta_bancaria=cuenta_bancaria,
+            via = via_movimiento_bancario,
             referencia_bancaria=request.POST.get('referencia_bancaria'),
             archivo_justificante=request.FILES.get('archivo_justificante_banco'),
         )

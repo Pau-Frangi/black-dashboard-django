@@ -487,9 +487,28 @@
                     </div> <!-- End campos-efectivo -->
                     
                     <!-- Campos específicos para movimientos de BANCO (transferencias) -->
+
+                    <!-- Campos de cuenta bancaria y via de movimiento bancario -->
                     <div class="campos-banco" id="camposBanco" style="display: none;">
                         <div class="row">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="cuenta_bancaria" class="form-label">Cuenta Bancaria</label>
+                                    <select class="form-control" name="cuenta_bancaria_id" id="cuenta_bancaria" required>
+                                    </select>
+                                </div>
+                            </div>
+                            <!-- Campos de justificante para movimientos bancarios - Para gastos e ingresos -->
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="via_movimiento_bancario" class="form-label">Vía de Movimiento Bancario</label>
+                                    <select class="form-control" name="via_movimiento_bancario_id" id="via_movimiento_bancario" required>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="referencia_bancaria" class="form-label">
                                         <i class="tim-icons icon-notes mr-2"></i>
@@ -503,16 +522,13 @@
                                     </small>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Campos de justificante para movimientos bancarios - Para gastos e ingresos -->
-                        <div class="justificante-fields-banco" id="justificanteFieldsBanco" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-6">
+                            <!-- Campos de justificante para movimientos bancarios - Para gastos e ingresos -->
+                            <div class="col-md-6">
+                                <div class="justificante-fields-banco" id="justificanteFieldsBanco" style="display: none;">
                                     <div class="form-group">
                                         <label for="archivo_justificante_banco" class="form-label">Archivo Justificante</label>
                                         <input type="file" class="form-control" name="archivo_justificante_banco" id="archivo_justificante_banco" 
-                                               accept=".pdf,.jpg,.jpeg,.png,.bmp">
+                                                accept=".pdf,.jpg,.jpeg,.png,.bmp">
                                         <small class="form-text text-muted">
                                             <i class="tim-icons icon-cloud-upload-94"></i>
                                             PDF, JPG, PNG, BMP (máx. 10MB)
@@ -521,6 +537,7 @@
                                 </div>
                             </div>
                         </div>
+                        
                     </div> <!-- End campos-banco -->
                 </div>
                 <div class="modal-footer">
@@ -1132,6 +1149,19 @@
             
         } else if (tipoOperacion === 'transferencia') {
             // Para transferencias, no necesitamos caja específica, solo ejercicio
+            const cuenta_bancariaId = $('#cuenta_bancaria').val();
+            if (!cuenta_bancariaId) {
+                showWarning('Por favor selecciona una cuenta bancaria para movimientos de transferencia', {floating: true});
+                return;
+            }
+            console.log('Cuenta bancaria seleccionada para transferencia:', cuenta_bancariaId);
+
+            const viaMovimientoBancarioId = $('#via_movimiento_bancario').val();
+            if (!viaMovimientoBancarioId) {
+                showWarning('Por favor selecciona una vía de movimiento bancario', {floating: true});
+                return;
+            }
+
             console.log('Datos bancarios validados correctamente');
         }
         
@@ -1158,6 +1188,8 @@
             tipo_operacion: formData.get('tipo_operacion'),
             caja_id: formData.get('caja_id'),
             turno_id: formData.get('turno_id'),
+            cuenta_bancaria_id: formData.get('cuenta_bancaria_id'),
+            via_movimiento_bancario_id: formData.get('via_movimiento_bancario_id'),
             concepto_id: formData.get('concepto_id'),
             cantidad: formData.get('cantidad'),
             justificante: formData.get('justificante') || 'No seleccionado',
@@ -3042,5 +3074,50 @@
             }
         });
     }
+
+    function loadCuentasAndVias() {
+
+        $.ajax({
+            url: '{% url "registro" %}',
+            method: 'GET',
+            data: {
+                'ajax': 'true',
+                'get_cuentas_vias': 'true',
+            },
+            success: function(data) {
+                if (data.success) {
+                    // Populate cuentas bancarias
+                    const cuentaSelect = $('#cuenta_bancaria');
+                    cuentaSelect.empty();
+                    cuentaSelect.append('<option value="">-- Selecciona una cuenta --</option>');
+                    data.cuentas.forEach(function(cuenta) {
+                        cuentaSelect.append(`<option value="${cuenta.id}">${cuenta.nombre} - ${cuenta.IBAN}</option>`);
+                    });
+
+                    // Populate vías de movimiento bancario
+                    const viaSelect = $('#via_movimiento_bancario');
+                    viaSelect.empty();
+                    viaSelect.append('<option value="">-- Selecciona una vía --</option>');
+                    data.vias.forEach(function(via) {
+                        viaSelect.append(`<option value="${via.id}">${via.nombre}</option>`);
+                    });
+                } else {
+                    showError('Error al cargar cuentas/vías: ' + data.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                showError('Error al cargar cuentas/vías');
+            }
+        });
+    }
+
+    // Call this function when tipo_operacion changes to transferencia
+    $('#tipo_operacion').on('change', function() {
+        if ($(this).val() === 'transferencia') {
+            loadCuentasAndVias();
+        }
+    });
+
+
 </script>
 {% endblock extrajs %}

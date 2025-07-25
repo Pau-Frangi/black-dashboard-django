@@ -831,10 +831,10 @@ class ViaMovimientoBanco(UserTrackingMixin, models.Model):
     Representa el medio de un movimiento bancario
     """
 
-    via = models.CharField(
+    nombre = models.CharField(
         max_length=100,
-        verbose_name="Vía",
-        help_text="Vía del movimiento bancario"
+        verbose_name="Nombre de la vía de movimiento bancario",
+        help_text="Ej: 'Bizum', 'Transferencia', etc.",
     )
 
     creado_por = models.ForeignKey(
@@ -853,7 +853,7 @@ class ViaMovimientoBanco(UserTrackingMixin, models.Model):
     )
 
     def __str__(self):
-        return self.via
+        return self.nombre
 
     class Meta:
         verbose_name = "Vía de Movimiento Bancario"

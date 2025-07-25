@@ -4,7 +4,7 @@ AJAX request handlers for the dynamic datatables application.
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from apps.dyn_dt.models import (
-    Ejercicio, MovimientoCaja, MovimientoBanco, Turno, Caja, Campamento
+    Ejercicio, MovimientoCaja, MovimientoBanco, Turno, Caja, Campamento, CuentaBancaria, ViaMovimientoBanco
 )
 from apps.dyn_dt.utils import format_movement_data, calculate_movements_summary
 
@@ -159,6 +159,25 @@ class RegistroAjaxHandler:
             
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
+        
+        
+    @staticmethod
+    def handle_get_cuentas_vias(request):
+        """
+        Devuelve una lista de cuentas bancarias y una lista de vías de movimiento bancario.
+        Args:
+            request: Django request object
+        Returns:
+            JsonResponse with cuentas and vias data
+        """
+        cuentas = CuentaBancaria.objects.filter(activo=True).values('id', 'nombre', 'titular', 'IBAN', 'activo')
+        vias = ViaMovimientoBanco.objects.all().values('id', 'nombre')
+
+        return JsonResponse({
+            'success': True,
+            'cuentas': list(cuentas),
+            'vias': list(vias)
+        })
 
 
 class LegacyAjaxHandler:

@@ -328,8 +328,8 @@ class EjercicioAdmin(admin.ModelAdmin):
 
 @admin.register(ViaMovimientoBanco)
 class ViaMovimientoBancoAdmin(admin.ModelAdmin):
-    list_display = ('via', 'creado_por', 'creado_en')
-    list_filter = ('via',)
+    list_display = ('nombre', 'creado_por', 'creado_en')
+    list_filter = ('nombre',)
     ordering = ('-creado_en',)
     readonly_fields = ('creado_por', 'creado_en')
 
