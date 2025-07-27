@@ -1288,13 +1288,15 @@
         console.log('Tipo de operación seleccionado:', tipoOperacion);
         
         if (tipoOperacion === 'efectivo') {
+
+            $('#cajaSelect').prop('required', true);
+            $('#cuenta_bancaria').prop('required', false);
+            $('#via_movimiento_bancario').prop('required', false);
+
             // Mostrar selector de caja y campos de efectivo
             $('#cajaSelectionRow').show();
             $('#camposEfectivo').show();
             $('#camposBanco').hide();
-            
-            // Hacer obligatorio el selector de caja para operaciones de efectivo
-            $('#cajaSelect').prop('required', true);
             
             // Ocultar desglose hasta que se seleccione una caja
             $('#desgloseDineroSection').hide();
@@ -1316,12 +1318,14 @@
             }
             
         } else if (tipoOperacion === 'transferencia') {
+
+            $('#cajaSelect').prop('required', false);
+            $('#cuenta_bancaria').prop('required', true);
+            $('#via_movimiento_bancario').prop('required', true);
+
             // Ocultar selector de caja para transferencias bancarias
             $('#cajaSelectionRow').hide();
             $('#cajaSelect').val(''); // Limpiar selección de caja
-            
-            // Hacer NO obligatorio el selector de caja para transferencias bancarias
-            $('#cajaSelect').prop('required', false);
             
             // Ocultar desglose para transferencias bancarias
             $('#desgloseDineroSection').hide();
@@ -1340,6 +1344,7 @@
                 // Actualizar las etiquetas según si es gasto o ingreso
                 updateBankJustificanteLabels(esGasto);
             }
+            loadCuentasAndVias();
             
         } else {
             // Sin selección - ocultar todos los campos específicos
@@ -3110,13 +3115,6 @@
             }
         });
     }
-
-    // Call this function when tipo_operacion changes to transferencia
-    $('#tipo_operacion').on('change', function() {
-        if ($(this).val() === 'transferencia') {
-            loadCuentasAndVias();
-        }
-    });
 
 
 </script>
