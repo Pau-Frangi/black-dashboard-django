@@ -347,13 +347,15 @@ class MovementUpdater:
         desglose_form = DesgloseDineroForm(request.POST)
         if desglose_form.is_valid():
             movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
-            
+            content_type = ContentType.objects.get_for_model(movimiento)
             for mov_data in movimientos_dinero_data:
                 MovimientoDinero.objects.create(
-                    movimiento_caja=movimiento,
+                    content_type=content_type,
+                    object_id=movimiento.id,
                     denominacion=mov_data['denominacion'],
                     cantidad_entrada=mov_data['cantidad_entrada'],
-                    cantidad_salida=mov_data['cantidad_salida']
+                    cantidad_salida=mov_data['cantidad_salida'],
+                    creado_por=request.user
                 )
         else:
             raise ValidationError('El desglose de dinero es inválido o está incompleto')

@@ -9,6 +9,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from apps.dyn_dt.models import MovimientoCaja, DenominacionEuro, MovimientoDinero
 from decimal import Decimal
+from django.contrib.contenttypes.models import ContentType
+
 
 
 class Command(BaseCommand):
@@ -81,7 +83,8 @@ class Command(BaseCommand):
                         for denominacion, cantidad in desglose_generado.items():
                             if cantidad > 0:
                                 MovimientoDinero.objects.create(
-                                    movimiento_caja=movimiento,
+                                    content_type=ContentType.objects.get_for_model(movimiento),
+                                    object_id=movimiento.id,
                                     denominacion=denominacion,
                                     cantidad_entrada=cantidad,
                                     cantidad_salida=0

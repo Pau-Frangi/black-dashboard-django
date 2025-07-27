@@ -503,13 +503,6 @@ class MovimientoCaja(Movimiento):
         verbose_name="Caja",
         related_name="movimientos"
     )
-    
-    movimientos_dinero = GenericRelation(
-        'MovimientoDinero',
-        content_type_field='content_type',
-        object_id_field='object_id',
-        related_query_name='movimiento_caja'
-    )
 
     turno = models.ForeignKey(
         Turno,
@@ -989,6 +982,11 @@ class MovimientoDinero(UserTrackingMixin, models.Model):
     def __str__(self):
         return f"{self.movimiento_caja} - {self.denominacion}: +{self.cantidad_entrada}/-{self.cantidad_salida}"
     
+    def debug(self):
+        print("Generic FK resolved as:", self.movimiento_caja)
+        print("content_type:", self.content_type)
+        print("object_id:", self.object_id)
+
     class Meta:
         verbose_name = "Movimiento de Dinero"
         verbose_name_plural = "Movimientos de Dinero"
@@ -1151,15 +1149,18 @@ def actualizar_saldo_caja_on_delete(sender, instance, **kwargs):
     # Actualizar saldo de caja
     instance.caja.saldo_caja -= instance.cantidad_real()
     instance.caja.save(skip_validation=True)
+    
+
+@receiver(pre_delete, sender=MovimientoCaja)
+def eliminar_movimientos_dinero_relacionados(sender, instance, **kwargs):
+    ct = ContentType.objects.get_for_model(instance)
+    MovimientoDinero.objects.filter(content_type=ct, object_id=instance.id).delete()
 
 
 @receiver(post_save, sender=MovimientoDinero)
 def actualizar_desglose_on_movimiento_dinero_save(sender, instance, created, **kwargs):
     if created:
         movimiento_caja = instance.movimiento_caja
-        from apps.dyn_dt.models import MovimientoCaja
-        if not isinstance(movimiento_caja, MovimientoCaja):
-            return  # Evita el error si el objeto relacionado no es válido
 
         desglose, created_desglose = DesgloseCaja.objects.get_or_create(
             caja=movimiento_caja.caja,
@@ -1176,10 +1177,6 @@ def actualizar_desglose_on_movimiento_dinero_save(sender, instance, created, **k
 def actualizar_desglose_on_movimiento_dinero_delete(sender, instance, **kwargs):
     """Actualiza el desglose cuando se elimina un MovimientoDinero"""
     movimiento_caja = instance.movimiento_caja
-    # Solo continuar si movimiento_caja es una instancia de MovimientoCaja
-    from apps.dyn_dt.models import MovimientoCaja
-    if not isinstance(movimiento_caja, MovimientoCaja):
-        return  # Evita el error si el objeto relacionado ya no existe
 
     desglose = DesgloseCaja.objects.filter(
         caja=movimiento_caja.caja,
