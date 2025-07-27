@@ -8,6 +8,11 @@ from django.dispatch import receiver
 from django.utils import timezone
 import os
 from .mixins import UserTrackingMixin
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericRelation
+
+
 
 # Create your models here.
 
@@ -498,6 +503,13 @@ class MovimientoCaja(Movimiento):
         verbose_name="Caja",
         related_name="movimientos"
     )
+    
+    movimientos_dinero = GenericRelation(
+        'MovimientoDinero',
+        content_type_field='content_type',
+        object_id_field='object_id',
+        related_query_name='movimiento_caja'
+    )
 
     turno = models.ForeignKey(
         Turno,
@@ -921,12 +933,17 @@ class MovimientoDinero(UserTrackingMixin, models.Model):
     """
     Representa el movimiento específico de denominaciones en un movimiento de caja
     """
-    movimiento_caja = models.ForeignKey(
-        'MovimientoCaja',
+    content_type = models.ForeignKey(
+        ContentType,
         on_delete=models.CASCADE,
-        verbose_name="Movimiento de Caja",
-        related_name="movimientos_dinero"
+        verbose_name="Tipo de movimiento de caja"
     )
+    
+    object_id = models.PositiveIntegerField(
+        verbose_name="ID del objeto"
+    )
+    
+    movimiento_caja = GenericForeignKey('content_type', 'object_id')
     
     denominacion = models.ForeignKey(
         DenominacionEuro,
@@ -975,7 +992,6 @@ class MovimientoDinero(UserTrackingMixin, models.Model):
     class Meta:
         verbose_name = "Movimiento de Dinero"
         verbose_name_plural = "Movimientos de Dinero"
-        unique_together = [['movimiento_caja', 'denominacion']]
 
 
 class ViaMovimientoBanco(UserTrackingMixin, models.Model):
@@ -1139,14 +1155,17 @@ def actualizar_saldo_caja_on_delete(sender, instance, **kwargs):
 
 @receiver(post_save, sender=MovimientoDinero)
 def actualizar_desglose_on_movimiento_dinero_save(sender, instance, created, **kwargs):
-    """Actualiza el desglose cuando se crea o modifica un MovimientoDinero"""
     if created:
+        movimiento_caja = instance.movimiento_caja
+        from apps.dyn_dt.models import MovimientoCaja
+        if not isinstance(movimiento_caja, MovimientoCaja):
+            return  # Evita el error si el objeto relacionado no es válido
+
         desglose, created_desglose = DesgloseCaja.objects.get_or_create(
-            caja=instance.movimiento_caja.caja,
+            caja=movimiento_caja.caja,
             denominacion=instance.denominacion,
             defaults={'cantidad': 0}
         )
-        
         desglose.cantidad += instance.cantidad_neta()
         if desglose.cantidad < 0:
             desglose.cantidad = 0
@@ -1156,8 +1175,14 @@ def actualizar_desglose_on_movimiento_dinero_save(sender, instance, created, **k
 @receiver(post_delete, sender=MovimientoDinero)
 def actualizar_desglose_on_movimiento_dinero_delete(sender, instance, **kwargs):
     """Actualiza el desglose cuando se elimina un MovimientoDinero"""
+    movimiento_caja = instance.movimiento_caja
+    # Solo continuar si movimiento_caja es una instancia de MovimientoCaja
+    from apps.dyn_dt.models import MovimientoCaja
+    if not isinstance(movimiento_caja, MovimientoCaja):
+        return  # Evita el error si el objeto relacionado ya no existe
+
     desglose = DesgloseCaja.objects.filter(
-        caja=instance.movimiento_caja.caja,
+        caja=movimiento_caja.caja,
         denominacion=instance.denominacion
     ).first()
     if desglose:

@@ -12,6 +12,8 @@ from apps.dyn_dt.models import (
 )
 from apps.dyn_dt.forms import DesgloseDineroForm
 from apps.dyn_dt.utils import combine_date_time
+from django.contrib.contenttypes.models import ContentType
+
 
 
 class MovementHandler:
@@ -84,7 +86,7 @@ class MovementHandler:
             })
             
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            return JsonResponse({'success': False, 'error': 'algo va mal: ' + str(e)})
     
     @staticmethod
     def delete_movement(request):
@@ -236,18 +238,15 @@ class MovementCreator:
     def process_money_breakdown(request, movimiento):
         """
         Processes money breakdown for cash movements.
-        
-        Args:
-            request: Django request object with breakdown data
-            movimiento: MovimientoCaja instance
         """
         desglose_form = DesgloseDineroForm(request.POST)
         if desglose_form.is_valid():
             movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
-            
+            content_type = ContentType.objects.get_for_model(movimiento)
             for mov_data in movimientos_dinero_data:
                 MovimientoDinero.objects.create(
-                    movimiento_caja=movimiento,
+                    content_type=content_type,
+                    object_id=movimiento.id,
                     denominacion=mov_data['denominacion'],
                     cantidad_entrada=mov_data['cantidad_entrada'],
                     cantidad_salida=mov_data['cantidad_salida'],

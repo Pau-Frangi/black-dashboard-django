@@ -167,7 +167,10 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
     tiene_archivo.boolean = False
     
     def tiene_desglose(self, obj):
-        count = obj.movimientos_dinero.count()
+        count = MovimientoDinero.objects.filter(
+            content_type__model=obj._meta.model_name,
+            object_id=obj.pk
+        ).count()
         if count > 0:
             return f"✅ ({count})"
         return "❌ Sin desglose"
@@ -321,10 +324,21 @@ class DesgloseCajaAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoDinero)
 class MovimientoDineroAdmin(admin.ModelAdmin):
-    list_display = ('movimiento_caja', 'denominacion', 'cantidad_entrada', 'cantidad_salida', 'cantidad_neta', 'valor_neto', 'creado_por', 'creado_en')
+    list_display = (
+        'get_movimiento_caja_display',  # Use a method instead of the GenericForeignKey
+        'denominacion', 'cantidad_entrada', 'cantidad_salida',
+        'cantidad_neta', 'valor_neto', 'creado_por', 'creado_en',
+    )
     list_filter = ('denominacion__es_billete', 'denominacion')
-    ordering = ('-movimiento_caja__fecha',)
+    ordering = ('-creado_en',)
     readonly_fields = ('cantidad_neta', 'valor_neto', 'creado_por', 'creado_en')
+
+    def get_movimiento_caja_display(self, obj):
+        # Return a string representation of the related object
+        if obj.movimiento_caja:
+            return str(obj.movimiento_caja)
+        return "-"
+    get_movimiento_caja_display.short_description = "Movimiento Caja"
 
     def save_model(self, request, obj, form, change):
         if not change:  # Only on creation
