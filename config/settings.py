@@ -59,6 +59,12 @@ INSTALLED_APPS = [
 
     # Dynamic DT
     "apps.dyn_dt",
+    
+    # Caja apps
+    "apps.caja",
+    
+    # Banco apps
+    "apps.banco",
 
     # Dynamic API
     "apps.dyn_api",

@@ -6,11 +6,9 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 
-from apps.dyn_dt.models import (
-    Caja, Concepto, MovimientoCaja, MovimientoBanco, 
-    MovimientoDinero, DesgloseCaja, Ejercicio, Turno, Campamento, CuentaBancaria, ViaMovimientoBanco
-)
-from apps.dyn_dt.forms import DesgloseDineroForm
+from apps.dyn_dt.models import *
+from apps.caja.models import *
+from apps.banco.models import *
 from apps.dyn_dt.utils import combine_date_time
 from django.contrib.contenttypes.models import ContentType
 

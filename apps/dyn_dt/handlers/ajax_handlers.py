@@ -3,9 +3,9 @@ AJAX request handlers for the dynamic datatables application.
 """
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from apps.dyn_dt.models import (
-    Ejercicio, MovimientoCaja, MovimientoBanco, Turno, Caja, Campamento, CuentaBancaria, ViaMovimientoBanco
-)
+from apps.dyn_dt.models import *
+from apps.caja.models import *
+from apps.banco.models import *
 from apps.dyn_dt.utils import format_movement_data, calculate_movements_summary
 
 
