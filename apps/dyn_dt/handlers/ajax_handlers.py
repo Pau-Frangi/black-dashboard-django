@@ -7,7 +7,8 @@ from apps.dyn_dt.models import *
 from apps.caja.models import *
 from apps.banco.models import *
 from apps.dyn_dt.utils import format_movement_data, calculate_movements_summary
-
+from apps.caja.ajax_views import *
+from apps.banco.ajax_views import *
 
 class RegistroAjaxHandler:
     """Handles AJAX requests for the registro view."""
@@ -23,46 +24,46 @@ class RegistroAjaxHandler:
         Returns:
             JsonResponse with movements data and summary
         """
+        
         ejercicio_id = request.GET.get('ejercicio_id')
         campamento_id = request.GET.get('campamento_id')
 
-        if not ejercicio_id:
-            return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
+        if not ejercicio_id or not campamento_id:
+            return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio o un campamento'})
 
         try:
+            
             ejercicio = Ejercicio.objects.get(id=ejercicio_id)
-
-            # Si se especifica campamento, filtrar por cajas de ese campamento
-            if campamento_id:
-                # Buscar cajas asociadas al campamento
-                cajas_campamento = Caja.objects.filter(campamento_id=campamento_id)
-                movimientos_caja = MovimientoCaja.objects.filter(
-                    ejercicio=ejercicio,
-                    caja__in=cajas_campamento
-                ).select_related('caja', 'turno', 'concepto').order_by('-fecha')
-                movimientos_banco = MovimientoBanco.objects.filter(
-                    ejercicio=ejercicio,
-                    campamento_id=campamento_id
-                ).select_related('concepto').order_by('-fecha')
-            else:
-                # Si no hay campamento, mostrar todos los movimientos del ejercicio
-                movimientos_caja = MovimientoCaja.objects.filter(
-                    ejercicio=ejercicio
-                ).select_related('caja', 'turno', 'concepto').order_by('-fecha')
-                movimientos_banco = MovimientoBanco.objects.filter(
-                    ejercicio=ejercicio
-                ).select_related('concepto').order_by('-fecha')
-
+            
+            movimientos_caja_ingresos = get_movimientos_caja_ingresos(request)
+            movimientos_caja_gastos = get_movimientos_caja_gastos(request)
+            movimientos_caja_depositos = get_movimientos_caja_depositos(request)
+            movimientos_caja_retiradas = get_movimientos_caja_retiradas(request)
+            movimientos_caja_transferencias = get_movimientos_caja_transferencias(request)
+            
+            movimientos_banco_ingresos = get_movimientos_banco_ingreso(request)
+            movimientos_banco_gastos = get_movimientos_banco_gasto(request)
+            
             movimientos_data = []
-            for mov in movimientos_caja:
-                movimientos_data.append(format_movement_data(mov, 'caja'))
-            for mov in movimientos_banco:
-                movimientos_data.append(format_movement_data(mov, 'banco'))
+            for mov in movimientos_caja_ingresos:
+                movimientos_data.append(mov)
+            for mov in movimientos_caja_gastos:
+                movimientos_data.append(mov)
+            for mov in movimientos_caja_depositos:
+                movimientos_data.append(mov)
+            for mov in movimientos_caja_retiradas:
+                movimientos_data.append(mov)
+            for mov in movimientos_caja_transferencias:
+                movimientos_data.append(mov)
+            for mov in movimientos_banco_ingresos:
+                movimientos_data.append(mov)
+            for mov in movimientos_banco_gastos:
+                movimientos_data.append(mov)
 
-            movimientos_data.sort(key=lambda x: x['datetime_iso'], reverse=True)
+            order_by = request.GET.get("order_by") or "-fecha"
+            movimientos_data.sort(key=lambda x: x[order_by], reverse=True)
 
-            all_movimientos = list(movimientos_caja) + list(movimientos_banco)
-            resumen = calculate_movements_summary(all_movimientos)
+            resumen = calculate_movements_summary(movimientos_data)
             resumen['saldo_actual'] = float(ejercicio.saldo_total)
 
             return JsonResponse({

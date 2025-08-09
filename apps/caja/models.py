@@ -218,6 +218,18 @@ class MovimientoCaja(UserTrackedModel, models.Model):
         if not self.caja.activa:
             raise ValidationError("No se pueden añadir movimientos a una caja inactiva")
         
+    def serializar(self):
+        return {
+            "id": self.id,
+            "importe": self.importe,
+            "fecha": self.fecha,
+            'fecha_completa': self.fecha.strftime('%Y-%m-%d %H:%M:%S'),
+            'fecha_display': self.fecha.strftime('%d/%m/%Y %H:%M'),
+            'datetime_iso': self.fecha.isoformat(),
+            "descripcion": self.descripcion,
+            "canal_movimiento": "caja"
+        }
+        
         
 class MovimientoCajaIngreso(MovimientoCaja):
     """
@@ -270,6 +282,22 @@ class MovimientoCajaIngreso(MovimientoCaja):
 
     def __str__(self):
         return f"Ingreso de {self.importe} € en {self.caja} el {self.fecha}"
+    
+    def serializar(self):
+        data = super().serializar()
+        data.update({
+            "ejercicio_id": self.ejercicio.id,
+            "ejercicio": self.ejercicio.nombre,
+            "caja_id": self.caja.id,
+            "caja": self.caja.nombre,
+            "turno_id": self.turno.id,
+            "turno": self.turno.nombre,
+            "concepto_id": self.concepto.id,
+            "concepto": self.concepto.nombre,
+            "archivo": self.archivo.url if self.archivo else None,
+            "tipo_operacion": "ingreso"
+        })
+        return data
     
     
 class MovimientoCajaGasto(MovimientoCaja):
@@ -324,6 +352,22 @@ class MovimientoCajaGasto(MovimientoCaja):
     def __str__(self):
         return f"Gasto de {self.importe} € en {self.caja} el {self.fecha}"
     
+    def serializar(self):
+        data = super().serializar()
+        data.update({
+            "ejercicio_id": self.ejercicio.id,
+            "ejercicio": self.ejercicio.nombre,
+            "caja_id": self.caja.id,
+            "caja": self.caja.nombre,
+            "turno_id": self.turno.id,
+            "turno": self.turno.nombre,
+            "concepto_id": self.concepto.id,
+            "concepto": self.concepto.nombre,
+            "archivo": self.archivo.url if self.archivo else None,
+            "tipo_operacion": "gasto"
+        })
+        return data
+    
     
 class MovimientoCajaTransferencia(MovimientoCaja):
     """
@@ -367,6 +411,21 @@ class MovimientoCajaTransferencia(MovimientoCaja):
         
     def __str__(self):
         return f"Transferencia de {self.importe} € de {self.caja_origen} a {self.caja_destino} el {self.fecha}"
+    
+    def serializar(self):
+        data = super().serializar()
+        data.update({
+            "ejercicio_id": self.ejercicio.id,
+            "ejercicio": self.ejercicio.nombre,
+            "caja_origen_id": self.caja_origen.id,
+            "caja_origen": self.caja_origen.nombre,
+            "caja_destino_id": self.caja_destino.id,
+            "caja_destino": self.caja_destino.nombre,
+            "turno_id": self.turno.id,
+            "turno": self.turno.nombre,
+            "tipo_operacion": "transferencia"
+        })
+        return data
 
 
 class MovimientoCajaDeposito(MovimientoCaja):
@@ -404,6 +463,19 @@ class MovimientoCajaDeposito(MovimientoCaja):
     class Meta:
         verbose_name = "Movimiento de Depósito"
         verbose_name_plural = "Movimientos de Depósito"
+        
+    def serializar(self):
+        data = super().serializar()
+        data.update({
+            "ejercicio_id": self.ejercicio.id,
+            "ejercicio": self.ejercicio.nombre,
+            "caja_id": self.caja.id,
+            "caja": self.caja.nombre,
+            "turno_id": self.turno.id,
+            "turno": self.turno.nombre,
+            "tipo_operacion": "deposito"
+        })
+        return data
         
         
 class MovimientoCajaRetirada(MovimientoCaja):
@@ -447,6 +519,20 @@ class MovimientoCajaRetirada(MovimientoCaja):
     class Meta:
         verbose_name = "Movimiento de Retirada"
         verbose_name_plural = "Movimientos de Retirada"
+        
+    def serializar(self):
+        data = super().serializar()
+        data.update({
+            "ejercicio_id": self.ejercicio.id,
+            "ejercicio": self.ejercicio.nombre,
+            "caja_id": self.caja.id,
+            "caja": self.caja.nombre,
+            "turno_id": self.turno.id,
+            "turno": self.turno.nombre,         
+            "retirado_por": self.retirado_por,
+            "tipo_operacion": "retirada"
+        })
+        return data
         
         
         

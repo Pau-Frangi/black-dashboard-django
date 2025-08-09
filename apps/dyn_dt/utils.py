@@ -117,9 +117,9 @@ def calculate_movements_summary(movimientos):
     Returns:
         Dictionary with summary statistics
     """
-    total_ingresos = sum(mov.cantidad for mov in movimientos if not mov.es_gasto())
-    total_gastos = sum(mov.cantidad for mov in movimientos if mov.es_gasto())
-    
+    total_ingresos = sum(mov.cantidad for mov in movimientos if mov.tipo_operacion == "ingreso")
+    total_gastos = sum(mov.cantidad for mov in movimientos if mov.tipo_operacion == "gasto")
+
     return {
         'total_ingresos': float(total_ingresos),
         'total_gastos': float(total_gastos),

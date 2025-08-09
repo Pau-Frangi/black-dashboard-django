@@ -16,7 +16,9 @@ from apps.dyn_dt.handlers.movement_handlers import MovementHandler
 from apps.dyn_dt.handlers.datatable_handlers import (
     DatatableHandler, FilterHandler, CRUDHandler, ExportHandler
 )
-from apps.dyn_dt.models import *
+from apps.dyn_dt.models import Concepto, Turno, Ejercicio, Campamento
+from apps.caja.models import Caja, DenominacionEuro, MovimientoEfectivo, MovimientoCajaIngreso, MovimientoCajaGasto, MovimientoCajaDeposito, MovimientoCajaRetirada, MovimientoCajaTransferencia
+from apps.banco.models import CuentaBancaria, ViaMovimientoBanco, MovimientoBancoGasto, MovimientoBancoIngreso
 
 # ================================
 # MAIN APPLICATION VIEWS

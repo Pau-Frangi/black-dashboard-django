@@ -125,6 +125,19 @@ class MovimientoBanco(UserTrackedModel, models.Model):
         """Validación de datos antes de guardar"""
         if self.importe <= 0:
             raise ValidationError("La cantidad debe ser positiva")
+        
+    def serializar(self):
+        return {
+            "id": self.id,
+            "importe": self.importe,
+            "fecha": self.fecha,
+            'fecha_completa': self.fecha.strftime('%Y-%m-%d %H:%M:%S'),
+            'fecha_display': self.fecha.strftime('%d/%m/%Y %H:%M'),
+            'datetime_iso': self.fecha.isoformat(),
+            "descripcion": self.descripcion,
+            "referencia_bancaria": self.referencia_bancaria or "",
+            "canal_movimiento": "banco"
+        }
 
 
 class MovimientoBancoIngreso(MovimientoBanco):
@@ -197,6 +210,26 @@ class MovimientoBancoIngreso(MovimientoBanco):
 
     def __str__(self):
         return f"Ingreso de {self.importe} € en {self.cuenta_bancaria} el {self.fecha}"
+    
+    def serializar(self):
+        data = super().serializar()
+        data.update({
+            "ejercicio_id": self.ejercicio.id,
+            "ejercicio": self.ejercicio.nombre,
+            "campamento_id": self.campamento.id,
+            "campamento": self.campamento.nombre,
+            "cuenta_bancaria_id": self.cuenta_bancaria.id if self.cuenta_bancaria else None,
+            "cuenta_bancaria": str(self.cuenta_bancaria),
+            "turno_id": self.turno.id,
+            "turno": str(self.turno),
+            "concepto_id": self.concepto.id,
+            "concepto": str(self.concepto),
+            "via_id": self.via.id,
+            "via": str(self.via),
+            "archivo": self.archivo.url if self.archivo else None,
+            "tipo_operacion": "ingreso"
+        })
+        return data
 
 
 class MovimientoBancoGasto(MovimientoBanco):
@@ -258,4 +291,23 @@ class MovimientoBancoGasto(MovimientoBanco):
 
     def __str__(self):
         return f"Gasto de {self.importe} € en {self.cuenta_bancaria} el {self.fecha}"
+    
+    
+    def serializar(self):
+        data = super().serializar()
+        data.update({
+            "ejercicio_id": self.ejercicio.id,
+            "ejercicio": self.ejercicio.nombre,
+            "campamento_id": self.campamento.id,
+            "campamento": self.campamento.nombre,
+            "cuenta_bancaria_id": self.cuenta_bancaria.id if self.cuenta_bancaria else None,
+            "cuenta_bancaria": str(self.cuenta_bancaria),
+            "turno_id": self.turno.id,
+            "turno": str(self.turno),
+            "concepto_id": self.concepto.id,
+            "concepto": str(self.concepto),
+            "archivo": self.archivo.url if self.archivo else None,
+            "tipo_operacion": "gasto"
+        })
+        return data
 
