@@ -7,8 +7,17 @@ from apps.dyn_dt.models import *
 from apps.caja.models import *
 from apps.banco.models import *
 from apps.dyn_dt.utils import format_movement_data, calculate_movements_summary
-from apps.caja.ajax_views import *
-from apps.banco.ajax_views import *
+from apps.caja.ajax_views import (
+    get_movimientos_caja_ingresos_data, 
+    get_movimientos_caja_gastos_data,
+    get_movimientos_caja_depositos_data,
+    get_movimientos_caja_retiradas_data,
+    get_movimientos_caja_transferencias_data
+)
+from apps.banco.ajax_views import (
+    get_movimientos_banco_ingreso_data,
+    get_movimientos_banco_gasto_data
+)
 
 class RegistroAjaxHandler:
     """Handles AJAX requests for the registro view."""
@@ -35,33 +44,30 @@ class RegistroAjaxHandler:
             
             ejercicio = Ejercicio.objects.get(id=ejercicio_id)
             
-            movimientos_caja_ingresos = get_movimientos_caja_ingresos(request)
-            movimientos_caja_gastos = get_movimientos_caja_gastos(request)
-            movimientos_caja_depositos = get_movimientos_caja_depositos(request)
-            movimientos_caja_retiradas = get_movimientos_caja_retiradas(request)
-            movimientos_caja_transferencias = get_movimientos_caja_transferencias(request)
+            movimientos_caja_ingresos = get_movimientos_caja_ingresos_data(request)
+            movimientos_caja_gastos = get_movimientos_caja_gastos_data(request)
+            movimientos_caja_depositos = get_movimientos_caja_depositos_data(request)
+            movimientos_caja_retiradas = get_movimientos_caja_retiradas_data(request)
+            movimientos_caja_transferencias = get_movimientos_caja_transferencias_data(request)
             
-            movimientos_banco_ingresos = get_movimientos_banco_ingreso(request)
-            movimientos_banco_gastos = get_movimientos_banco_gasto(request)
+            movimientos_banco_ingresos = get_movimientos_banco_ingreso_data(request)
+            movimientos_banco_gastos = get_movimientos_banco_gasto_data(request)
             
             movimientos_data = []
-            for mov in movimientos_caja_ingresos:
-                movimientos_data.append(mov)
-            for mov in movimientos_caja_gastos:
-                movimientos_data.append(mov)
-            for mov in movimientos_caja_depositos:
-                movimientos_data.append(mov)
-            for mov in movimientos_caja_retiradas:
-                movimientos_data.append(mov)
-            for mov in movimientos_caja_transferencias:
-                movimientos_data.append(mov)
-            for mov in movimientos_banco_ingresos:
-                movimientos_data.append(mov)
-            for mov in movimientos_banco_gastos:
-                movimientos_data.append(mov)
+            movimientos_data.extend(movimientos_caja_ingresos)
+            movimientos_data.extend(movimientos_caja_gastos)
+            movimientos_data.extend(movimientos_caja_depositos)
+            movimientos_data.extend(movimientos_caja_retiradas)
+            movimientos_data.extend(movimientos_caja_transferencias)
+            movimientos_data.extend(movimientos_banco_ingresos)
+            movimientos_data.extend(movimientos_banco_gastos)
 
-            order_by = request.GET.get("order_by") or "-fecha"
-            movimientos_data.sort(key=lambda x: x[order_by], reverse=True)
+            order_by = request.GET.get("order_by") or "fecha"
+            reverse_order = order_by.startswith('-')
+            if reverse_order:
+                order_by = order_by[1:]
+            
+            movimientos_data.sort(key=lambda x: x.get(order_by, ''), reverse=reverse_order)
 
             resumen = calculate_movements_summary(movimientos_data)
             resumen['saldo_actual'] = float(ejercicio.saldo_total)

@@ -149,6 +149,13 @@ class Caja(UserTrackedModel, models.Model):
         
         return saldo if saldo >= 0 else Decimal('0.00')
 
+    @property
+    def saldo_caja(self):
+        """
+        Property to get the calculated saldo for serialization
+        """
+        return self.calcular_saldo_caja()
+
     def __str__(self):
         return f"{self.nombre} - {'Activa' if self.activa else 'Inactiva'} - Saldo: {self.calcular_saldo_caja():.2f}€"
 
