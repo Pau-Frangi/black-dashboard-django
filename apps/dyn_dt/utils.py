@@ -112,13 +112,13 @@ def calculate_movements_summary(movimientos):
     Calculates summary statistics for a list of movements.
     
     Args:
-        movimientos: List of movement objects
+        movimientos: List of movement dictionaries (serialized data)
     
     Returns:
         Dictionary with summary statistics
     """
-    total_ingresos = sum(mov.cantidad for mov in movimientos if mov.tipo_operacion == "ingreso")
-    total_gastos = sum(mov.cantidad for mov in movimientos if mov.tipo_operacion == "gasto")
+    total_ingresos = sum(mov['importe'] for mov in movimientos if mov['tipo_operacion'] == "ingreso")
+    total_gastos = sum(mov['importe'] for mov in movimientos if mov['tipo_operacion'] == "gasto")
 
     return {
         'total_ingresos': float(total_ingresos),

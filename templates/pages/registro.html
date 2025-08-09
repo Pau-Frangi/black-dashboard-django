@@ -57,7 +57,7 @@
                     <input type="text" 
                         class="form-control search-input" 
                         id="movementsSearch" 
-                        placeholder="Buscar por concepto, cantidad, justificante o descripción..."
+                        placeholder="Buscar por concepto, importe, justificante o descripción..."
                         autocomplete="off">
                     <div class="append-clear-button">
                         <button class="btn btn-clear" type="button" id="clearSearch" style="display: none;">
@@ -103,9 +103,9 @@
                                 <span>Fecha</span>
                                 <span id="sortDateIcon" class="ml-2 d-inline"></span>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="sortMovimientos('cantidad')" id="sortByAmount">
+                            <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center" onclick="sortMovimientos('importe')" id="sortByAmount">
                                 <i class="tim-icons icon-coins mr-1"></i>
-                                <span>Cantidad</span>
+                                <span>importe</span>
                                 <span id="sortAmountIcon" class="ml-2 d-inline"></span>
                             </button>
                             </div>
@@ -135,7 +135,7 @@
                                         <th>Tipo</th>
                                         <th>Concepto</th>
                                         <th>Descripción</th>
-                                        <th>Cantidad</th>
+                                        <th>importe</th>
                                         <th>Justificante</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -182,24 +182,24 @@
                     <div class="row mb-3">
                         <div class="col-md-12">
                             <div class="form-group">
-                                <label for="tipo_operacion" class="form-label">
+                                <label for="canal_movimiento" class="form-label">
                                     <i class="tim-icons icon-money-coins mr-2"></i>
-                                    Tipo de Operación
+                                    Canal de Movimiento
                                 </label>
-                                <select class="form-control" name="tipo_operacion" id="tipo_operacion" required>
-                                    <option value="">-- Selecciona el tipo de operación --</option>
-                                    <option value="efectivo">
+                                <select class="form-control" name="canal_movimiento" id="canal_movimiento" required>
+                                    <option value="">-- Selecciona el canal de movimiento --</option>
+                                    <option value="caja">
                                         <i class="tim-icons icon-coins"></i>
-                                        Efectivo (Caja)
+                                        Movimiento de Caja
                                     </option>
-                                    <option value="transferencia">
+                                    <option value="banco">
                                         <i class="tim-icons icon-credit-card"></i>
-                                        Transferencia/Banco
+                                        Movimiento de Banco
                                     </option>
                                 </select>
                                 <small class="form-text text-muted">
                                     <i class="tim-icons icon-bulb-63"></i>
-                                    Efectivo: movimientos con billetes y monedas físicas. Transferencia: operaciones bancarias.
+                                    Efectivo: movimientos con billetes y monedas físicas. banco: operaciones bancarias.
                                 </small>
                             </div>
                         </div>
@@ -259,8 +259,8 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="cantidad" class="form-label">Cantidad (€)</label>
-                                <input type="number" class="form-control" name="cantidad" id="cantidad" 
+                                <label for="importe" class="form-label">importe (€)</label>
+                                <input type="number" class="form-control" name="importe" id="importe" 
                                        step="0.01" min="0.01" required placeholder="0.00">
                             </div>
                         </div>
@@ -327,8 +327,8 @@
                             <small class="text-danger">(Obligatorio)</small>
                         </h6>
                         <p class="section-description">
-                            <strong>Especifica la cantidad exacta de cada billete y moneda que entra y sale de la caja.</strong>
-                            El total debe coincidir exactamente con la cantidad del movimiento.
+                            <strong>Especifica la importe exacta de cada billete y moneda que entra y sale de la caja.</strong>
+                            El total debe coincidir exactamente con la importe del movimiento.
                         </p>
                         
                         <div class="row">
@@ -486,7 +486,7 @@
                     </div>
                     </div> <!-- End campos-efectivo -->
                     
-                    <!-- Campos específicos para movimientos de BANCO (transferencias) -->
+                    <!-- Campos específicos para movimientos de BANCO (bancos) -->
 
                     <!-- Campos de cuenta bancaria y via de movimiento bancario -->
                     <div class="campos-banco" id="camposBanco" style="display: none;">
@@ -610,8 +610,8 @@
             applyFilters();
         });
         
-        // Event listener para el campo cantidad para validar desglose
-        $('#cantidad').on('input', function() {
+        // Event listener para el campo importe para validar desglose
+        $('#importe').on('input', function() {
             validateMoneyBreakdown();
         });
         
@@ -877,53 +877,53 @@
             console.log('¿Tiene caja_nombre?', mov.caja); // Debug añadido
 
             const fechaDisplay = mov.fecha_display || new Date(mov.datetime_iso).toLocaleString('es-ES');
-            const cantidadClass = mov.es_gasto ? 'text-danger' : 'text-success';
-            const cantidadSign = mov.es_gasto ? '-' : '+';
+            const importeClass = mov.tipo_operacion === 'gasto' ? 'text-danger' : 'text-success';
+            const importeSign = mov.tipo_operacion === 'gasto' ? '-' : '+';
             
             // Determinar el tipo de movimiento y su badge
-            const tipoMovimiento = mov.tipo || 'caja';
-            let tipoBadge;
+            const canalMovimiento = mov.canal_movimiento;
+            let canalMovimientoBadge;
             
-            if (tipoMovimiento === 'banco') {
-                tipoBadge = '<span class="badge badge-info"><i class="tim-icons icon-credit-card"></i> Banco</span>';
-            } else {
-                // Para movimientos de caja, solo badge de efectivo
-                tipoBadge = '<span class="badge badge-secondary"><i class="tim-icons icon-coins"></i> Efectivo</span>';
+            if (canalMovimiento === 'banco') {
+                canalMovimientoBadge = '<span class="badge badge-info"><i class="tim-icons icon-credit-card"></i> Banco</span>';
+            } else if (canalMovimiento === 'caja') {
+                // Para movimientos de caja, solo badge de caja
+                canalMovimientoBadge = '<span class="badge badge-secondary"><i class="tim-icons icon-coins"></i> Caja</span>';
                 // El nombre de la caja se añadirá después
                 if (mov.caja && mov.caja) {
-                    tipoBadge += `<span class="d-block mt-1 text-muted" style="font-size: 0.8rem;">${mov.caja}</span>`;
+                    canalMovimientoBadge += `<span class="d-block mt-1 text-muted" style="font-size: 0.8rem;">${mov.caja}</span>`;
                 }
             }
             
             // Badge para ingreso/gasto
-            const ingresoGastoBadge = mov.es_gasto ? 
+            const tipoOperacionBadge = mov.tipo_operacion === 'gasto' ? 
                 '<span class="badge badge-danger"><i class="tim-icons icon-simple-remove"></i> Gasto</span>' : 
                 '<span class="badge badge-success"><i class="tim-icons icon-simple-add"></i> Ingreso</span>';
             
             const row = `
-                <tr data-tipo="${tipoMovimiento}" data-es-gasto="${mov.es_gasto}">
+                <tr data-tipo="${canalMovimiento}" data-es-gasto="${mov.tipo_operacion === 'gasto'}">
                     <td>
                         <div class="d-flex flex-column">
                             <strong>${fechaDisplay}</strong>
                         </div>
                     </td>
                     <td>${mov.turno}</td>
-                    <td>${tipoBadge}</td>
+                    <td>${canalMovimientoBadge}</td>
                     <td>
                         ${mov.concepto}
-                        ${ingresoGastoBadge}
+                        ${tipoOperacionBadge}
                     </td>
                     <td>${mov.descripcion || '-'}</td>
-                    <td class="${cantidadClass}">
-                        <strong>${cantidadSign}${mov.cantidad}€</strong>
+                    <td class="${importeClass}">
+                        <strong>${importeSign}${mov.importe}€</strong>
                     </td>
                     <td>${mov.justificante || '-'}</td>
                     <td>
                         <div class="btn-group" role="group">
-                            <button class="btn btn-sm btn-outline-primary" onclick="editMovimiento(${mov.id}, '${tipoMovimiento}')" title="Editar movimiento">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editMovimiento(${mov.id}, '${canalMovimiento}')" title="Editar movimiento">
                                 <i class="tim-icons icon-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMovimiento(${mov.id}, '${tipoMovimiento}')" title="Eliminar movimiento">
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMovimiento(${mov.id}, '${canalMovimiento}')" title="Eliminar movimiento">
                                 <i class="tim-icons icon-simple-remove"></i>
                             </button>
                         </div>
@@ -971,11 +971,11 @@
 
         // Calcular totales basándose en los movimientos filtrados
         filteredMovimientos.forEach(mov => {
-            const cantidad = parseFloat(mov.cantidad) || 0;
-            if (mov.es_gasto) {
-                totalGastos += cantidad;
-            } else {
-                totalIngresos += cantidad;
+            const importe = parseFloat(mov.importe) || 0;
+            if (mov.tipo_operacion === 'gasto') {
+                totalGastos += importe;
+            } else if (mov.tipo_operacion === 'ingreso') {
+                totalIngresos += importe;
             }
         });
 
@@ -1033,12 +1033,12 @@
         }
     }
 
-    function deleteMovimiento(movimientoId, tipoMovimiento = 'caja') {
+    function deleteMovimiento(movimientoId, canalMovimiento = 'caja') {
         if (!confirm('¿Estás seguro de que quieres eliminar este movimiento?')) {
             return;
         }
 
-        console.log('Eliminando movimiento ID:', movimientoId, 'Tipo:', tipoMovimiento);
+        console.log('Eliminando movimiento ID:', movimientoId, 'Tipo:', canalMovimiento);
 
         $.ajax({
             url: '{% url "registro" %}',
@@ -1046,7 +1046,7 @@
             data: {
                 'action': 'delete',
                 'movimiento_id': movimientoId,
-                'tipo_movimiento': tipoMovimiento,
+                'tipo_movimiento': canalMovimiento,
                 'csrfmiddlewaretoken': $('[name=csrfmiddlewaretoken]').val()
             },
             success: function(data) {
@@ -1091,12 +1091,12 @@
         console.log('Ejercicio ID seleccionado:', ejercicioId);
         
         // Verificar que se ha seleccionado un tipo de operación
-        const tipoOperacion = $('#tipo_operacion').val();
-        if (!tipoOperacion) {
+        const canalMovimiento = $('#tipo_operacion').val();
+        if (!canalMovimiento) {
             showWarning('Por favor selecciona el tipo de operación', {floating: true});
             return;
         }
-        console.log('Tipo de operación seleccionado:', tipoOperacion);
+        console.log('Tipo de operación seleccionado:', canalMovimiento);
 
         // Verificar que se ha seleccionado un turno
         const turnoId = $('#turno').val();
@@ -1114,47 +1114,47 @@
         }
         console.log('Concepto ID seleccionado:', conceptoId);
 
-        // Verificar que se ha introducido una cantidad
-        const cantidad = $('#cantidad').val();
-        if (!cantidad || isNaN(cantidad) || parseFloat(cantidad) <= 0) {
-            showWarning('Por favor introduce una cantidad válida', {floating: true});
+        // Verificar que se ha introducido una importe
+        const importe = $('#importe').val();
+        if (!importe || isNaN(importe) || parseFloat(importe) <= 0) {
+            showWarning('Por favor introduce una importe válida', {floating: true});
             return;
         }
-        console.log('Cantidad introducida:', cantidad);
+        console.log('importe introducida:', importe);
         
         // =============================================================================
         // VALIDACIÓN ESPECÍFICA SEGÚN EL TIPO DE OPERACIÓN
         // =============================================================================
         
-        if (tipoOperacion === 'efectivo') {
-            // Para movimientos de efectivo, verificar que hay una caja seleccionada
+        if (canalMovimiento === 'caja') {
+            // Para movimientos de caja, verificar que hay una caja seleccionada
             const cajaId = $('#cajaSelect').val();
             if (!cajaId) {
-                showWarning('Por favor selecciona una caja para movimientos de efectivo', {floating: true});
+                showWarning('Por favor selecciona una caja para movimientos de caja', {floating: true});
                 return;
             }
-            console.log('Caja seleccionada para efectivo:', cajaId);
+            console.log('Caja seleccionada para caja:', cajaId);
             
-            // Validar desglose para movimientos de efectivo (tanto nuevos como editados)
+            // Validar desglose para movimientos de caja (tanto nuevos como editados)
             const validationResult = validateCompleteMoneyBreakdown();
             if (!validationResult.valid) {
                 showError(validationResult.error, {floating: true});
                 return;
             }
-            console.log('Desglose de efectivo validado correctamente');
+            console.log('Desglose de caja validado correctamente');
             
             // Asegurar que el caja_id esté establecido en el formulario
             $('#cajaIdInput').val(cajaId);
             console.log('Caja ID:', cajaId);
             
-        } else if (tipoOperacion === 'transferencia') {
-            // Para transferencias, no necesitamos caja específica, solo ejercicio
+        } else if (canalMovimiento === 'banco') {
+            // Para bancos, no necesitamos caja específica, solo ejercicio
             const cuenta_bancariaId = $('#cuenta_bancaria').val();
             if (!cuenta_bancariaId) {
-                showWarning('Por favor selecciona una cuenta bancaria para movimientos de transferencia', {floating: true});
+                showWarning('Por favor selecciona una cuenta bancaria para movimientos de banco', {floating: true});
                 return;
             }
-            console.log('Cuenta bancaria seleccionada para transferencia:', cuenta_bancariaId);
+            console.log('Cuenta bancaria seleccionada para banco:', cuenta_bancariaId);
 
             const viaMovimientoBancarioId = $('#via_movimiento_bancario').val();
             if (!viaMovimientoBancarioId) {
@@ -1178,7 +1178,7 @@
             formData.append('action', 'add');
         }
         
-        formData.append('tipo_operacion', tipoOperacion);
+        formData.append('tipo_operacion', canalMovimiento);
         formData.append('campamento_id', campamento_id);
 
         console.log('Datos del formulario preparados para enviar:', {
@@ -1191,7 +1191,7 @@
             cuenta_bancaria_id: formData.get('cuenta_bancaria_id'),
             via_movimiento_bancario_id: formData.get('via_movimiento_bancario_id'),
             concepto_id: formData.get('concepto_id'),
-            cantidad: formData.get('cantidad'),
+            importe: formData.get('importe'),
             justificante: formData.get('justificante') || 'No seleccionado',
             archivo_justificante: formData.get('archivo_justificante') ? 'Archivo adjunto' : 'No adjunto'
         });
@@ -1242,7 +1242,7 @@
         console.log('Concepto seleccionado:', selectedOption.text(), 'Es gasto:', esGasto);
         
         // Get current operation type to determine which justificante fields to show
-        const tipoOperacion = $('#tipo_operacion').val();
+        const canalMovimiento = $('#tipo_operacion').val();
         
         if (selectedOption.val()) {
             // Hay concepto seleccionado
@@ -1253,7 +1253,7 @@
             }
             
             // Mostrar campos según tipo de operación
-            if (tipoOperacion === 'efectivo') {
+            if (canalMovimiento === 'caja') {
                 // Para efectivo: solo gastos necesitan justificante
                 if (esGasto) {
                     $('#justificanteFields').removeClass('d-none').addClass('show').show();
@@ -1261,8 +1261,8 @@
                     $('#justificanteFields').removeClass('show').hide();
                 }
                 $('#justificanteFieldsBanco').hide();
-            } else if (tipoOperacion === 'transferencia') {
-                // Para transferencias: SIEMPRE mostrar justificante (ingreso o gasto)
+            } else if (canalMovimiento === 'banco') {
+                // Para bancos: SIEMPRE mostrar justificante (ingreso o gasto)
                 $('#justificanteFieldsBanco').removeClass('d-none').addClass('show').show();
                 $('#justificanteFields').hide();
                 
@@ -1284,10 +1284,10 @@
 
     // Handle tipo de operacion changes
     $('#tipo_operacion').on('change', function() {
-        const tipoOperacion = $(this).val();
-        console.log('Tipo de operación seleccionado:', tipoOperacion);
+        const canalMovimiento = $(this).val();
+        console.log('Tipo de operación seleccionado:', canalMovimiento);
         
-        if (tipoOperacion === 'efectivo') {
+        if (canalMovimiento === 'efectivo') {
 
             $('#cajaSelect').prop('required', true);
             $('#cuenta_bancaria').prop('required', false);
@@ -1317,17 +1317,17 @@
                 $('#justificanteFieldsBanco').hide();
             }
             
-        } else if (tipoOperacion === 'transferencia') {
+        } else if (canalMovimiento === 'banco') {
 
             $('#cajaSelect').prop('required', false);
             $('#cuenta_bancaria').prop('required', true);
             $('#via_movimiento_bancario').prop('required', true);
 
-            // Ocultar selector de caja para transferencias bancarias
+            // Ocultar selector de caja para bancos bancarias
             $('#cajaSelectionRow').hide();
             $('#cajaSelect').val(''); // Limpiar selección de caja
             
-            // Ocultar desglose para transferencias bancarias
+            // Ocultar desglose para bancos bancarias
             $('#desgloseDineroSection').hide();
             
             // Mostrar campos de banco y ocultar campos de efectivo
@@ -1357,10 +1357,10 @@
         }
         
         // Limpiar los campos del tipo no seleccionado
-        if (tipoOperacion === 'efectivo') {
+        if (canalMovimiento === 'caja') {
             $('#justificante_banco, #referencia_bancaria').val();
             $('#archivo_justificante_banco').val('');
-        } else if (tipoOperacion === 'transferencia') {
+        } else if (canalMovimiento === 'banco') {
             $('#justificante').val('');
             $('#archivo_justificante').val('');
             // Limpiar también campos de desglose de dinero
@@ -1373,14 +1373,14 @@
     $(document).on('change', '#cajaSelect', function() {
         const cajaId = $(this).val();
         const ejercicio_id = $('#ejercicioSelect').val();
-        const tipoOperacion = $('#tipo_operacion').val();
+        const canalMovimiento = $('#canal_movimiento').val();
         
-        console.log('Caja seleccionada:', cajaId, 'Tipo operación:', tipoOperacion);
+        console.log('Caja seleccionada:', cajaId, 'Tipo operación:', canalMovimiento);
         
-        if (cajaId && tipoOperacion === 'efectivo') {
+        if (cajaId && canalMovimiento === 'caja') {
             // Load money breakdown data for the selected caja and show the desglose section
             loadCajaMoneyBreakdown(cajaId, ejercicio_id);
-        } else if (tipoOperacion === 'efectivo') {
+        } else if (canalMovimiento === 'caja') {
             // Hide breakdown if no caja selected
             $('#desgloseDineroSection').hide();
             // Reset available quantities display
@@ -1407,9 +1407,9 @@
             if (field === 'fecha') {
                 valueA = new Date(a.datetime_iso);
                 valueB = new Date(b.datetime_iso);
-            } else if (field === 'cantidad') {
-                valueA = parseFloat(a.cantidad);
-                valueB = parseFloat(b.cantidad);
+            } else if (field === 'importe') {
+                valueA = parseFloat(a.importe);
+                valueB = parseFloat(b.importe);
             }
             
             if (currentSortOrder === 'asc') {
@@ -1438,7 +1438,7 @@
                 activeButton = '#sortByDate';
                 activeIcon = '#sortDateIcon';
                 break;
-            case 'cantidad':
+            case 'importe':
                 activeButton = '#sortByAmount';
                 activeIcon = '#sortAmountIcon';
                 break;
@@ -1453,12 +1453,12 @@
     
     function validateCompleteMoneyBreakdown() {
         
-        const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
+        const importeMovimiento = parseFloat($('#importe').val()) || 0;
         
-        if (cantidadMovimiento <= 0) {
+        if (importeMovimiento <= 0) {
             return {
                 valid: false,
-                error: 'Por favor, ingresa una cantidad válida para el movimiento.'
+                error: 'Por favor, ingresa una importe válida para el movimiento.'
             };
         }
         
@@ -1474,7 +1474,7 @@
         if (!tieneDesglose) {
             return {
                 valid: false,
-                error: 'ERROR: El desglose de billetes y monedas es obligatorio. Por favor, especifica la cantidad exacta de cada denominación que entra y sale de la caja.'
+                error: 'ERROR: El desglose de billetes y monedas es obligatorio. Por favor, especifica la importe exacta de cada denominación que entra y sale de la caja.'
             };
         }
         
@@ -1488,7 +1488,7 @@
             if (valorCalculado > 0) {
                 return {
                     valid: false,
-                    error: 'ERROR: El desglose no puede ser positivo para un gasto. Por favor, verifica las cantidades.'
+                    error: 'ERROR: El desglose no puede ser positivo para un gasto. Por favor, verifica las importees.'
                 };
             }
             valorCalculado = -valorCalculado; // Invertir el valor para gastos
@@ -1496,18 +1496,18 @@
             if (valorCalculado < 0) {
                 return {
                     valid: false,
-                    error: 'ERROR: El desglose no puede ser negativo para un ingreso. Por favor, verifica las cantidades.'
+                    error: 'ERROR: El desglose no puede ser negativo para un ingreso. Por favor, verifica las importees.'
                 };
             }
         }
 
-        const diferencia = Math.abs(valorCalculado - cantidadMovimiento);
+        const diferencia = Math.abs(valorCalculado - importeMovimiento);
         const tolerance = 0.01; // Tolerancia de 1 céntimo
         
         if (diferencia > tolerance) {
             return {
                 valid: false,
-                error: `ERROR: El desglose (${totales.neto.toFixed(2)}€) no coincide con la cantidad del movimiento (${cantidadMovimiento.toFixed(2)}€). Diferencia: ${diferencia.toFixed(2)}€. El desglose debe ser exacto.`
+                error: `ERROR: El desglose (${totales.neto.toFixed(2)}€) no coincide con la importe del movimiento (${importeMovimiento.toFixed(2)}€). Diferencia: ${diferencia.toFixed(2)}€. El desglose debe ser exacto.`
             };
         }
         
@@ -1534,7 +1534,7 @@
             validateSalidaInput(this);
         });
         
-        // Validación adicional en tiempo real para inputs de salida que exceden cantidad
+        // Validación adicional en tiempo real para inputs de salida que exceden importe
         $('.salida-input').on('input', function() {
             const $input = $(this);
             const value = parseInt($input.val()) || 0;
@@ -1588,15 +1588,15 @@
         let totalSalida = 0;
         
         $('.entrada-input').each(function() {
-            const cantidad = parseInt($(this).val()) || 0;
+            const importe = parseInt($(this).val()) || 0;
             const valor = parseFloat($(this).data('valor'));
-            totalEntrada += cantidad * valor;
+            totalEntrada += importe * valor;
         });
         
         $('.salida-input').each(function() {
-            const cantidad = parseInt($(this).val()) || 0;
+            const importe = parseInt($(this).val()) || 0;
             const valor = parseFloat($(this).data('valor'));
-            totalSalida += cantidad * valor;
+            totalSalida += importe * valor;
         });
         
         const totalNeto = totalEntrada - totalSalida;
@@ -1625,19 +1625,19 @@
     
     function validateMoneyBreakdown() {
         // VALIDACIÓN PRINCIPAL DEL DESGLOSE
-        // Esta función verifica que el desglose coincida exactamente con la cantidad del movimiento
+        // Esta función verifica que el desglose coincida exactamente con la importe del movimiento
         
-        const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
+        const importeMovimiento = parseFloat($('#importe').val()) || 0;
         const totales = calculateMoneyTotals();
         
-        // Verificar si el total neto coincide con la cantidad del movimiento
-        const diferencia = Math.abs(totales.neto - cantidadMovimiento);
+        // Verificar si el total neto coincide con la importe del movimiento
+        const diferencia = Math.abs(totales.neto - importeMovimiento);
         const tolerance = 0.01; // Tolerancia de 1 céntimo
         
         const $totalNeto = $('#totalNeto').parent();
         $totalNeto.removeClass('border border-warning border-success');
         
-        if (cantidadMovimiento > 0) {
+        if (importeMovimiento > 0) {
             if (diferencia <= tolerance) {
                 // Coincide exactamente - mostrar como correcto
                 $totalNeto.addClass('border border-success');
@@ -1652,10 +1652,10 @@
     }
     
     function calculateFromTotal() {
-        const cantidadMovimiento = parseFloat($('#cantidad').val()) || 0;
+        const importeMovimiento = parseFloat($('#importe').val()) || 0;
         
-        if (cantidadMovimiento <= 0) {
-            showWarning('Por favor, primero ingresa la cantidad total del movimiento.');
+        if (importeMovimiento <= 0) {
+            showWarning('Por favor, primero ingresa la importe total del movimiento.');
             return;
         }
         
@@ -1675,16 +1675,16 @@
         // Obtener denominaciones disponibles ordenadas de mayor a menor
         const denominaciones = [];
         $(`.money-input[data-tipo="${tipoInput}"]`).each(function() {
-            const cantidadDisponible = esGasto ? 
+            const importeDisponible = esGasto ? 
                 (parseInt($(this).data('available')) || 0) : 
                 999999; // Para ingresos, no hay límite
             
-            if (cantidadDisponible > 0) {
+            if (importeDisponible > 0) {
                 denominaciones.push({
                     id: $(this).data('denominacion'),
                     valor: parseFloat($(this).data('valor')),
                     elemento: $(this),
-                    disponible: cantidadDisponible
+                    disponible: importeDisponible
                 });
             }
         });
@@ -1699,26 +1699,26 @@
             });
         }
         
-        let remainingAmount = cantidadMovimiento;
-        let cantidadDistribuida = 0;
+        let remainingAmount = importeMovimiento;
+        let importeDistribuida = 0;
         const distribucion = [];
         
-        // Calcular automáticamente la distribución respetando cantidades disponibles
+        // Calcular automáticamente la distribución respetando importees disponibles
         denominaciones.forEach(denom => {
             if (remainingAmount >= denom.valor && denom.disponible > 0) {
-                const cantidadIdeal = Math.floor(remainingAmount / denom.valor);
-                const cantidadUsada = Math.min(cantidadIdeal, denom.disponible);
+                const importeIdeal = Math.floor(remainingAmount / denom.valor);
+                const importeUsada = Math.min(importeIdeal, denom.disponible);
                 
-                if (cantidadUsada > 0) {
-                    denom.elemento.val(cantidadUsada);
-                    const valorUsado = cantidadUsada * denom.valor;
+                if (importeUsada > 0) {
+                    denom.elemento.val(importeUsada);
+                    const valorUsado = importeUsada * denom.valor;
                     remainingAmount -= valorUsado;
-                    cantidadDistribuida += valorUsado;
+                    importeDistribuida += valorUsado;
                     remainingAmount = Math.round(remainingAmount * 100) / 100; // Evitar errores de punto flotante
                     
                     distribucion.push({
                         valor: denom.valor,
-                        cantidad: cantidadUsada,
+                        importe: importeUsada,
                         total: valorUsado
                     });
                 }
@@ -1726,21 +1726,21 @@
         });
         
         // SI ES GASTO Y NO SE PUEDE HACER EXACTO, INTENTAR CON CAMBIO
-        if (esGasto && remainingAmount > 0.01 && totalDisponible >= cantidadMovimiento) {
+        if (esGasto && remainingAmount > 0.01 && totalDisponible >= importeMovimiento) {
             console.log('Intentando calcular con cambio...');
             
             // Limpiar el desglose previo
             clearMoneyBreakdown();
             
             // Intentar encontrar una combinación que permita dar el vuelto
-            const resultadoConCambio = calculateWithChange(cantidadMovimiento, denominaciones);
+            const resultadoConCambio = calculateWithChange(importeMovimiento, denominaciones);
             
             if (resultadoConCambio.success) {
                 // Aplicar la distribución calculada (salidas)
                 resultadoConCambio.distribucion.forEach(item => {
                     const elemento = denominaciones.find(d => d.valor === item.valor)?.elemento;
                     if (elemento) {
-                        elemento.val(item.cantidad);
+                        elemento.val(item.importe);
                     }
                 });
                 
@@ -1761,33 +1761,33 @@
         calculateMoneyTotals();
         validateMoneyBreakdown();
         
-        // Verificar si se pudo alcanzar la cantidad exacta
+        // Verificar si se pudo alcanzar la importe exacta
         if (remainingAmount > 0.01) { // Tolerancia de 1 céntimo
-            const porcentajeAlcanzado = ((cantidadDistribuida / cantidadMovimiento) * 100).toFixed(1);
+            const porcentajeAlcanzado = ((importeDistribuida / importeMovimiento) * 100).toFixed(1);
             
-            if (esGasto && totalDisponible < cantidadMovimiento) {
+            if (esGasto && totalDisponible < importeMovimiento) {
                 // No hay suficiente dinero total en la caja
                 let mensaje = `❌ No hay suficiente dinero en la caja para realizar este gasto.\n\n`;
                 mensaje += `💰 Total disponible en caja: ${totalDisponible.toFixed(2)}€\n`;
-                mensaje += `💸 Cantidad del gasto: ${cantidadMovimiento.toFixed(2)}€\n`;
-                mensaje += `📉 Faltan: ${(cantidadMovimiento - totalDisponible).toFixed(2)}€\n\n`;
+                mensaje += `💸 importe del gasto: ${importeMovimiento.toFixed(2)}€\n`;
+                mensaje += `📉 Faltan: ${(importeMovimiento - totalDisponible).toFixed(2)}€\n\n`;
                 mensaje += `💡 Sugerencias:\n`;
                 mensaje += `• Añade más dinero a la caja\n`;
-                mensaje += `• Reduce la cantidad del gasto\n`;
+                mensaje += `• Reduce la importe del gasto\n`;
                 mensaje += `• Realiza el gasto en varias transacciones`;
                 
                 showWarning(mensaje);
-                showInsufficientFunds(totalDisponible, cantidadMovimiento);
+                showInsufficientFunds(totalDisponible, importeMovimiento);
             } else {
                 // Hay dinero suficiente pero no se puede hacer exacto
-                let mensaje = `⚠️ No se puede alcanzar la cantidad exacta de ${cantidadMovimiento.toFixed(2)}€ con las denominaciones disponibles en la caja.\n\n`;
-                mensaje += `💰 Cantidad distribuida: ${cantidadDistribuida.toFixed(2)}€ (${porcentajeAlcanzado}%)\n`;
-                mensaje += `📉 Cantidad faltante: ${remainingAmount.toFixed(2)}€\n\n`;
+                let mensaje = `⚠️ No se puede alcanzar la importe exacta de ${importeMovimiento.toFixed(2)}€ con las denominaciones disponibles en la caja.\n\n`;
+                mensaje += `💰 importe distribuida: ${importeDistribuida.toFixed(2)}€ (${porcentajeAlcanzado}%)\n`;
+                mensaje += `📉 importe faltante: ${remainingAmount.toFixed(2)}€\n\n`;
                 
                 if (distribucion.length > 0) {
                     mensaje += `📊 Distribución calculada:\n`;
                     distribucion.forEach(item => {
-                        mensaje += `• ${item.cantidad} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
+                        mensaje += `• ${item.importe} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
                     });
                     mensaje += '\n';
                 }
@@ -1796,7 +1796,7 @@
                     mensaje += `💡 Sugerencias:\n`;
                     mensaje += `• Verifica que hay suficientes billetes/monedas en la caja\n`;
                     mensaje += `• Considera realizar el gasto en varias transacciones\n`;
-                    mensaje += `• Ajusta la cantidad del movimiento a ${cantidadDistribuida.toFixed(2)}€`;
+                    mensaje += `• Ajusta la importe del movimiento a ${importeDistribuida.toFixed(2)}€`;
                 } else {
                     mensaje += `💡 Nota: Para ingresos, siempre puedes especificar manualmente las denominaciones exactas que ingresan.`;
                 }
@@ -1807,20 +1807,20 @@
                 $('#totalNeto').parent().removeClass('border-success').addClass('border border-warning');
                 
                 // Mostrar mensaje temporal en la interfaz
-                showCalculationWarning(cantidadDistribuida, remainingAmount, cantidadMovimiento);
+                showCalculationWarning(importeDistribuida, remainingAmount, importeMovimiento);
             }
         } else {
             // Cálculo exitoso
-            const mensaje = `✅ Cantidad distribuida correctamente: ${cantidadMovimiento.toFixed(2)}€\n\n📊 Distribución:\n`;
+            const mensaje = `✅ importe distribuida correctamente: ${importeMovimiento.toFixed(2)}€\n\n📊 Distribución:\n`;
             let detalleDistribucion = '';
             distribucion.forEach(item => {
-                detalleDistribucion += `• ${item.cantidad} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
+                detalleDistribucion += `• ${item.importe} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
             });
             
             console.log(mensaje + detalleDistribucion);
             
             // Mostrar mensaje de éxito temporal
-            showCalculationSuccess(cantidadMovimiento);
+            showCalculationSuccess(importeMovimiento);
         }
     }
     
@@ -1833,11 +1833,11 @@
         calculateMoneyTotals();
     }
     
-    function showCalculationWarning(cantidadDistribuida, cantidadFaltante, cantidadTotal) {
+    function showCalculationWarning(importeDistribuida, importeFaltante, importeTotal) {
         // Remover mensajes anteriores
         $('.calculation-message').remove();
         
-        const porcentaje = ((cantidadDistribuida / cantidadTotal) * 100).toFixed(1);
+        const porcentaje = ((importeDistribuida / importeTotal) * 100).toFixed(1);
         
         const $message = $(`
             <div class="calculation-message alert alert-warning alert-enhanced fade-in mt-3 mb-0">
@@ -1846,11 +1846,11 @@
                     <div>
                         <h6 class="mb-2">⚠️ Distribución incompleta</h6>
                         <p class="mb-2">
-                            <strong>Distribuido:</strong> ${cantidadDistribuida.toFixed(2)}€ (${porcentaje}%) <br>
-                            <strong>Faltante:</strong> ${cantidadFaltante.toFixed(2)}€
+                            <strong>Distribuido:</strong> ${importeDistribuida.toFixed(2)}€ (${porcentaje}%) <br>
+                            <strong>Faltante:</strong> ${importeFaltante.toFixed(2)}€
                         </p>
                         <small class="text-muted">
-                            No hay suficientes denominaciones disponibles en la caja para alcanzar la cantidad exacta.
+                            No hay suficientes denominaciones disponibles en la caja para alcanzar la importe exacta.
                         </small>
                     </div>
                 </div>
@@ -1867,7 +1867,7 @@
         }, 10000);
     }
     
-    function showCalculationSuccess(cantidadTotal) {
+    function showCalculationSuccess(importeTotal) {
         // Remover mensajes anteriores
         $('.calculation-message').remove();
         
@@ -1878,7 +1878,7 @@
                     <div>
                         <strong>✅ Distribución completada correctamente</strong>
                         <br>
-                        <small class="text-muted">Cantidad total: ${cantidadTotal.toFixed(2)}€</small>
+                        <small class="text-muted">importe total: ${importeTotal.toFixed(2)}€</small>
                     </div>
                 </div>
             </div>
@@ -1894,16 +1894,16 @@
         }, 5000);
     }
     
-    function calculateWithChange(cantidadObjetivo, denominacionesDisponibles) {
+    function calculateWithChange(importeObjetivo, denominacionesDisponibles) {
         // Esta función intenta encontrar una combinación que permita pagar con cambio
-        console.log('Calculando con cambio para:', cantidadObjetivo);
+        console.log('Calculando con cambio para:', importeObjetivo);
         
         // Ordenar denominaciones de mayor a menor
         const denomsOrdenadas = [...denominacionesDisponibles].sort((a, b) => b.valor - a.valor);
         
         // Intentar con diferentes estrategias empezando por billetes grandes
         for (let estrategia = 0; estrategia < 3; estrategia++) {
-            const resultado = tryPaymentStrategy(cantidadObjetivo, denomsOrdenadas, estrategia);
+            const resultado = tryPaymentStrategy(importeObjetivo, denomsOrdenadas, estrategia);
             if (resultado.success) {
                 return resultado;
             }
@@ -1912,7 +1912,7 @@
         return { success: false };
     }
     
-    function tryPaymentStrategy(cantidadObjetivo, denominaciones, estrategia) {
+    function tryPaymentStrategy(importeObjetivo, denominaciones, estrategia) {
         let mejorResultado = { success: false, exceso: Infinity };
         
         // Estrategia 0: Usar billetes grandes primero
@@ -1921,8 +1921,8 @@
         
         function buscarCombinacion(indice, acumulado, distribucionActual) {
             if (indice >= denominaciones.length) {
-                if (acumulado >= cantidadObjetivo) {
-                    const exceso = acumulado - cantidadObjetivo;
+                if (acumulado >= importeObjetivo) {
+                    const exceso = acumulado - importeObjetivo;
                     if (exceso < mejorResultado.exceso) {
                         mejorResultado = {
                             success: true,
@@ -1937,28 +1937,28 @@
             }
             
             const denom = denominaciones[indice];
-            const maxCantidad = Math.min(denom.disponible, 
-                estrategia === 0 ? Math.ceil((cantidadObjetivo * 1.5) / denom.valor) : denom.disponible
+            const maximporte = Math.min(denom.disponible, 
+                estrategia === 0 ? Math.ceil((importeObjetivo * 1.5) / denom.valor) : denom.disponible
             );
             
-            // Probar diferentes cantidades de esta denominación
-            for (let cantidad = 0; cantidad <= maxCantidad; cantidad++) {
-                const nuevoAcumulado = acumulado + (cantidad * denom.valor);
+            // Probar diferentes importees de esta denominación
+            for (let importe = 0; importe <= maximporte; importe++) {
+                const nuevoAcumulado = acumulado + (importe * denom.valor);
                 
                 // Poda: si ya excedemos mucho, no seguir
-                if (nuevoAcumulado > cantidadObjetivo * 2) break;
+                if (nuevoAcumulado > importeObjetivo * 2) break;
                 
-                if (cantidad > 0) {
+                if (importe > 0) {
                     distribucionActual.push({
                         valor: denom.valor,
-                        cantidad: cantidad,
-                        total: cantidad * denom.valor
+                        importe: importe,
+                        total: importe * denom.valor
                     });
                 }
                 
                 buscarCombinacion(indice + 1, nuevoAcumulado, distribucionActual);
                 
-                if (cantidad > 0) {
+                if (importe > 0) {
                     distribucionActual.pop();
                 }
                 
@@ -1991,7 +1991,7 @@
                         <div class="mb-2">
                             <strong>Distribución de salida:</strong><br>
                             ${resultado.distribucion.map(item => 
-                                `<small>• ${item.cantidad} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€</small>`
+                                `<small>• ${item.importe} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€</small>`
                             ).join('<br>')}<br>
                             <strong>Cambio añadido automáticamente como entrada</strong>
                         </div>
@@ -2020,7 +2020,7 @@
         alertMsg += `💚 Cambio recibido (ENTRADA): +${resultado.cambio.toFixed(2)}€\n\n`;
         alertMsg += `📊 Distribución de salida:\n`;
         resultado.distribucion.forEach(item => {
-            alertMsg += `• ${item.cantidad} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
+            alertMsg += `• ${item.importe} × ${item.valor.toFixed(2)}€ = ${item.total.toFixed(2)}€\n`;
         });
         alertMsg += `\n� El cambio se ha añadido automáticamente como entrada en el desglose.\n`;
         alertMsg += `📝 El total neto coincidirá exactamente con el gasto real de ${(resultado.totalPagado - resultado.cambio).toFixed(2)}€`;
@@ -2028,11 +2028,11 @@
         showInfo(alertMsg);
     }
     
-    function showInsufficientFunds(totalDisponible, cantidadRequerida) {
+    function showInsufficientFunds(totalDisponible, importeRequerida) {
         // Remover mensajes anteriores
         $('.calculation-message').remove();
         
-        const faltante = cantidadRequerida - totalDisponible;
+        const faltante = importeRequerida - totalDisponible;
         
         const $message = $(`
             <div class="calculation-message alert alert-danger alert-enhanced fade-in mt-3 mb-0">
@@ -2042,7 +2042,7 @@
                         <h6 class="mb-2">❌ Fondos insuficientes</h6>
                         <p class="mb-2">
                             <strong>Total disponible:</strong> ${totalDisponible.toFixed(2)}€<br>
-                            <strong>Cantidad requerida:</strong> ${cantidadRequerida.toFixed(2)}€<br>
+                            <strong>importe requerida:</strong> ${importeRequerida.toFixed(2)}€<br>
                             <strong>Faltante:</strong> ${faltante.toFixed(2)}€
                         </p>
                         <small class="text-muted">
@@ -2063,8 +2063,8 @@
         }, 8000);
     }
     
-    function addChangeAsIncome(cantidadCambio) {
-        console.log('Añadiendo cambio como entrada:', cantidadCambio);
+    function addChangeAsIncome(importeCambio) {
+        console.log('Añadiendo cambio como entrada:', importeCambio);
         
         // Obtener todas las denominaciones de entrada ordenadas de mayor a menor
         const denominacionesEntrada = [];
@@ -2077,27 +2077,27 @@
         
         denominacionesEntrada.sort((a, b) => b.valor - a.valor);
         
-        let remainingChange = cantidadCambio;
+        let remainingChange = importeCambio;
         const distribucionCambio = [];
         
         // Distribuir el cambio usando denominaciones grandes primero
         denominacionesEntrada.forEach(denom => {
             if (remainingChange >= denom.valor) {
-                const cantidad = Math.floor(remainingChange / denom.valor);
-                if (cantidad > 0) {
-                    // Obtener el valor actual del input y sumarle la nueva cantidad
+                const importe = Math.floor(remainingChange / denom.valor);
+                if (importe > 0) {
+                    // Obtener el valor actual del input y sumarle la nueva importe
                     const valorActual = parseInt(denom.elemento.val()) || 0;
-                    const nuevaCantidad = valorActual + cantidad;
+                    const nuevaimporte = valorActual + importe;
 
-                    denom.elemento.val(nuevaCantidad);
+                    denom.elemento.val(nuevaimporte);
 
-                    const valorUsado = cantidad * denom.valor;
+                    const valorUsado = importe * denom.valor;
                     remainingChange -= valorUsado;
                     remainingChange = Math.round(remainingChange * 100) / 100; // Evitar errores de punto flotante
                     
                     distribucionCambio.push({
                         valor: denom.valor,
-                        cantidad: cantidad,
+                        importe: importe,
                         total: valorUsado
                     });
                 }
@@ -2114,7 +2114,7 @@
                 denomMenor.elemento.val(valorActual + 1);
                 distribucionCambio.push({
                     valor: denomMenor.valor,
-                    cantidad: 1,
+                    importe: 1,
                     total: denomMenor.valor,
                     nota: 'Ajuste por redondeo'
                 });
@@ -2153,11 +2153,11 @@
     // =============================================================================
 
     // =============================================================================
-    // GESTIÓN DE CANTIDADES DISPONIBLES
+    // GESTIÓN DE importeES DISPONIBLES
     // =============================================================================
     
     function updateAvailableQuantities(desgloseActual) {
-        console.log('Actualizando cantidades disponibles:', desgloseActual);
+        console.log('Actualizando importees disponibles:', desgloseActual);
         
         // Actualizar todas las denominaciones
         $('.money-item').each(function() {
@@ -2167,34 +2167,34 @@
             const $moneyItem = $(this);
             
             if (desgloseActual[denominacionId]) {
-                const cantidad = desgloseActual[denominacionId].cantidad;
+                const importe = desgloseActual[denominacionId].importe;
                 
-                // Actualizar el display según la cantidad
-                if (cantidad === 0) {
+                // Actualizar el display según la importe
+                if (importe === 0) {
                     $availableDisplay.find('.quantity-text').text('Sin unidades');
                     $availableDisplay.addClass('no-available').removeClass('has-available');
                 } else {
-                    $availableDisplay.find('.quantity-text').text(`Disponible: ${cantidad}`);
+                    $availableDisplay.find('.quantity-text').text(`Disponible: ${importe}`);
                     $availableDisplay.removeClass('no-available').addClass('has-available');
                 }
                 
                 // Actualizar el max del input de salida
-                $salidaInput.attr('max', cantidad);
-                $salidaInput.data('available', cantidad);
+                $salidaInput.attr('max', importe);
+                $salidaInput.data('available', importe);
                 
                 // Validar si el valor actual excede lo disponible
                 const currentValue = parseInt($salidaInput.val()) || 0;
-                if (currentValue > cantidad) {
-                    $salidaInput.val(cantidad);
+                if (currentValue > importe) {
+                    $salidaInput.val(importe);
                     $salidaInput.addClass('exceeds-available');
                     $moneyItem.addClass('has-error');
-                    showTemporaryMessage($salidaInput, `Cantidad ajustada al máximo disponible: ${cantidad}`, 'exceeds-warning');
+                    showTemporaryMessage($salidaInput, `importe ajustada al máximo disponible: ${importe}`, 'exceeds-warning');
                 } else {
                     $salidaInput.removeClass('exceeds-available');
                     $moneyItem.removeClass('has-error');
                 }
             } else {
-                // No hay cantidad disponible
+                // No hay importe disponible
                 $availableDisplay.find('.quantity-text').text('Sin unidades');
                 $availableDisplay.addClass('no-available').removeClass('has-available');
                 $salidaInput.attr('max', 0);
@@ -2205,7 +2205,7 @@
             }
         });
         
-        console.log('Cantidades disponibles actualizadas');
+        console.log('importees disponibles actualizadas');
     }
     
     function validateSalidaInput(input) {
@@ -2480,7 +2480,7 @@
      * Alternar filtro de tipo de operación (efectivo/banco/todos)
      */
     function toggleTipoFilter() {
-        const states = ['todos', 'efectivo', 'banco'];
+        const states = ['todos', 'caja', 'banco'];
         const currentIndex = states.indexOf(currentTipoFilter);
         const nextIndex = (currentIndex + 1) % states.length;
         currentTipoFilter = states[nextIndex];
@@ -2577,7 +2577,7 @@
         if (searchTerm !== '') {
             filtered = filtered.filter(mov => {
                 return mov.concepto.toLowerCase().includes(searchTerm) ||
-                       mov.cantidad.toString().includes(searchTerm) ||
+                       mov.importe.toString().includes(searchTerm) ||
                        (mov.justificante && mov.justificante.toLowerCase().includes(searchTerm)) ||
                        (mov.descripcion && mov.descripcion.toLowerCase().includes(searchTerm)) ||
                        mov.turno.toLowerCase().includes(searchTerm);
@@ -2587,11 +2587,11 @@
         // Aplicar filtro de tipo
         if (currentTipoFilter !== 'todos') {
             filtered = filtered.filter(mov => {
-                const tipoMovimiento = mov.tipo || 'caja';
-                if (currentTipoFilter === 'efectivo') {
-                    return tipoMovimiento === 'caja';
+                const canalMovimiento = mov.canal_movimiento;
+                if (currentTipoFilter === 'caja') {
+                    return canalMovimiento === 'caja';
                 } else if (currentTipoFilter === 'banco') {
-                    return tipoMovimiento === 'banco';
+                    return canalMovimiento === 'banco';
                 }
                 return true;
             });
@@ -2630,8 +2630,8 @@
     // Global variable to track if we're editing
     let editingMovimiento = null;
 
-    function editMovimiento(movimientoId, tipoMovimiento) {
-        console.log('Editando movimiento:', movimientoId, 'tipo:', tipoMovimiento);
+    function editMovimiento(movimientoId, canalMovimiento) {
+        console.log('Editando movimiento:', movimientoId, 'tipo:', canalMovimiento);
         
         // Verificar que hay un ejercicio seleccionado
         const ejercicioId = $('#ejercicioSelect').val();
@@ -2641,7 +2641,7 @@
         }
         
         // Find the movement in our current data
-        const movimiento = currentMovimientos.find(mov => mov.id === movimientoId && mov.tipo === tipoMovimiento);
+        const movimiento = currentMovimientos.find(mov => mov.id === movimientoId && mov.tipo === canalMovimiento);
         
         if (!movimiento) {
             showError('No se pudo encontrar el movimiento a editar');
@@ -2651,7 +2651,7 @@
         // Set editing mode
         editingMovimiento = {
             id: movimientoId,
-            tipo: tipoMovimiento,
+            tipo: canalMovimiento,
             data: movimiento
         };
         
@@ -2688,15 +2688,15 @@
         const fechaStr = fecha.toISOString().split('T')[0];
         const horaStr = fecha.toTimeString().slice(0, 5);
         
-        // Populate basic fields
+        // Populate basic fields    
         $('#fecha').val(fechaStr);
         $('#hora').val(horaStr);
-        $('#cantidad').val(movimiento.cantidad);
+        $('#importe').val(movimiento.importe);
         $('#descripcion').val(movimiento.descripcion);
         
         // Set operation type based on movement type
-        const tipoOperacion = movimiento.tipo === 'banco' ? 'transferencia' : 'efectivo';
-        $('#tipo_operacion').val(tipoOperacion);
+        const canalMovimiento = movimiento.tipo === 'banco' ? 'banco' : 'caja';
+        $('#tipo_operacion').val(canalMovimiento);
         
         // Disable operation type field (not allowed to change)
         $('#tipo_operacion').prop('disabled', true);
@@ -2768,7 +2768,7 @@
         }
         
         // Handle specific fields based on movement type
-        if (movimiento.tipo === 'banco') {
+        if (movimiento.canal_movimiento === 'banco') {
             // Show bank fields
             $('#camposBanco').show();
             $('#camposEfectivo').hide();
@@ -2778,8 +2778,7 @@
             $('#referencia_bancaria').val(movimiento.referencia_bancaria || '');
             
             // Set bank operation type
-            const esBancoGasto = movimiento.es_gasto;
-            $('#tipo_operacion_banco').val(esBancoGasto ? 'gasto' : 'ingreso');
+            $('#tipo_operacion_banco').val(movimiento.tipo_operacion);
             
         } else {
             // Show cash fields
@@ -2865,6 +2864,11 @@
             success: function(data) {
                 if (data.success) {
                     console.log('Movimientos del ejercicio cargados:', data.movimientos.length);
+
+                    // Motrar los datos por console
+                    console.log('Resumen del ejercicio:', data.resumen);
+                    console.log('Datos del ejercicio:', data.ejercicio);
+                    console.log('Movimientos:', data.movimientos);
                     
                     // Update global variables
                     currentMovimientos = data.movimientos;
@@ -3051,14 +3055,14 @@
                         const desglose = data.desglose[denominacionId];
                         
                         // Set entrada and salida values
-                        if (desglose.cantidad_entrada > 0) {
-                            $(`#entrada_${denominacionId}`).val(desglose.cantidad_entrada);
+                        if (desglose.importe_entrada > 0) {
+                            $(`#entrada_${denominacionId}`).val(desglose.importe_entrada);
                         }
-                        if (desglose.cantidad_salida > 0) {
-                            $(`#salida_${denominacionId}`).val(desglose.cantidad_salida);
+                        if (desglose.importe_salida > 0) {
+                            $(`#salida_${denominacionId}`).val(desglose.importe_salida);
                         }
                         
-                        console.log(`Denominación ${denominacionId}: entrada=${desglose.cantidad_entrada}, salida=${desglose.cantidad_salida}`);
+                        console.log(`Denominación ${denominacionId}: entrada=${desglose.importe_entrada}, salida=${desglose.importe_salida}`);
                     });
                     
                     // Recalculate totals after loading the data
