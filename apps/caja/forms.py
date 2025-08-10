@@ -3,7 +3,28 @@ from .models import *
 from apps.dyn_dt.models import Turno, Concepto, Ejercicio, Campamento
 
 
-class CajaForm(forms.ModelForm):
+class UserTrackedModelForm(forms.ModelForm):
+    """
+    Base form class that automatically handles creado_por and modificado_por fields
+    """
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        if self.user:
+            if not instance.pk:  # New instance
+                instance.creado_por = self.user
+            instance.modificado_por = self.user
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+class CajaForm(UserTrackedModelForm):
     class Meta:
         model = Caja
         fields = ['campamento', 'nombre', 'activa', 'observaciones']
@@ -15,7 +36,7 @@ class CajaForm(forms.ModelForm):
         }
 
 
-class DenominacionEuroForm(forms.ModelForm):
+class DenominacionEuroForm(UserTrackedModelForm):
     class Meta:
         model = DenominacionEuro
         fields = ['valor', 'es_billete', 'activa']
@@ -26,7 +47,7 @@ class DenominacionEuroForm(forms.ModelForm):
         }
 
 
-class MovimientoCajaIngresoForm(forms.ModelForm):
+class MovimientoCajaIngresoForm(UserTrackedModelForm):
     # Add custom field for combined date and time handling
     fecha = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -63,12 +84,18 @@ class MovimientoCajaIngresoForm(forms.ModelForm):
         hora = self.cleaned_data['hora']
         instance.fecha = datetime.combine(fecha, hora)
         
+        # Call parent save to handle user tracking
         if commit:
+            # Handle user tracking from parent class
+            if self.user:
+                if not instance.pk:  # New instance
+                    instance.creado_por = self.user
+                instance.modificado_por = self.user
             instance.save()
         return instance
 
 
-class MovimientoCajaGastoForm(forms.ModelForm):
+class MovimientoCajaGastoForm(UserTrackedModelForm):
     # Add custom field for combined date and time handling + justificante
     fecha = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -110,12 +137,18 @@ class MovimientoCajaGastoForm(forms.ModelForm):
         hora = self.cleaned_data['hora']
         instance.fecha = datetime.combine(fecha, hora)
         
+        # Call parent save to handle user tracking
         if commit:
+            # Handle user tracking from parent class
+            if self.user:
+                if not instance.pk:  # New instance
+                    instance.creado_por = self.user
+                instance.modificado_por = self.user
             instance.save()
         return instance
 
 
-class MovimientoCajaTransferenciaForm(forms.ModelForm):
+class MovimientoCajaTransferenciaForm(UserTrackedModelForm):
     class Meta:
         model = MovimientoCajaTransferencia
         fields = ['ejercicio', 'caja_origen', 'caja_destino', 'turno', 'importe', 'descripcion', 'fecha']
@@ -140,7 +173,7 @@ class MovimientoCajaTransferenciaForm(forms.ModelForm):
         return cleaned_data
 
 
-class MovimientoCajaDepositoForm(forms.ModelForm):
+class MovimientoCajaDepositoForm(UserTrackedModelForm):
     class Meta:
         model = MovimientoCajaDeposito
         fields = ['ejercicio', 'caja', 'turno', 'importe', 'descripcion', 'fecha']
@@ -154,7 +187,7 @@ class MovimientoCajaDepositoForm(forms.ModelForm):
         }
 
 
-class MovimientoCajaRetiradaForm(forms.ModelForm):
+class MovimientoCajaRetiradaForm(UserTrackedModelForm):
     class Meta:
         model = MovimientoCajaRetirada
         fields = ['ejercicio', 'caja', 'turno', 'importe', 'descripcion', 'retirado_por', 'fecha']
@@ -169,7 +202,7 @@ class MovimientoCajaRetiradaForm(forms.ModelForm):
         }
 
 
-class DesgloseCajaForm(forms.ModelForm):
+class DesgloseCajaForm(UserTrackedModelForm):
     class Meta:
         model = DesgloseCaja
         fields = ['caja', 'denominacion', 'cantidad']
@@ -185,7 +218,7 @@ class DesgloseCajaForm(forms.ModelForm):
         self.fields['denominacion'].queryset = DenominacionEuro.objects.filter(activa=True)
 
 
-class MovimientoEfectivoForm(forms.ModelForm):
+class MovimientoEfectivoForm(UserTrackedModelForm):
     class Meta:
         model = MovimientoEfectivo
         fields = ['caja', 'denominacion', 'cantidad_entrada', 'cantidad_salida']

@@ -1,21 +1,22 @@
 from django.contrib import admin
 from .models import *
+from .forms import MovimientoCajaIngresoForm, MovimientoCajaGastoForm  # Agregar esta línea
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 
 
 @admin.register(MovimientoCajaIngreso)
 class MovimientoCajaIngresoAdmin(admin.ModelAdmin):
+    form = MovimientoCajaIngresoForm
     list_display = ('fecha_display', 'ejercicio', 'caja', 'turno', 'concepto', 'importe_display', 'descripcion', 'archivo_display', 'creado_por', 'creado_en')
     search_fields = ('caja__nombre', 'concepto__nombre')
     list_filter = ('fecha', 'caja', 'turno', 'ejercicio', 'creado_por', 'creado_en', 'concepto')
     ordering = ('-fecha',)
     readonly_fields = ('creado_por', 'creado_en', 'modificado_por', 'modificado_en')
     
-    
     fieldsets = (
         ('Información básica', {
-            'fields': ('fecha', 'ejercicio', 'caja', 'turno', 'concepto', 'importe')
+            'fields': ('fecha', 'hora', 'ejercicio', 'caja', 'turno', 'concepto', 'importe')
         }),
         ('Archivos adjuntos', {
             'fields': ('archivo',)
@@ -26,7 +27,7 @@ class MovimientoCajaIngresoAdmin(admin.ModelAdmin):
         ('Información de creación y modificación', {
             'fields': ('creado_por', 'creado_en', 'modificado_por', 'modificado_en')
         }),
-        )
+    )
  
     def fecha_display(self, obj):
         return obj.fecha.strftime('%d/%m/%Y %H:%M')
@@ -35,19 +36,26 @@ class MovimientoCajaIngresoAdmin(admin.ModelAdmin):
     def archivo_display(self, obj):
         # Si tienes archivo adjunto, muestra un enlace para descargarlo con su nombre
         if obj.archivo:
-            return format_html('<a href="{}"> {obj.archivo.name} </a>', obj.archivo.url)
+            return format_html('<a href="{}">{}</a>', obj.archivo.url, obj.archivo.name)
         return 'Sin archivo'
+    archivo_display.short_description = 'Archivo'
     
     def importe_display(self, obj):
         return f"+ {obj.importe:.2f} €"
+    importe_display.short_description = 'Importe'
  
-    def save_model(self, request, obj, form, change):
-        obj.save(user=request.user)
-        
-        
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Create a wrapper that passes the user to the form
+        class FormWithUser(form):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, user=request.user, **kwargs)
+        return FormWithUser
+
         
 @admin.register(MovimientoCajaGasto)
 class MovimientoCajaGastoAdmin(admin.ModelAdmin):
+    form = MovimientoCajaGastoForm
     list_display = ('fecha_display', 'ejercicio', 'caja', 'turno', 'concepto', 'importe_display', 'descripcion', 'archivo_display', 'creado_por', 'creado_en')
     search_fields = ('caja__nombre', 'concepto__nombre')
     list_filter = ('fecha', 'caja', 'turno', 'ejercicio', 'creado_por', 'creado_en', 'concepto')
@@ -56,7 +64,7 @@ class MovimientoCajaGastoAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Información básica', {
-            'fields': ('fecha', 'ejercicio', 'caja', 'turno', 'concepto', 'importe')
+            'fields': ('fecha', 'hora', 'ejercicio', 'caja', 'turno', 'concepto', 'importe', 'justificante')
         }),
         ('Archivos adjuntos', {
             'fields': ('archivo',)
@@ -75,14 +83,21 @@ class MovimientoCajaGastoAdmin(admin.ModelAdmin):
     
     def archivo_display(self, obj):
         if obj.archivo:
-            return format_html('<a href="{}"> {obj.archivo.name} </a>', obj.archivo.url)
+            return format_html('<a href="{}">{}</a>', obj.archivo.url, obj.archivo.name)
         return 'Sin archivo'
+    archivo_display.short_description = 'Archivo'
     
     def importe_display(self, obj):
         return f"- {obj.importe:.2f} €"
+    importe_display.short_description = 'Importe'
  
-    def save_model(self, request, obj, form, change):
-        obj.save(user=request.user)
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Create a wrapper that passes the user to the form
+        class FormWithUser(form):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, user=request.user, **kwargs)
+        return FormWithUser
         
 
 @admin.register(MovimientoCajaTransferencia)

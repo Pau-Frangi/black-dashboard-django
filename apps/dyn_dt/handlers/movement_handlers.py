@@ -59,19 +59,20 @@ class MovementHandler:
             print(f"DEBUG: Fixed POST data: {dict(post_data)}")
             
             # Select appropriate form based on canal_movimiento and es_gasto
+            # Pass user to form constructor
             if canal_movimiento == 'caja':
                 if es_gasto:
-                    form = MovimientoCajaGastoForm(post_data, request.FILES)
+                    form = MovimientoCajaGastoForm(post_data, request.FILES, user=request.user)
                     # Add justificante field handling for cash expenses
                     justificante = request.POST.get('justificante', '')
                 else:
-                    form = MovimientoCajaIngresoForm(post_data, request.FILES)
+                    form = MovimientoCajaIngresoForm(post_data, request.FILES, user=request.user)
                     justificante = None
             elif canal_movimiento == 'banco':
                 if es_gasto:
-                    form = MovimientoBancoGastoForm(post_data, request.FILES)
+                    form = MovimientoBancoGastoForm(post_data, request.FILES, user=request.user)
                 else:
-                    form = MovimientoBancoIngresoForm(post_data, request.FILES)
+                    form = MovimientoBancoIngresoForm(post_data, request.FILES, user=request.user)
                 justificante = None
             else:
                 return JsonResponse({
@@ -82,11 +83,8 @@ class MovementHandler:
             print(f"DEBUG: Form errors: {form.errors}")
             
             if form.is_valid():
-                # Create the movement instance but don't save yet
+                # Create the movement instance - user tracking is handled by form
                 movement = form.save(commit=False)
-                
-                # Set user who created it
-                movement.creado_por = request.user
                 
                 # Handle justificante for cash expenses
                 if canal_movimiento == 'caja' and es_gasto and justificante:
@@ -95,7 +93,7 @@ class MovementHandler:
                     if justificante:
                         movement.descripcion += f" [Justificante: {justificante}]"
                 
-                # Save the movement
+                # Save the movement (user tracking is handled by form)
                 movement.save()
                 
                 # Handle money breakdown for cash movements
@@ -126,7 +124,7 @@ class MovementHandler:
                 'success': False,
                 'error': f'Error interno del servidor: {str(e)}'
             })
-    
+
     @staticmethod
     def _handle_money_breakdown(request, movement):
         """Handle money breakdown for cash movements"""
@@ -184,22 +182,22 @@ class MovementHandler:
                 # Try to find in both ingreso and gasto models
                 try:
                     movement = MovimientoCajaIngreso.objects.get(id=movimiento_id)
-                    form = MovimientoCajaIngresoForm(request.POST, request.FILES, instance=movement)
+                    form = MovimientoCajaIngresoForm(request.POST, request.FILES, instance=movement, user=request.user)
                 except MovimientoCajaIngreso.DoesNotExist:
                     try:
                         movement = MovimientoCajaGasto.objects.get(id=movimiento_id)
-                        form = MovimientoCajaGastoForm(request.POST, request.FILES, instance=movement)
+                        form = MovimientoCajaGastoForm(request.POST, request.FILES, instance=movement, user=request.user)
                     except MovimientoCajaGasto.DoesNotExist:
                         pass
             elif tipo_movimiento == 'banco':
                 # Try to find in both ingreso and gasto models
                 try:
                     movement = MovimientoBancoIngreso.objects.get(id=movimiento_id)
-                    form = MovimientoBancoIngresoForm(request.POST, request.FILES, instance=movement)
+                    form = MovimientoBancoIngresoForm(request.POST, request.FILES, instance=movement, user=request.user)
                 except MovimientoBancoIngreso.DoesNotExist:
                     try:
                         movement = MovimientoBancoGasto.objects.get(id=movimiento_id)
-                        form = MovimientoBancoGastoForm(request.POST, request.FILES, instance=movement)
+                        form = MovimientoBancoGastoForm(request.POST, request.FILES, instance=movement, user=request.user)
                     except MovimientoBancoGasto.DoesNotExist:
                         pass
             
@@ -210,7 +208,7 @@ class MovementHandler:
                 })
             
             if form.is_valid():
-                # Update the movement
+                # Update the movement - user tracking is handled by form
                 updated_movement = form.save()
                 
                 # Handle money breakdown for cash movements
@@ -369,6 +367,8 @@ class MovementHandler:
         
         # Recalculate caja saldo
         movimiento.caja.recalcular_saldo_caja()
+        movimiento.caja.recalcular_saldo_caja()
+        raise ValidationError('El desglose de dinero es inválido o está incompleto')
         movimiento.caja.recalcular_saldo_caja()
         raise ValidationError('El desglose de dinero es inválido o está incompleto')
 

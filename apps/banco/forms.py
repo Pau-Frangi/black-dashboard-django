@@ -3,7 +3,28 @@ from .models import *
 from apps.dyn_dt.models import Turno, Concepto, Ejercicio, Campamento
 
 
-class CuentaBancariaForm(forms.ModelForm):
+class UserTrackedModelForm(forms.ModelForm):
+    """
+    Base form class that automatically handles creado_por and modificado_por fields
+    """
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        if self.user:
+            if not instance.pk:  # New instance
+                instance.creado_por = self.user
+            instance.modificado_por = self.user
+        
+        if commit:
+            instance.save()
+        return instance
+
+
+class CuentaBancariaForm(UserTrackedModelForm):
     class Meta:
         model = CuentaBancaria
         fields = ['nombre', 'titular', 'IBAN', 'activo']
@@ -25,7 +46,7 @@ class CuentaBancariaForm(forms.ModelForm):
         return iban
 
 
-class ViaMovimientoBancoForm(forms.ModelForm):
+class ViaMovimientoBancoForm(UserTrackedModelForm):
     class Meta:
         model = ViaMovimientoBanco
         fields = ['nombre']
@@ -34,7 +55,7 @@ class ViaMovimientoBancoForm(forms.ModelForm):
         }
 
 
-class MovimientoBancoIngresoForm(forms.ModelForm):
+class MovimientoBancoIngresoForm(UserTrackedModelForm):
     # Add custom field for combined date and time handling
     fecha = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -76,12 +97,18 @@ class MovimientoBancoIngresoForm(forms.ModelForm):
         hora = self.cleaned_data['hora']
         instance.fecha = datetime.combine(fecha, hora)
         
+        # Call parent save to handle user tracking
         if commit:
+            # Handle user tracking from parent class
+            if self.user:
+                if not instance.pk:  # New instance
+                    instance.creado_por = self.user
+                instance.modificado_por = self.user
             instance.save()
         return instance
 
 
-class MovimientoBancoGastoForm(forms.ModelForm):
+class MovimientoBancoGastoForm(UserTrackedModelForm):
     # Add custom field for combined date and time handling
     fecha = forms.DateField(
         widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -122,7 +149,13 @@ class MovimientoBancoGastoForm(forms.ModelForm):
         hora = self.cleaned_data['hora']
         instance.fecha = datetime.combine(fecha, hora)
         
+        # Call parent save to handle user tracking
         if commit:
+            # Handle user tracking from parent class
+            if self.user:
+                if not instance.pk:  # New instance
+                    instance.creado_por = self.user
+                instance.modificado_por = self.user
             instance.save()
         return instance
 

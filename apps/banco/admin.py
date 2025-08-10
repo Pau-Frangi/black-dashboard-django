@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import *
+from .forms import MovimientoBancoIngresoForm, MovimientoBancoGastoForm  # Agregar esta línea
 from django.utils.html import format_html
 
 
@@ -28,16 +29,19 @@ class CuentaBancariaAdmin(admin.ModelAdmin):
         
 @admin.register(MovimientoBancoIngreso)
 class MovimientoBancoIngresoAdmin(admin.ModelAdmin):
+    form = MovimientoBancoIngresoForm
     list_display = ('fecha_display', 'ejercicio', 'campamento', 'cuenta_bancaria', 'via', 'turno', 'concepto', 'importe_display', 'descripcion', 'archivo_display', 'creado_por', 'creado_en')
     search_fields = ('cuenta_bancaria__nombre', 'concepto__nombre')
     list_filter = ('fecha', 'cuenta_bancaria', 'turno', 'ejercicio', 'creado_por', 'creado_en', 'concepto', 'campamento')
     ordering = ('-fecha',)
     readonly_fields = ('creado_por', 'creado_en', 'modificado_por', 'modificado_en')
 
-
     fieldsets = (
         ('Información básica', {
-            'fields': ('fecha', 'ejercicio', 'campamento', 'cuenta_bancaria', 'via', 'turno', 'concepto', 'importe')
+            'fields': ('fecha', 'hora', 'ejercicio', 'campamento', 'cuenta_bancaria', 'via', 'turno', 'concepto', 'importe')
+        }),
+        ('Referencia bancaria', {
+            'fields': ('referencia_bancaria',)
         }),
         ('Archivos adjuntos', {
             'fields': ('archivo',)
@@ -65,13 +69,18 @@ class MovimientoBancoIngresoAdmin(admin.ModelAdmin):
         return f"+ {obj.importe:.2f} €"
     importe_display.short_description = 'Importe'
  
-    def save_model(self, request, obj, form, change):
-        obj.save(user=request.user)
-        
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Create a wrapper that passes the user to the form
+        class FormWithUser(form):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, user=request.user, **kwargs)
+        return FormWithUser
         
         
 @admin.register(MovimientoBancoGasto)
 class MovimientoBancoGastoAdmin(admin.ModelAdmin):
+    form = MovimientoBancoGastoForm
     list_display = ('fecha_display', 'ejercicio', 'campamento', 'turno', 'concepto', 'importe_display', 'descripcion', 'archivo_display', 'creado_por', 'creado_en')
     search_fields = ('concepto__nombre',)
     list_filter = ('fecha', 'turno', 'ejercicio', 'creado_por', 'creado_en', 'concepto', 'campamento')
@@ -80,7 +89,10 @@ class MovimientoBancoGastoAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Información básica', {
-            'fields': ('fecha', 'ejercicio', 'campamento', 'turno', 'concepto', 'importe')
+            'fields': ('fecha', 'hora', 'ejercicio', 'campamento', 'cuenta_bancaria', 'turno', 'concepto', 'importe')
+        }),
+        ('Referencia bancaria', {
+            'fields': ('referencia_bancaria',)
         }),
         ('Archivos adjuntos', {
             'fields': ('archivo',)
@@ -107,5 +119,10 @@ class MovimientoBancoGastoAdmin(admin.ModelAdmin):
         return f"- {obj.importe:.2f} €"
     importe_display.short_description = 'Importe'
     
-    def save_model(self, request, obj, form, change):
-        obj.save(user=request.user)
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Create a wrapper that passes the user to the form
+        class FormWithUser(form):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, user=request.user, **kwargs)
+        return FormWithUser
