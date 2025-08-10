@@ -18,6 +18,7 @@ function loadCajasData() {
         $('#noEjercicioMessage').show();
         return;
     }
+    
     $.ajax({
         url: "/cajas/",
         method: "GET",
@@ -63,6 +64,9 @@ function renderCajasTabs(cajas) {
                 <a class="nav-link ${idx === 0 ? 'active' : ''}" id="tab-caja-${caja.id}" data-toggle="tab" href="#caja-${caja.id}" role="tab"
                    data-ingresos="${caja.ingresos_caja}" data-gastos="${caja.gastos_caja}" data-saldo="${caja.saldo_caja}">
                     <i class="tim-icons icon-wallet-43"></i> ${caja.nombre}
+                    <span class="badge badge-${caja.activa ? 'success' : 'secondary'} ml-2">
+                        ${caja.activa ? 'Activa' : 'Inactiva'}
+                    </span>
                 </a>
             </li>
         `);
@@ -72,42 +76,40 @@ function renderCajasTabs(cajas) {
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card mt-3">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h4 class="card-title">
-                                        <i class="tim-icons icon-coins mr-2"></i>
-                                        Desglose Actual de las Cajas
-                                    </h4>
-                                </div>
-                                <div class="card-body">
-                                    <div id="desgloseActualContainer">
-                                        <div class="text-center text-muted py-3" id="noDesgloseMessage-${caja.id}">
-                                            <i class="tim-icons icon-wallet-43" style="font-size: 2rem;"></i>
-                                            <p class="mt-2">Selecciona un ejercicio para ver el desglose de sus cajas</p>
+                            <div class="card-header">
+                                <h4 class="card-title">
+                                    <i class="tim-icons icon-coins mr-2"></i>
+                                    Desglose Actual de ${caja.nombre}
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div id="desgloseActualContainer-${caja.id}">
+                                    <div class="text-center text-muted py-3" id="noDesgloseMessage-${caja.id}">
+                                        <i class="tim-icons icon-wallet-43" style="font-size: 2rem;"></i>
+                                        <p class="mt-2">Cargando desglose...</p>
+                                    </div>
+                                    <div id="desgloseContent-${caja.id}" style="display: none;">
+                                        <div id="desgloseCaja-${caja.id}">
+                                            <!-- El desglose de la caja se cargará aquí -->
                                         </div>
-                                        <div id="desgloseContent-${caja.id}" style="display: none;">
-                                            <div id="desgloseCaja-${caja.id}">
-                                                <!-- El desglose de la caja se cargará aquí -->
-                                            </div>
-                                            <hr>
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="d-flex justify-content-between">
-                                                        <strong>Total calculado desde desglose:</strong>
-                                                        <span id="totalDesglose-${caja.id}" class="text-success">--</span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="d-flex justify-content-between">
-                                                        <strong>Saldo oficial:</strong>
-                                                        <span id="saldoOficial-${caja.id}" class="text-info">--</span>
-                                                    </div>
+                                        <hr>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="d-flex justify-content-between">
+                                                    <strong>Total desde desglose:</strong>
+                                                    <span id="totalDesglose-${caja.id}" class="text-success">--</span>
                                                 </div>
                                             </div>
-                                            <div id="diferenciaSaldo-${caja.id}" class="alert alert-warning mt-2" style="display: none;">
-                                                <i class="tim-icons icon-alert-circle-exc mr-1"></i>
-                                                <strong>Atención:</strong> Hay una diferencia entre el saldo oficial y el calculado desde el desglose.
+                                            <div class="col-md-6">
+                                                <div class="d-flex justify-content-between">
+                                                    <strong>Saldo oficial:</strong>
+                                                    <span id="saldoOficial-${caja.id}" class="text-info">--</span>
+                                                </div>
                                             </div>
+                                        </div>
+                                        <div id="diferenciaSaldo-${caja.id}" class="alert alert-warning mt-2" style="display: none;">
+                                            <i class="tim-icons icon-alert-circle-exc mr-1"></i>
+                                            <strong>Atención:</strong> Hay una diferencia entre el saldo oficial y el calculado desde el desglose.
                                         </div>
                                     </div>
                                 </div>
@@ -115,11 +117,16 @@ function renderCajasTabs(cajas) {
                         </div>
                         <div class="card mt-3">
                             <div class="card-header">
-                                <h5 class="card-title section-title"><i class="tim-icons icon-refresh-01"></i> Movimientos de Dinero</h5>
+                                <h5 class="card-title">
+                                    <i class="tim-icons icon-refresh-01"></i> 
+                                    Movimientos de Efectivo
+                                </h5>
                             </div>
                             <div class="card-body">
-                                <div id="movimientosDineroCaja-${caja.id}" class="movements-search-bar">
-                                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+                                <div id="movimientosDineroCaja-${caja.id}">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Cargando...</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -127,21 +134,31 @@ function renderCajasTabs(cajas) {
                     <div class="col-md-6">
                         <div class="card mt-3">
                             <div class="card-header">
-                                <h5 class="card-title section-title"><i class="tim-icons icon-notes"></i> Movimientos de la Caja</h5>
+                                <h5 class="card-title">
+                                    <i class="tim-icons icon-notes"></i> 
+                                    Movimientos de ${caja.nombre}
+                                </h5>
                             </div>
                             <div class="card-body">
                                 <div id="movimientosCaja-${caja.id}">
-                                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Cargando...</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <div class="card mt-3">
                             <div class="card-header">
-                                <h5 class="card-title section-title"><i class="tim-icons icon-chart-bar-32"></i> Gráficos de Utilidad</h5>
+                                <h5 class="card-title">
+                                    <i class="tim-icons icon-chart-bar-32"></i> 
+                                    Evolución del Saldo
+                                </h5>
                             </div>
                             <div class="card-body">
                                 <div id="graficosCaja-${caja.id}">
-                                    <div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="sr-only">Cargando...</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -149,6 +166,8 @@ function renderCajasTabs(cajas) {
                 </div>
             </div>
         `);
+        
+        // Load data for each caja
         loadDesgloseCaja(caja.id);
         loadMovimientosCaja(caja.id);
         loadMovimientosDineroCaja(caja.id);
@@ -170,6 +189,7 @@ function renderCajasTabs(cajas) {
 function loadDesgloseCaja(cajaId) {
     const container = $('#desgloseCaja-' + cajaId);
     container.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>');
+    
     $.ajax({
         url: '/cajas/',
         method: 'GET',
@@ -181,21 +201,44 @@ function loadDesgloseCaja(cajaId) {
         },
         success: function(data) {
             if (data.success && data.desglose && data.desglose.length > 0) {
-                let html = '<table class="table table-sm"><thead><tr><th>Denominación</th><th>Cantidad</th><th>Total (€)</th></tr></thead><tbody>';
+                let html = `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Denominación</th>
+                                    <th>Tipo</th>
+                                    <th>Cantidad</th>
+                                    <th>Total (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
                 let total = 0;
                 data.desglose.forEach(function(item) {
+                    const tipoIcon = item.tipo === 'billete' ? 'tim-icons icon-paper' : 'tim-icons icon-coins';
+                    const tipoBadge = item.tipo === 'billete' ? 'badge-primary' : 'badge-info';
+                    
                     html += `<tr>
                         <td>${item.denominacion}</td>
+                        <td>
+                            <span class="badge ${tipoBadge}">
+                                <i class="${tipoIcon}"></i> ${item.tipo}
+                            </span>
+                        </td>
                         <td>${item.cantidad}</td>
-                        <td>${item.valor_total.toFixed(2)}</td>
+                        <td><strong>${item.valor_total.toFixed(2)}€</strong></td>
                     </tr>`;
                     total += item.valor_total;
                 });
-                html += '</tbody></table>';
+                
+                html += '</tbody></table></div>';
                 container.html(html);
                 $('#desgloseContent-' + cajaId).show();
                 $('#noDesgloseMessage-' + cajaId).hide();
                 $('#totalDesglose-' + cajaId).text(total.toFixed(2) + '€');
+                
                 if (data.saldo_oficial !== undefined) {
                     $('#saldoOficial-' + cajaId).text(data.saldo_oficial.toFixed(2) + '€');
                     if (Math.abs(total - data.saldo_oficial) > 0.01) {
@@ -205,13 +248,13 @@ function loadDesgloseCaja(cajaId) {
                     }
                 }
             } else {
-                container.html('<div class="text-muted py-2">No hay desglose disponible.</div>');
+                container.html('<div class="text-muted py-2"><i class="tim-icons icon-alert-circle-exc"></i> No hay desglose disponible.</div>');
                 $('#desgloseContent-' + cajaId).hide();
                 $('#noDesgloseMessage-' + cajaId).show();
             }
         },
         error: function() {
-            container.html('<div class="text-danger py-2">Error al cargar el desglose.</div>');
+            container.html('<div class="text-danger py-2"><i class="tim-icons icon-alert-circle-exc"></i> Error al cargar el desglose.</div>');
             $('#desgloseContent-' + cajaId).hide();
             $('#noDesgloseMessage-' + cajaId).show();
         }
@@ -221,6 +264,7 @@ function loadDesgloseCaja(cajaId) {
 function loadMovimientosCaja(cajaId) {
     const container = $('#movimientosCaja-' + cajaId);
     container.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>');
+    
     $.ajax({
         url: '/cajas/',
         method: 'GET',
@@ -232,22 +276,42 @@ function loadMovimientosCaja(cajaId) {
         },
         success: function(data) {
             if (data.success && data.movimientos && data.movimientos.length > 0) {
-                let html = '<table class="table table-sm"><thead><tr><th>Fecha</th><th>Concepto</th><th>Cantidad</th></tr></thead><tbody>';
+                let html = `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Concepto</th>
+                                    <th>Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
                 data.movimientos.forEach(function(mov) {
+                    const clase = mov.es_gasto ? 'text-danger' : 'text-success';
+                    const signo = mov.es_gasto ? '-' : '+';
+                    const icon = mov.es_gasto ? 'tim-icons icon-simple-remove' : 'tim-icons icon-simple-add';
+                    
                     html += `<tr>
                         <td>${mov.fecha_display}</td>
                         <td>${mov.concepto}</td>
-                        <td class="${mov.es_gasto ? 'text-danger' : 'text-success'}"><strong>${mov.es_gasto ? '-' : '+'}${mov.cantidad.toFixed(2)}€</strong></td>
+                        <td class="${clase}">
+                            <i class="${icon}"></i>
+                            <strong>${signo}${mov.cantidad.toFixed(2)}€</strong>
+                        </td>
                     </tr>`;
                 });
-                html += '</tbody></table>';
+                
+                html += '</tbody></table></div>';
                 container.html(html);
             } else {
-                container.html('<div class="text-muted py-2">No hay movimientos registrados.</div>');
+                container.html('<div class="text-muted py-2"><i class="tim-icons icon-bell-55"></i> No hay movimientos registrados para este ejercicio.</div>');
             }
         },
         error: function() {
-            container.html('<div class="text-danger py-2">Error al cargar los movimientos.</div>');
+            container.html('<div class="text-danger py-2"><i class="tim-icons icon-alert-circle-exc"></i> Error al cargar los movimientos.</div>');
         }
     });
 }
@@ -255,6 +319,7 @@ function loadMovimientosCaja(cajaId) {
 function loadMovimientosDineroCaja(cajaId) {
     const container = $('#movimientosDineroCaja-' + cajaId);
     container.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>');
+    
     $.ajax({
         url: '/cajas/',
         method: 'GET',
@@ -266,22 +331,40 @@ function loadMovimientosDineroCaja(cajaId) {
         },
         success: function(data) {
             if (data.success && data.movimientos_dinero && data.movimientos_dinero.length > 0) {
-                let html = '<table class="table table-sm"><thead><tr><th>Denominación</th><th>Entrada</th><th>Salida</th></tr></thead><tbody>';
+                let html = `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Denominación</th>
+                                    <th>Entrada</th>
+                                    <th>Salida</th>
+                                    <th>Neto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
                 data.movimientos_dinero.forEach(function(mov) {
+                    const neto = mov.cantidad_entrada - mov.cantidad_salida;
+                    const netoClass = neto > 0 ? 'text-success' : (neto < 0 ? 'text-danger' : 'text-muted');
+                    
                     html += `<tr>
                         <td>${mov.denominacion}</td>
-                        <td>${mov.cantidad_entrada}</td>
-                        <td>${mov.cantidad_salida}</td>
+                        <td class="text-success">+${mov.cantidad_entrada}</td>
+                        <td class="text-danger">-${mov.cantidad_salida}</td>
+                        <td class="${netoClass}"><strong>${neto}</strong></td>
                     </tr>`;
                 });
-                html += '</tbody></table>';
+                
+                html += '</tbody></table></div>';
                 container.html(html);
             } else {
-                container.html('<div class="text-muted py-2">No hay movimientos de dinero registrados.</div>');
+                container.html('<div class="text-muted py-2"><i class="tim-icons icon-bell-55"></i> No hay movimientos de efectivo registrados.</div>');
             }
         },
         error: function() {
-            container.html('<div class="text-danger py-2">Error al cargar los movimientos de dinero.</div>');
+            container.html('<div class="text-danger py-2"><i class="tim-icons icon-alert-circle-exc"></i> Error al cargar los movimientos de efectivo.</div>');
         }
     });
 }
@@ -289,6 +372,7 @@ function loadMovimientosDineroCaja(cajaId) {
 function loadGraficosCaja(cajaId) {
     const container = $('#graficosCaja-' + cajaId);
     container.html('<div class="spinner-border text-primary" role="status"><span class="sr-only">Cargando...</span></div>');
+    
     $.ajax({
         url: '/cajas/',
         method: 'GET',
@@ -299,7 +383,7 @@ function loadGraficosCaja(cajaId) {
             'ejercicio_id': $('#ejercicioSelect').val()
         },
         success: function(data) {
-            if (data.success && data.grafico) {
+            if (data.success && data.grafico && data.grafico.labels.length > 0) {
                 container.html('<canvas id="graficoCajaCanvas-' + cajaId + '" height="120"></canvas>');
                 const canvas = document.getElementById('graficoCajaCanvas-' + cajaId);
                 if (canvas) {
@@ -309,21 +393,43 @@ function loadGraficosCaja(cajaId) {
                         data: {
                             labels: data.grafico.labels,
                             datasets: [{
-                                label: 'Saldo',
+                                label: 'Saldo (€)',
                                 data: data.grafico.saldos,
                                 borderColor: '#1d8cf8',
                                 backgroundColor: 'rgba(29,140,248,0.1)',
-                                fill: true
+                                fill: true,
+                                tension: 0.1
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: '#ffffff'
+                                    }
+                                }
+                            },
                             scales: {
                                 y: {
                                     beginAtZero: true,
                                     ticks: {
-                                        callback: function(value) { return value.toFixed(2) + '€'; }
+                                        callback: function(value) { 
+                                            return value.toFixed(2) + '€'; 
+                                        },
+                                        color: '#ffffff'
+                                    },
+                                    grid: {
+                                        color: 'rgba(255,255,255,0.1)'
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: '#ffffff'
+                                    },
+                                    grid: {
+                                        color: 'rgba(255,255,255,0.1)'
                                     }
                                 }
                             }
@@ -333,11 +439,11 @@ function loadGraficosCaja(cajaId) {
                     container.html('<div class="text-danger">No se pudo crear el gráfico (canvas no disponible).</div>');
                 }
             } else {
-                container.html('<div class="text-muted py-2">No hay datos de gráficos disponibles.</div>');
+                container.html('<div class="text-muted py-2"><i class="tim-icons icon-bell-55"></i> No hay datos suficientes para generar el gráfico.</div>');
             }
         },
         error: function() {
-            container.html('<div class="text-danger py-2">Error al cargar el gráfico.</div>');
+            container.html('<div class="text-danger py-2"><i class="tim-icons icon-alert-circle-exc"></i> Error al cargar el gráfico.</div>');
         }
     });
 }
@@ -346,5 +452,12 @@ function updateTotalsDisplay(ingresos, gastos, saldo) {
     $('#totalIngresosHeader').text(ingresos.toFixed(2) + '€');
     $('#totalGastosHeader').text(gastos.toFixed(2) + '€');
     $('#saldoActual').text(saldo.toFixed(2) + '€');
+    
+    // Update color classes based on values
+    $('#totalIngresosHeader').removeClass('text-success text-muted').addClass(ingresos > 0 ? 'text-success' : 'text-muted');
+    $('#totalGastosHeader').removeClass('text-danger text-muted').addClass(gastos > 0 ? 'text-danger' : 'text-muted');
+    $('#saldoActual').removeClass('text-success text-danger text-muted').addClass(
+        saldo > 0 ? 'text-success' : (saldo < 0 ? 'text-danger' : 'text-muted')
+    );
 }
 

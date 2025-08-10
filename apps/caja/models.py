@@ -592,7 +592,29 @@ class DesgloseCaja(UserTrackedModel, models.Model):
         verbose_name_plural = "Desgloses de Caja"
         unique_together = [['caja', 'denominacion']]
         ordering = ['-denominacion__valor']
-         
+    
+    def verificar_consistencia(self):
+        """Verifica si el desglose está consistente con los movimientos de efectivo"""
+        # Calcular cantidad desde MovimientoEfectivo
+        from django.contrib.contenttypes.models import ContentType
+        
+        cantidad_calculada = 0
+        
+        # Buscar todos los MovimientoEfectivo que afectan esta denominación en esta caja
+        movimientos_efectivo = MovimientoEfectivo.objects.filter(
+            caja=self.caja,
+            denominacion=self.denominacion
+        )
+        
+        for mov_ef in movimientos_efectivo:
+            cantidad_calculada += mov_ef.cantidad_entrada - mov_ef.cantidad_salida
+        
+        return {
+            'cantidad_actual': self.cantidad,
+            'cantidad_calculada': cantidad_calculada,
+            'diferencia': self.cantidad - cantidad_calculada,
+            'consistente': self.cantidad == cantidad_calculada
+        }
         
 class MovimientoEfectivo(UserTrackedModel, models.Model):
     """
@@ -695,31 +717,70 @@ def eliminar_movimientos_efectivo_relacionados(sender, instance, **kwargs):
 def actualizar_desglose_on_movimiento_efectivo_save(sender, instance, created, **kwargs):
     """Actualiza el desglose de la caja al crear o actualizar un MovimientoEfectivo"""
     if created:
+        print(f"DEBUG: Nueva instancia de MovimientoEfectivo creada - ID: {instance.id}")
+        print(f"DEBUG: Caja: {instance.caja}, Denominación: {instance.denominacion}")
+        print(f"DEBUG: Entrada: {instance.cantidad_entrada}, Salida: {instance.cantidad_salida}")
+        
+        # Obtener o crear el desglose para esta denominación
         desglose_caja, created_desglose = DesgloseCaja.objects.get_or_create(
             caja=instance.caja,
             denominacion=instance.denominacion,
-            defaults={'cantidad': 0, 'creado_por': instance.creado_por}
+            defaults={
+                'cantidad': 0, 
+                'creado_por': instance.creado_por if instance.creado_por else None
+            }
         )
-        desglose_caja.cantidad += instance.cantidad_entrada - instance.cantidad_salida
+        
+        if created_desglose:
+            print(f"DEBUG: Nuevo DesgloseCaja creado para {instance.denominacion} en {instance.caja}")
+        
+        # Calcular cambio neto (entrada - salida)
+        cambio_neto = instance.cantidad_entrada - instance.cantidad_salida
+        
+        # Actualizar la cantidad en el desglose
+        cantidad_anterior = desglose_caja.cantidad
+        desglose_caja.cantidad += cambio_neto
+        
+        # Asegurar que la cantidad no sea negativa
         if desglose_caja.cantidad < 0:
-            desglose_caja.cantidad = 0  
+            print(f"WARNING: Desglose negativo para {instance.denominacion} en {instance.caja}: {desglose_caja.cantidad}")
+            desglose_caja.cantidad = 0
+        
         desglose_caja.save()
+        
+        print(f"DEBUG: Desglose actualizado - {instance.denominacion}: {cantidad_anterior} + {cambio_neto} = {desglose_caja.cantidad}")
         
         
 @receiver(post_delete, sender=MovimientoEfectivo)
-def actualizar_desglose_on_movimiento_dinero_delete(sender, instance, **kwargs):
-    """Actualiza el desglose cuando se elimina un MovimientoDinero"""
-    desglose = DesgloseCaja.objects.filter(
-        caja=instance.caja,
-        denominacion=instance.denominacion
-    ).first()
-    if desglose:
-        desglose.cantidad -= instance.cantidad_neta()
+def actualizar_desglose_on_movimiento_efectivo_delete(sender, instance, **kwargs):
+    """Actualiza el desglose cuando se elimina un MovimientoEfectivo"""
+    print(f"DEBUG: Eliminando MovimientoEfectivo - ID: {instance.id}")
+    print(f"DEBUG: Caja: {instance.caja}, Denominación: {instance.denominacion}")
+    print(f"DEBUG: Entrada: {instance.cantidad_entrada}, Salida: {instance.cantidad_salida}")
+    
+    try:
+        desglose = DesgloseCaja.objects.get(
+            caja=instance.caja,
+            denominacion=instance.denominacion
+        )
+        
+        # Revertir el cambio (inverso de lo que se hizo al crear)
+        cambio_neto = instance.cantidad_entrada - instance.cantidad_salida
+        cantidad_anterior = desglose.cantidad
+        desglose.cantidad -= cambio_neto
+        
+        # Asegurar que la cantidad no sea negativa
         if desglose.cantidad < 0:
+            print(f"WARNING: Desglose se volvería negativo, estableciendo a 0")
             desglose.cantidad = 0
+            
         desglose.save()
         
+        print(f"DEBUG: Desglose revertido - {instance.denominacion}: {cantidad_anterior} - {cambio_neto} = {desglose.cantidad}")
         
+    except DesgloseCaja.DoesNotExist:
+        print(f"WARNING: No existe desglose para {instance.denominacion} en {instance.caja}")
+
 ##############################################################################
 #   Señal para inicializar el desglose de la caja al crear una nueva caja    #
 ##############################################################################

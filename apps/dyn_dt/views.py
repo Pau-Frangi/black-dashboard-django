@@ -277,21 +277,61 @@ def cajas(request):
     """
     from django.http import JsonResponse
     from django.db.models import Sum
+    from apps.caja.models import Caja, DesgloseCaja, MovimientoCajaIngreso, MovimientoCajaGasto
+    
     # AJAX handler
     if request.method == 'GET' and request.GET.get('ajax') == 'true':
         action = request.GET.get('action')
+        ejercicio_id = request.GET.get('ejercicio_id')
 
         if not action:
-            cajas = Caja.objects.all()
-            cajas_data = [{
-                'id': caja.id,
-                'nombre': caja.nombre,
-                'activa': caja.activa,
-                'saldo_caja': float(caja.saldo_caja),
-                'ingresos_caja': float(caja.movimientos.filter(concepto__es_gasto=False).aggregate(Sum('cantidad'))['cantidad__sum'] or 0),
-                'gastos_caja': float(caja.movimientos.filter(concepto__es_gasto=True).aggregate(Sum('cantidad'))['cantidad__sum'] or 0)
-            } for caja in cajas]
+            # Get cajas for specific ejercicio and campamento
+            if not ejercicio_id:
+                return JsonResponse({'success': False, 'error': 'Ejercicio ID requerido'})
+            
+            try:
+                ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+            except Ejercicio.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Ejercicio no encontrado'})
+            
+            # Get all cajas that have movements in this ejercicio
+            cajas_con_movimientos = set()
+            
+            # Get cajas from ingreso movements
+            ingresos = MovimientoCajaIngreso.objects.filter(ejercicio=ejercicio).values_list('caja_id', flat=True)
+            cajas_con_movimientos.update(ingresos)
+            
+            # Get cajas from gasto movements
+            gastos = MovimientoCajaGasto.objects.filter(ejercicio=ejercicio).values_list('caja_id', flat=True)
+            cajas_con_movimientos.update(gastos)
+            
+            # Get cajas data
+            cajas = Caja.objects.filter(id__in=cajas_con_movimientos)
+            cajas_data = []
+            
+            for caja in cajas:
+                # Calculate totals for this caja in this ejercicio
+                ingresos_total = MovimientoCajaIngreso.objects.filter(
+                    ejercicio=ejercicio, 
+                    caja=caja
+                ).aggregate(total=Sum('importe'))['total'] or 0
+                
+                gastos_total = MovimientoCajaGasto.objects.filter(
+                    ejercicio=ejercicio, 
+                    caja=caja
+                ).aggregate(total=Sum('importe'))['total'] or 0
+                
+                cajas_data.append({
+                    'id': caja.id,
+                    'nombre': caja.nombre,
+                    'activa': caja.activa,
+                    'saldo_caja': float(caja.saldo_caja),
+                    'ingresos_caja': float(ingresos_total),
+                    'gastos_caja': float(gastos_total)
+                })
+            
             return JsonResponse({'success': True, 'cajas': cajas_data})
+        
         # Desglose de caja
         elif action == 'get_desglose':
             caja_id = request.GET.get('caja_id')
@@ -301,81 +341,202 @@ def cajas(request):
                 caja = Caja.objects.get(id=caja_id)
             except Caja.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Caja no encontrada'})
+            
+            # Refrescar el desglose desde la base de datos
             desglose = caja.obtener_desglose_actual()
-            desglose_data = [{
-                'denominacion': str(d.denominacion),
-                'cantidad': d.cantidad,
-                'valor_total': float(d.valor_total()),
-                'tipo': 'billete' if getattr(d.denominacion, 'es_billete', False) else 'moneda'
-            } for d in desglose]
-            return JsonResponse({'success': True, 'desglose': desglose_data})
+            desglose_data = []
+            
+            for d in desglose:
+                # Recalcular valores para asegurar consistencia
+                d.refresh_from_db()
+                desglose_data.append({
+                    'denominacion': str(d.denominacion),
+                    'cantidad': d.cantidad,
+                    'valor_total': float(d.valor_total()),
+                    'tipo': 'billete' if d.denominacion.es_billete else 'moneda'
+                })
+            
+            return JsonResponse({
+                'success': True, 
+                'desglose': desglose_data,
+                'saldo_oficial': float(caja.saldo_caja)
+            })
+        
         # Movimientos de caja
         elif action == 'get_movimientos':
             caja_id = request.GET.get('caja_id')
-            if not caja_id:
-                return JsonResponse({'success': False, 'error': 'Caja ID requerido'})
+            if not caja_id or not ejercicio_id:
+                return JsonResponse({'success': False, 'error': 'Caja ID y Ejercicio ID requeridos'})
             try:
                 caja = Caja.objects.get(id=caja_id)
-            except Caja.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'Caja no encontrada'})
-            movimientos = caja.movimientos.select_related('turno', 'concepto').order_by('-fecha')
-            movimientos_data = [{
-                'id': mov.id,
-                'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
-                'concepto': mov.concepto.nombre,
-                'cantidad': float(mov.cantidad),
-                'es_gasto': mov.concepto.es_gasto
-            } for mov in movimientos]
+                ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+            except (Caja.DoesNotExist, Ejercicio.DoesNotExist):
+                return JsonResponse({'success': False, 'error': 'Caja o Ejercicio no encontrado'})
+            
+            # Get both ingreso and gasto movements for this caja and ejercicio
+            movimientos_data = []
+            
+            # Ingresos
+            ingresos = MovimientoCajaIngreso.objects.filter(
+                caja=caja, ejercicio=ejercicio
+            ).select_related('turno', 'concepto').order_by('-fecha')
+            
+            for mov in ingresos:
+                movimientos_data.append({
+                    'id': mov.id,
+                    'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                    'concepto': mov.concepto.nombre,
+                    'cantidad': float(mov.importe),
+                    'es_gasto': False
+                })
+            
+            # Gastos
+            gastos = MovimientoCajaGasto.objects.filter(
+                caja=caja, ejercicio=ejercicio
+            ).select_related('turno', 'concepto').order_by('-fecha')
+            
+            for mov in gastos:
+                movimientos_data.append({
+                    'id': mov.id,
+                    'fecha_display': mov.fecha.strftime('%d/%m/%Y %H:%M'),
+                    'concepto': mov.concepto.nombre,
+                    'cantidad': float(mov.importe),
+                    'es_gasto': True
+                })
+            
+            # Sort by date descending
+            movimientos_data.sort(key=lambda x: x['fecha_display'], reverse=True)
+            
             return JsonResponse({'success': True, 'movimientos': movimientos_data})
-        # Movimientos de dinero
+        
+        # Movimientos de dinero (efectivo)
         elif action == 'get_movimientos_dinero':
             caja_id = request.GET.get('caja_id')
-            if not caja_id:
-                return JsonResponse({'success': False, 'error': 'Caja ID requerido'})
+            if not caja_id or not ejercicio_id:
+                return JsonResponse({'success': False, 'error': 'Caja ID y Ejercicio ID requeridos'})
+            
             try:
                 caja = Caja.objects.get(id=caja_id)
-            except Caja.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'Caja no encontrada'})
-            movimientos_dinero = []
-            for mov in caja.movimientos.all():
-                for md in mov.movimientos_dinero.all():
-                    movimientos_dinero.append({
-                        'denominacion': str(md.denominacion),
-                        'cantidad_entrada': md.cantidad_entrada,
-                        'cantidad_salida': md.cantidad_salida
-                    })
-            return JsonResponse({'success': True, 'movimientos_dinero': movimientos_dinero})
-        # Gráficos de utilidad (ejemplo: saldo por día)
+                ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+            except (Caja.DoesNotExist, Ejercicio.DoesNotExist):
+                return JsonResponse({'success': False, 'error': 'Caja o Ejercicio no encontrado'})
+            
+            from apps.caja.models import MovimientoEfectivo
+            from django.contrib.contenttypes.models import ContentType
+            from django.db import models  # Add this import
+            
+            movimientos_dinero_data = []
+            
+            # Get content types for movimiento models
+            ct_ingreso = ContentType.objects.get_for_model(MovimientoCajaIngreso)
+            ct_gasto = ContentType.objects.get_for_model(MovimientoCajaGasto)
+            
+            # Get all movement IDs for this caja and ejercicio
+            ingreso_ids = MovimientoCajaIngreso.objects.filter(
+                caja=caja, ejercicio=ejercicio
+            ).values_list('id', flat=True)
+            
+            gasto_ids = MovimientoCajaGasto.objects.filter(
+                caja=caja, ejercicio=ejercicio
+            ).values_list('id', flat=True)
+            
+            # Get MovimientoEfectivo for these movements
+            movimientos_efectivo = MovimientoEfectivo.objects.filter(
+                models.Q(content_type=ct_ingreso, object_id__in=ingreso_ids) |
+                models.Q(content_type=ct_gasto, object_id__in=gasto_ids)
+            ).select_related('denominacion')
+            
+            for mov_ef in movimientos_efectivo:
+                movimientos_dinero_data.append({
+                    'denominacion': str(mov_ef.denominacion),
+                    'cantidad_entrada': mov_ef.cantidad_entrada,
+                    'cantidad_salida': mov_ef.cantidad_salida
+                })
+            
+            return JsonResponse({'success': True, 'movimientos_dinero': movimientos_dinero_data})
+        
+        # Gráficos de utilidad (evolución del saldo)
         elif action == 'get_graficos':
             caja_id = request.GET.get('caja_id')
-            if not caja_id:
-                return JsonResponse({'success': False, 'error': 'Caja ID requerido'})
+            if not caja_id or not ejercicio_id:
+                return JsonResponse({'success': False, 'error': 'Caja ID y Ejercicio ID requeridos'})
+            
             try:
                 caja = Caja.objects.get(id=caja_id)
-            except Caja.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'Caja no encontrada'})
-            movimientos = caja.movimientos.order_by('fecha')
+                ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+            except (Caja.DoesNotExist, Ejercicio.DoesNotExist):
+                return JsonResponse({'success': False, 'error': 'Caja o Ejercicio no encontrado'})
+            
+            # Get all movements for this caja and ejercicio, ordered by date
+            movimientos = []
+            
+            # Add ingresos
+            ingresos = MovimientoCajaIngreso.objects.filter(
+                caja=caja, ejercicio=ejercicio
+            ).order_by('fecha')
+            
+            for mov in ingresos:
+                movimientos.append({
+                    'fecha': mov.fecha,
+                    'importe': float(mov.importe),
+                    'es_gasto': False
+                })
+            
+            # Add gastos
+            gastos = MovimientoCajaGasto.objects.filter(
+                caja=caja, ejercicio=ejercicio
+            ).order_by('fecha')
+            
+            for mov in gastos:
+                movimientos.append({
+                    'fecha': mov.fecha,
+                    'importe': float(mov.importe),
+                    'es_gasto': True
+                })
+            
+            # Sort all movements by date
+            movimientos.sort(key=lambda x: x['fecha'])
+            
+            # Calculate running balance
             labels = []
             saldos = []
             saldo = 0
+            
             for mov in movimientos:
-                saldo += mov.cantidad_real()
-                labels.append(mov.fecha.strftime('%d/%m'))
+                if mov['es_gasto']:
+                    saldo -= mov['importe']
+                else:
+                    saldo += mov['importe']
+                
+                labels.append(mov['fecha'].strftime('%d/%m'))
                 saldos.append(float(saldo))
-            return JsonResponse({'success': True, 'grafico': {'labels': labels, 'saldos': saldos}})
+            
+            return JsonResponse({
+                'success': True, 
+                'grafico': {
+                    'labels': labels, 
+                    'saldos': saldos
+                }
+            })
+        
         else:
             return JsonResponse({'success': False, 'error': 'Acción no válida'})
+    
     # Render HTML
+    campamentos = Campamento.objects.all().order_by('nombre')
     ejercicios = Ejercicio.objects.all().order_by('-año', 'nombre')
     current_year = datetime.now().year
     default_ejercicio = None
+    
     for ejercicio in ejercicios:
         if ejercicio.año == current_year:
             default_ejercicio = ejercicio
             break
     if not default_ejercicio and ejercicios.exists():
         default_ejercicio = ejercicios.first()
+    
     context = {
+        'campamentos': campamentos,
         'ejercicios': ejercicios,
         'default_ejercicio_id': default_ejercicio.id if default_ejercicio else None,
         'segment': 'cajas'
