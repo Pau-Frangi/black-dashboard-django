@@ -122,6 +122,7 @@ function setupEventListeners() {
     // =============================================================================
     // MODAL AND FORM HANDLING
     // =============================================================================
+    // Handle concepto changes
     $('#concepto').on('change', function() {
         const selectedOption = $(this).find('option:selected');
         const esGasto = selectedOption.data('es-gasto') === "True";
@@ -163,7 +164,7 @@ function setupEventListeners() {
             $(this).removeClass('border-success border-warning');
             $('#justificanteFields, #justificanteFieldsBanco').removeClass('show').hide();
             $('#justificante, #referencia_bancaria').val('');
-            $('#archivo_justificante, #archivo_justificante_banco').val('');
+            $('input[name="archivo"]').val('');
             $('.file-display').remove();
             console.log('Sin selección - ocultando campos');
         }
@@ -176,8 +177,8 @@ function setupEventListeners() {
         
         if (canalMovimiento === 'caja') {
             $('#cajaSelect').prop('required', true);
-            $('#cuenta_bancaria').prop('required', false);
-            $('#via_movimiento_bancario').prop('required', false);
+            $('select[name="cuenta_bancaria"]').prop('required', false);
+            $('select[name="via"]').prop('required', false);
 
             // Mostrar selector de caja y campos de efectivo
             $('#cajaSelectionRow').show();
@@ -205,8 +206,8 @@ function setupEventListeners() {
             
         } else if (canalMovimiento === 'banco') {
             $('#cajaSelect').prop('required', false);
-            $('#cuenta_bancaria').prop('required', true);
-            $('#via_movimiento_bancario').prop('required', true);
+            $('select[name="cuenta_bancaria"]').prop('required', true);
+            $('select[name="via"]').prop('required', true);
 
             // Ocultar selector de caja para operaciones bancarias
             $('#cajaSelectionRow').hide();
@@ -229,7 +230,6 @@ function setupEventListeners() {
                 // Actualizar las etiquetas según si es gasto o ingreso
                 updateBankJustificanteLabels(esGasto);
             }
-            loadCuentasAndVias();
             
         } else {
             // Sin selección - ocultar todos los campos específicos
@@ -243,10 +243,10 @@ function setupEventListeners() {
         
         // Limpiar los campos del tipo no seleccionado
         if (canalMovimiento === 'caja') {
-            $('#referencia_bancaria').val('');
+            $('input[name="referencia_bancaria"]').val('');
             $('#archivo_justificante_banco').val('');
         } else if (canalMovimiento === 'banco') {
-            $('#justificante').val('');
+            $('input[name="justificante"]').val('');
             $('#archivo_justificante').val('');
             // Limpiar también campos de desglose de dinero
             $('.money-input').val('');
@@ -320,6 +320,9 @@ function setupEventListeners() {
             return;
         }
         console.log('Concepto ID seleccionado:', conceptoId);
+
+        // Add the concepto_id to the form data
+        formData.append('concepto_id', conceptoId);
 
         // Verificar que se ha introducido un importe
         const importe = $('#importe').val();

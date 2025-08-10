@@ -12,6 +12,13 @@ function prepareModal() {
         return false;
     }
     
+    // Verificar que hay un campamento seleccionado
+    const campamentoId = $('#campamentoSelect').val();
+    if (!campamentoId) {
+        showWarning('Por favor selecciona un campamento antes de añadir un movimiento');
+        return false;
+    }
+    
     // Clear editing mode for new movements
     editingMovimiento = null;
     
@@ -21,9 +28,11 @@ function prepareModal() {
         Añadir Nuevo Movimiento
     `);
     
-    // Establecer el ejercicio_id en el formulario
+    // Establecer el ejercicio_id y campamento_id en el formulario
     $('#ejercicioIdInput').val(ejercicioId);
+    $('#campamentoIdInput').val(campamentoId);
     console.log('Ejercicio ID establecido en modal:', ejercicioId);
+    console.log('Campamento ID establecido en modal:', campamentoId);
     
     // Load turnos for the selected ejercicio
     loadTurnosForEjercicio(ejercicioId);
@@ -42,8 +51,8 @@ function resetModalForm() {
     
     // Reset date and time to current values (only for new movements)
     if (!editingMovimiento) {
-        $('#fecha').val(new Date().toISOString().split('T')[0]);
-        $('#hora').val(new Date().toTimeString().slice(0, 5));
+        $('input[name="fecha"]').val(new Date().toISOString().split('T')[0]);
+        $('input[name="hora"]').val(new Date().toTimeString().slice(0, 5));
     }
     
     // Re-enable fields that might have been disabled during editing
@@ -64,11 +73,11 @@ function resetModalForm() {
     // Reset required attributes
     $('#cajaSelect').prop('required', false);
     
-    // Clear all form values
-    $('#justificante').val('');
-    $('#archivo_justificante').val('');
-    $('#referencia_bancaria').val('');
-    $('#archivo_justificante_banco').val('');
+    // Clear specific form values
+    $('input[name="justificante"]').val('');
+    $('input[name="archivo"]').val('');
+    $('input[name="referencia_bancaria"]').val('');
+    $('input[name="archivo_justificante_banco"]').val('');
     
     // Remove file display if exists
     $('.file-display').remove();
@@ -133,9 +142,11 @@ function prepareModalForEdit(movimiento) {
     // Reset form first
     resetModalForm();
     
-    // Set ejercicio ID
+    // Set ejercicio and campamento ID
     const currentEjercicioId = $('#ejercicioSelect').val();
+    const currentCampamentoId = $('#campamentoSelect').val();
     $('#ejercicioIdInput').val(currentEjercicioId);
+    $('#campamentoIdInput').val(currentCampamentoId);
     
     // Set caja ID only if it's available (for cash movements)
     if (movimiento.caja_id) {
@@ -147,11 +158,11 @@ function prepareModalForEdit(movimiento) {
     const fechaStr = fecha.toISOString().split('T')[0];
     const horaStr = fecha.toTimeString().slice(0, 5);
     
-    // Populate basic fields    
-    $('#fecha').val(fechaStr);
-    $('#hora').val(horaStr);
-    $('#importe').val(movimiento.importe);
-    $('#descripcion').val(movimiento.descripcion);
+    // Populate form fields using proper names
+    $('input[name="fecha"]').val(fechaStr);
+    $('input[name="hora"]').val(horaStr);
+    $('input[name="importe"]').val(movimiento.importe);
+    $('textarea[name="descripcion"]').val(movimiento.descripcion);
     
     // Set operation type based on movement type
     const canalMovimiento = movimiento.tipo === 'banco' ? 'banco' : 'caja';
@@ -166,7 +177,7 @@ function prepareModalForEdit(movimiento) {
     if (editEjercicioId) {
         loadTurnosForEjercicio(editEjercicioId, function() {
             if (movimiento.turno_id) {
-                $('#turno').val(movimiento.turno_id);
+                $('select[name="turno"]').val(movimiento.turno_id);
                 console.log('Turno preseleccionado por ID:', movimiento.turno_id, '(' + movimiento.turno + ')');
             }
         });
@@ -192,15 +203,31 @@ function prepareModalForEdit(movimiento) {
         $('#camposEfectivo').hide();
         
         // Set bank-specific fields
-        $('#referencia_bancaria').val(movimiento.referencia_bancaria || '');
+        $('input[name="referencia_bancaria"]').val(movimiento.referencia_bancaria || '');
+        
+        // Set cuenta bancaria and via if available
+        if (movimiento.cuenta_bancaria_id) {
+            $('select[name="cuenta_bancaria"]').val(movimiento.cuenta_bancaria_id);
+        }
+        if (movimiento.via_id) {
+            $('select[name="via"]').val(movimiento.via_id);
+        }
         
     } else {
         // Show cash fields
         $('#camposEfectivo').show();
         $('#camposBanco').hide();
         
-        // Set cash-specific fields
-        $('#justificante').val(movimiento.justificante || '');
+        // Set cash-specific fields - extract justificante from description if present
+        const justificanteMatch = movimiento.descripcion.match(/\[Justificante: (\d+)\]/);
+        if (justificanteMatch) {
+            $('input[name="justificante"]').val(justificanteMatch[1]);
+        }
+        
+        // Set caja selection
+        if (movimiento.caja_id) {
+            $('#cajaSelect').val(movimiento.caja_id);
+        }
         
         // Load money breakdown for cash movements
         loadMovimientoDesglose(movimiento.id);

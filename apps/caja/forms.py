@@ -27,9 +27,19 @@ class DenominacionEuroForm(forms.ModelForm):
 
 
 class MovimientoCajaIngresoForm(forms.ModelForm):
+    # Add custom field for combined date and time handling
+    fecha = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        required=True
+    )
+    hora = forms.TimeField(
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+        required=True
+    )
+
     class Meta:
         model = MovimientoCajaIngreso
-        fields = ['ejercicio', 'caja', 'turno', 'concepto', 'importe', 'descripcion', 'archivo', 'fecha']
+        fields = ['ejercicio', 'caja', 'turno', 'concepto', 'importe', 'descripcion', 'archivo']
         widgets = {
             'ejercicio': forms.Select(attrs={'class': 'form-control'}),
             'caja': forms.Select(attrs={'class': 'form-control'}),
@@ -38,7 +48,6 @@ class MovimientoCajaIngresoForm(forms.ModelForm):
             'importe': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'archivo': forms.FileInput(attrs={'class': 'form-control'}),
-            'fecha': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -46,11 +55,38 @@ class MovimientoCajaIngresoForm(forms.ModelForm):
         # Filter conceptos to show only those that are not gastos
         self.fields['concepto'].queryset = Concepto.objects.filter(es_gasto=False)
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Combine fecha and hora into datetime
+        from datetime import datetime, time
+        fecha = self.cleaned_data['fecha']
+        hora = self.cleaned_data['hora']
+        instance.fecha = datetime.combine(fecha, hora)
+        
+        if commit:
+            instance.save()
+        return instance
+
 
 class MovimientoCajaGastoForm(forms.ModelForm):
+    # Add custom field for combined date and time handling + justificante
+    fecha = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        required=True
+    )
+    hora = forms.TimeField(
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+        required=True
+    )
+    justificante = forms.CharField(
+        max_length=5,
+        required=False,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '12345', 'maxlength': '5'})
+    )
+
     class Meta:
         model = MovimientoCajaGasto
-        fields = ['ejercicio', 'caja', 'turno', 'concepto', 'importe', 'descripcion', 'archivo', 'fecha']
+        fields = ['ejercicio', 'caja', 'turno', 'concepto', 'importe', 'descripcion', 'archivo']
         widgets = {
             'ejercicio': forms.Select(attrs={'class': 'form-control'}),
             'caja': forms.Select(attrs={'class': 'form-control'}),
@@ -59,13 +95,24 @@ class MovimientoCajaGastoForm(forms.ModelForm):
             'importe': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'archivo': forms.FileInput(attrs={'class': 'form-control'}),
-            'fecha': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Filter conceptos to show only those that are gastos
         self.fields['concepto'].queryset = Concepto.objects.filter(es_gasto=True)
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Combine fecha and hora into datetime
+        from datetime import datetime, time
+        fecha = self.cleaned_data['fecha']
+        hora = self.cleaned_data['hora']
+        instance.fecha = datetime.combine(fecha, hora)
+        
+        if commit:
+            instance.save()
+        return instance
 
 
 class MovimientoCajaTransferenciaForm(forms.ModelForm):
@@ -153,17 +200,6 @@ class MovimientoEfectivoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Filter denominaciones to show only active ones
         self.fields['denominacion'].queryset = DenominacionEuro.objects.filter(activa=True)
-
-
-# Formset for handling multiple MovimientoEfectivo instances
-MovimientoEfectivoFormSet = forms.inlineformset_factory(
-    parent_model=None,  # This will be set dynamically based on the movement type
-    model=MovimientoEfectivo,
-    form=MovimientoEfectivoForm,
-    extra=0,
-    can_delete=True,
-    fields=['denominacion', 'cantidad_entrada', 'cantidad_salida']
-)
 
 
 # Filter forms for admin or list views

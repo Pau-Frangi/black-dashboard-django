@@ -175,8 +175,9 @@
             <form id="addMovementForm" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <input type="hidden" name="caja_id" id="cajaIdInput">
-                    <input type="hidden" name="ejercicio_id" id="ejercicioIdInput">
+                    <input type="hidden" name="caja" id="cajaIdInput">
+                    <input type="hidden" name="ejercicio" id="ejercicioIdInput">
+                    <input type="hidden" name="campamento" id="campamentoIdInput">
                     
                     <!-- Tipo de Operación -->
                     <div class="row mb-3">
@@ -213,7 +214,7 @@
                                     <i class="tim-icons icon-coins mr-2"></i>
                                     Seleccionar Caja
                                 </label>
-                                <select class="form-control" name="caja_id_select" id="cajaSelect" required>
+                                <select class="form-control" name="caja" id="cajaSelect" required>
                                     <option value="">-- Selecciona una caja --</option>
                                     {% for caja in cajas %}
                                         <option value="{{ caja.id }}"
@@ -236,7 +237,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="turno" class="form-label">Turno</label>
-                                <select class="form-control" name="turno_id" id="turno" required>
+                                <select class="form-control" name="turno" id="turno" required>
                                     <option value="">-- Selecciona un turno --</option>
                                 </select>
                             </div>
@@ -244,7 +245,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="concepto" class="form-label">Concepto</label>
-                                <select class="form-control" name="concepto_id" id="concepto" required>
+                                <select class="form-control" name="concepto" id="concepto" required>
                                     <option value="">-- Selecciona un concepto --</option>
                                     {% for concepto in conceptos %}
                                         <option value="{{ concepto.id }}" data-es-gasto="{{ concepto.es_gasto }}">
@@ -307,8 +308,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="archivo_justificante" class="form-label">Archivo Justificante de Factura</label>
-                                        <input type="file" class="form-control" name="archivo_justificante" id="archivo_justificante" 
+                                        <label for="archivo" class="form-label">Archivo Justificante de Factura</label>
+                                        <input type="file" class="form-control" name="archivo" id="archivo_justificante" 
                                                accept=".pdf,.jpg,.jpeg,.png,.bmp">
                                         <small class="form-text text-muted">
                                             <i class="tim-icons icon-cloud-upload-94"></i>
@@ -487,22 +488,27 @@
                     </div> <!-- End campos-efectivo -->
                     
                     <!-- Campos específicos para movimientos de BANCO (bancos) -->
-
-                    <!-- Campos de cuenta bancaria y via de movimiento bancario -->
                     <div class="campos-banco" id="camposBanco" style="display: none;">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="cuenta_bancaria" class="form-label">Cuenta Bancaria</label>
-                                    <select class="form-control" name="cuenta_bancaria_id" id="cuenta_bancaria" required>
+                                    <select class="form-control" name="cuenta_bancaria" id="cuenta_bancaria" required>
+                                        <option value="">-- Selecciona una cuenta --</option>
+                                        {% for cuenta in cuentas_bancarias %}
+                                            <option value="{{ cuenta.id }}">{{ cuenta.nombre }} - {{ cuenta.IBAN }}</option>
+                                        {% endfor %}
                                     </select>
                                 </div>
                             </div>
-                            <!-- Campos de justificante para movimientos bancarios - Para gastos e ingresos -->
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="via_movimiento_bancario" class="form-label">Vía de Movimiento Bancario</label>
-                                    <select class="form-control" name="via_movimiento_bancario_id" id="via_movimiento_bancario" required>
+                                    <label for="via" class="form-label">Vía de Movimiento Bancario</label>
+                                    <select class="form-control" name="via" id="via_movimiento_bancario" required>
+                                        <option value="">-- Selecciona una vía --</option>
+                                        {% for via in vias_movimiento %}
+                                            <option value="{{ via.id }}">{{ via.nombre }}</option>
+                                        {% endfor %}
                                     </select>
                                 </div>
                             </div>
@@ -522,12 +528,11 @@
                                     </small>
                                 </div>
                             </div>
-                            <!-- Campos de justificante para movimientos bancarios - Para gastos e ingresos -->
                             <div class="col-md-6">
                                 <div class="justificante-fields-banco" id="justificanteFieldsBanco" style="display: none;">
                                     <div class="form-group">
-                                        <label for="archivo_justificante_banco" class="form-label">Archivo Justificante</label>
-                                        <input type="file" class="form-control" name="archivo_justificante_banco" id="archivo_justificante_banco" 
+                                        <label for="archivo" class="form-label">Archivo Justificante</label>
+                                        <input type="file" class="form-control" name="archivo" id="archivo_justificante_banco" 
                                                 accept=".pdf,.jpg,.jpeg,.png,.bmp">
                                         <small class="form-text text-muted">
                                             <i class="tim-icons icon-cloud-upload-94"></i>
@@ -537,7 +542,6 @@
                                 </div>
                             </div>
                         </div>
-                        
                     </div> <!-- End campos-banco -->
                 </div>
                 <div class="modal-footer">

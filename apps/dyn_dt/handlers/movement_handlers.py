@@ -1,288 +1,297 @@
 """
-Handlers for movement creation, editing, and deletion operations.
+Movement handling using Django forms for better validation and organization
 """
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from django.core.exceptions import ValidationError
-from decimal import Decimal
-
-from apps.dyn_dt.models import *
-from apps.caja.models import *
-from apps.banco.models import *
-from apps.dyn_dt.utils import combine_date_time
 from django.contrib.contenttypes.models import ContentType
-from apps.caja.forms import DesgloseCajaForm, MovimientoCajaGastoForm, MovimientoCajaIngresoForm
+from pydantic import ValidationError
+from apps.caja.models import MovimientoCajaIngreso, MovimientoCajaGasto, MovimientoEfectivo, DesgloseCaja
+from apps.banco.models import MovimientoBancoIngreso, MovimientoBancoGasto
+from apps.caja.forms import MovimientoCajaIngresoForm, MovimientoCajaGastoForm, DesgloseCajaForm
 from apps.banco.forms import MovimientoBancoIngresoForm, MovimientoBancoGastoForm
-
-
+from apps.dyn_dt.models import Concepto
+import traceback
 
 
 class MovementHandler:
-    """Handles movement creation, editing, and deletion."""
+    """Handler for movement operations using Django forms"""
     
     @staticmethod
     def create_movement(request):
-        """
-        Creates a new movement (cash or bank).
-        
-        Args:
-            request: Django request object with movement data
-            
-        Returns:
-            JsonResponse indicating success or failure
-        """
+        """Create a new movement using appropriate form based on type and concept"""
         try:
+            canal_movimiento = request.POST.get('canal_movimiento')
+            concepto_id = request.POST.get('concepto_id') or request.POST.get('concepto')
             
-            # Get operation type and validate
-            tipo_operacion = request.POST.get('tipo_operacion')
-            if not tipo_operacion or tipo_operacion not in ['efectivo', 'transferencia']:
+            if not canal_movimiento or not concepto_id:
                 return JsonResponse({
                     'success': False, 
-                    'error': 'Tipo de operación inválido'
+                    'error': 'Canal de movimiento y concepto son requeridos'
                 })
             
-            # Parse common data
-            fecha_datetime = combine_date_time(
-                request.POST.get('fecha'), 
-                request.POST.get('hora', '12:00')
-            )
-            turno = get_object_or_404(Turno, id=request.POST.get('turno_id'))
-            concepto = get_object_or_404(Concepto, id=request.POST.get('concepto_id'))
-            cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
-            ejercicio = get_object_or_404(Ejercicio, id=request.POST.get('ejercicio_id'))
-            campamento = get_object_or_404(Campamento, id=request.POST.get('campamento_id'))
-
+            # Get concepto to determine if it's gasto or ingreso
+            try:
+                concepto = Concepto.objects.get(id=concepto_id)
+            except Concepto.DoesNotExist:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Concepto no encontrado'
+                })
             
-            # Create movement based on type
-            if tipo_operacion == 'transferencia':
-                cuenta_bancaria = get_object_or_404(CuentaBancaria, id=request.POST.get('cuenta_bancaria_id'))
-                via_movimiento_bancario = ViaMovimientoBanco.objects.get(id=request.POST.get('via_movimiento_bancario_id'))
-                movimiento = MovementCreator.create_bank_movement(
-                    request, campamento, ejercicio, turno, concepto, cuenta_bancaria, via_movimiento_bancario, cantidad_decimal, fecha_datetime
-                )
+            es_gasto = concepto.es_gasto
+            
+            # Create a mutable copy of POST data to fix field names
+            post_data = request.POST.copy()
+            
+            # Fix field names for Django forms
+            post_data['concepto'] = concepto_id
+            if 'concepto_id' in post_data:
+                del post_data['concepto_id']
+            
+            # Select appropriate form based on canal_movimiento and es_gasto
+            if canal_movimiento == 'caja':
+                if es_gasto:
+                    form = MovimientoCajaGastoForm(post_data, request.FILES)
+                    # Add justificante field handling for cash expenses
+                    justificante = request.POST.get('justificante', '')
+                else:
+                    form = MovimientoCajaIngresoForm(post_data, request.FILES)
+                    justificante = None
+            elif canal_movimiento == 'banco':
+                if es_gasto:
+                    form = MovimientoBancoGastoForm(post_data, request.FILES)
+                else:
+                    form = MovimientoBancoIngresoForm(post_data, request.FILES)
+                justificante = None
             else:
-                caja = get_object_or_404(Caja, id=request.POST.get('caja_id'))
-
-                # Validate caja is active
-                if not caja.activa:
-                    return JsonResponse({
-                        'success': False, 
-                        'error': 'No se pueden añadir movimientos a una caja inactiva'
-                    })
-                    
-                movimiento = MovementCreator.create_cash_movement(
-                    request, ejercicio, caja, turno, concepto, cantidad_decimal, fecha_datetime
-                )
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Canal de movimiento no válido'
+                })
             
-            # Set user before saving
-            movimiento.save(user=request.user)  # Pass user explicitly
-            
-            # Process money breakdown if needed (to create the MovimientoDinero)
-            if tipo_operacion == 'efectivo':
-                MovementCreator.process_money_breakdown(request, movimiento)
-            
-            return JsonResponse({
-                'success': True, 
-                'message': 'Movimiento añadido correctamente'
-            })
-            
+            if form.is_valid():
+                # Create the movement instance but don't save yet
+                movement = form.save(commit=False)
+                
+                # Set user who created it
+                movement.creado_por = request.user
+                
+                # Handle justificante for cash expenses
+                if canal_movimiento == 'caja' and es_gasto and justificante:
+                    # Since justificante is not a model field, we need to handle it differently
+                    # For now, we'll add it to the description
+                    if justificante:
+                        movement.descripcion += f" [Justificante: {justificante}]"
+                
+                # Save the movement
+                movement.save()
+                
+                # Handle money breakdown for cash movements
+                if canal_movimiento == 'caja':
+                    MovementHandler._handle_money_breakdown(request, movement)
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Movimiento de {canal_movimiento} {"gasto" if es_gasto else "ingreso"} creado correctamente',
+                    'movement_id': movement.id
+                })
+            else:
+                # Return form errors
+                errors = []
+                for field, field_errors in form.errors.items():
+                    for error in field_errors:
+                        errors.append(f"{field}: {error}")
+                
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Errores de validación: ' + '; '.join(errors)
+                })
+                
         except Exception as e:
-            return JsonResponse({'success': False, 'error': 'algo va mal: ' + str(e)})
+            print(f"Error creating movement: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno del servidor: {str(e)}'
+            })
+    
+    @staticmethod
+    def _handle_money_breakdown(request, movement):
+        """Handle money breakdown for cash movements"""
+        try:
+            # Get all denomination entries from POST data
+            for key, value in request.POST.items():
+                if key.startswith('entrada_') or key.startswith('salida_'):
+                    parts = key.split('_')
+                    if len(parts) == 2:
+                        tipo = parts[0]  # 'entrada' or 'salida'
+                        denominacion_id = parts[1]
+                        cantidad = int(value) if value else 0
+                        
+                        if cantidad > 0:
+                            # Get or create MovimientoEfectivo
+                            content_type = ContentType.objects.get_for_model(movement)
+                            
+                            movimiento_efectivo, created = MovimientoEfectivo.objects.get_or_create(
+                                content_type=content_type,
+                                object_id=movement.id,
+                                caja=movement.caja,
+                                denominacion_id=denominacion_id,
+                                defaults={'creado_por': request.user}
+                            )
+                            
+                            if tipo == 'entrada':
+                                movimiento_efectivo.cantidad_entrada = cantidad
+                            elif tipo == 'salida':
+                                movimiento_efectivo.cantidad_salida = cantidad
+                            
+                            movimiento_efectivo.save()
+                            
+        except Exception as e:
+            print(f"Error handling money breakdown: {e}")
+            print(traceback.format_exc())
+    
+    @staticmethod
+    def edit_movement(request):
+        """Edit an existing movement"""
+        try:
+            movimiento_id = request.POST.get('movimiento_id')
+            tipo_movimiento = request.POST.get('tipo_movimiento')
+            
+            if not movimiento_id or not tipo_movimiento:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'ID del movimiento y tipo son requeridos'
+                })
+            
+            # Find the movement based on type
+            movement = None
+            form = None
+            
+            if tipo_movimiento == 'caja':
+                # Try to find in both ingreso and gasto models
+                try:
+                    movement = MovimientoCajaIngreso.objects.get(id=movimiento_id)
+                    form = MovimientoCajaIngresoForm(request.POST, request.FILES, instance=movement)
+                except MovimientoCajaIngreso.DoesNotExist:
+                    try:
+                        movement = MovimientoCajaGasto.objects.get(id=movimiento_id)
+                        form = MovimientoCajaGastoForm(request.POST, request.FILES, instance=movement)
+                    except MovimientoCajaGasto.DoesNotExist:
+                        pass
+            elif tipo_movimiento == 'banco':
+                # Try to find in both ingreso and gasto models
+                try:
+                    movement = MovimientoBancoIngreso.objects.get(id=movimiento_id)
+                    form = MovimientoBancoIngresoForm(request.POST, request.FILES, instance=movement)
+                except MovimientoBancoIngreso.DoesNotExist:
+                    try:
+                        movement = MovimientoBancoGasto.objects.get(id=movimiento_id)
+                        form = MovimientoBancoGastoForm(request.POST, request.FILES, instance=movement)
+                    except MovimientoBancoGasto.DoesNotExist:
+                        pass
+            
+            if not movement or not form:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Movimiento no encontrado'
+                })
+            
+            if form.is_valid():
+                # Update the movement
+                updated_movement = form.save()
+                
+                # Handle money breakdown for cash movements
+                if tipo_movimiento == 'caja':
+                    # Clear existing money breakdown
+                    content_type = ContentType.objects.get_for_model(movement)
+                    MovimientoEfectivo.objects.filter(
+                        content_type=content_type,
+                        object_id=movement.id
+                    ).delete()
+                    
+                    # Create new breakdown
+                    MovementHandler._handle_money_breakdown(request, updated_movement)
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Movimiento actualizado correctamente'
+                })
+            else:
+                # Return form errors
+                errors = []
+                for field, field_errors in form.errors.items():
+                    for error in field_errors:
+                        errors.append(f"{field}: {error}")
+                
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Errores de validación: ' + '; '.join(errors)
+                })
+                
+        except Exception as e:
+            print(f"Error editing movement: {e}")
+            print(traceback.format_exc())
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno del servidor: {str(e)}'
+            })
     
     @staticmethod
     def delete_movement(request):
-        """
-        Deletes a movement.
-        
-        Args:
-            request: Django request object with movement ID and type
-            
-        Returns:
-            JsonResponse indicating success or failure
-        """
+        """Delete a movement"""
         try:
             movimiento_id = request.POST.get('movimiento_id')
-            tipo_movimiento = request.POST.get('tipo_movimiento', 'caja')
+            tipo_movimiento = request.POST.get('tipo_movimiento')
             
-            if tipo_movimiento == 'banco':
-                movimiento = get_object_or_404(MovimientoBanco, id=movimiento_id)
-            else:
-                movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
+            if not movimiento_id or not tipo_movimiento:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'ID del movimiento y tipo son requeridos'
+                })
             
-            movimiento.delete()
+            # Find and delete the movement
+            movement = None
+            
+            if tipo_movimiento == 'caja':
+                # Try to find in both ingreso and gasto models
+                try:
+                    movement = MovimientoCajaIngreso.objects.get(id=movimiento_id)
+                except MovimientoCajaIngreso.DoesNotExist:
+                    try:
+                        movement = MovimientoCajaGasto.objects.get(id=movimiento_id)
+                    except MovimientoCajaGasto.DoesNotExist:
+                        pass
+            elif tipo_movimiento == 'banco':
+                # Try to find in both ingreso and gasto models
+                try:
+                    movement = MovimientoBancoIngreso.objects.get(id=movimiento_id)
+                except MovimientoBancoIngreso.DoesNotExist:
+                    try:
+                        movement = MovimientoBancoGasto.objects.get(id=movimiento_id)
+                    except MovimientoBancoGasto.DoesNotExist:
+                        pass
+            
+            if not movement:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Movimiento no encontrado'
+                })
+            
+            # Delete the movement (related MovimientoEfectivo will be deleted by signals)
+            movement.delete()
+            
             return JsonResponse({
-                'success': True, 
+                'success': True,
                 'message': 'Movimiento eliminado correctamente'
             })
             
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-    
-    @staticmethod
-    def edit_movement(request):
-        """
-        Handles movement editing logic.
-        
-        Args:
-            request: Django request object with updated movement data
-            
-        Returns:
-            JsonResponse indicating success or failure
-        """
-        try:
-            movimiento_id = request.POST.get('movimiento_id')
-            tipo_movimiento = request.POST.get('tipo_movimiento', 'caja')
-            
-            # Get the existing movement
-            if tipo_movimiento == 'banco':
-                movimiento = get_object_or_404(MovimientoBanco, id=movimiento_id)
-            else:
-                movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
-            
-            # Store original values for saldo calculation
-            cantidad_original = movimiento.cantidad
-            
-            # Update basic fields
-            fecha_datetime = combine_date_time(
-                request.POST.get('fecha'),
-                request.POST.get('hora', '12:00')
-            )
-            cantidad_decimal = Decimal(str(request.POST.get('cantidad')))
-            
-            # Update common fields
-            movimiento.cantidad = cantidad_decimal
-            movimiento.fecha = fecha_datetime
-            movimiento.descripcion = request.POST.get('descripcion') or None
-            
-            # Update type-specific fields
-            if tipo_movimiento == 'banco':
-                MovementUpdater.update_bank_movement_fields(request, movimiento)
-            else:
-                MovementUpdater.update_cash_movement_fields(request, movimiento)
-            
-            # Validate and save
-            movimiento.full_clean()
-            movimiento.save()
-            
-            # Update saldos
-            MovementUpdater.update_saldos_after_edit(
-                movimiento, cantidad_original, tipo_movimiento, request
-            )
-            
+            print(f"Error deleting movement: {e}")
+            print(traceback.format_exc())
             return JsonResponse({
-                'success': True, 
-                'message': 'Movimiento actualizado correctamente'
+                'success': False,
+                'error': f'Error interno del servidor: {str(e)}'
             })
-            
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-
-
-class MovementCreator:
-    """Helper class for creating movements."""
-    
-    @staticmethod
-    def create_bank_movement(request, campamento, ejercicio, turno, concepto, cuenta_bancaria, via_movimiento_bancario, cantidad_decimal, fecha_datetime):
-        """Creates a bank movement"""
-
-        return MovimientoBanco(
-            campamento=campamento,
-            ejercicio=ejercicio,
-            turno=turno,
-            concepto=concepto,
-            cantidad=cantidad_decimal,
-            fecha=fecha_datetime,
-            descripcion=request.POST.get('descripcion') or None,
-            cuenta_bancaria=cuenta_bancaria,
-            via = via_movimiento_bancario,
-            referencia_bancaria=request.POST.get('referencia_bancaria'),
-            archivo_justificante=request.FILES.get('archivo_justificante_banco'),
-        )
-    
-    @staticmethod
-    def create_cash_movement(request, ejercicio, caja, turno, concepto, cantidad, fecha):
-        """
-        Creates a cash movement.
-        
-        Args:
-            request: Django request object
-            caja: Caja instance
-            concepto: Concepto instance
-            cantidad: Movement amount
-            fecha: Movement datetime
-            
-        Returns:
-            MovimientoCaja instance
-        """
-        movimiento = MovimientoCaja(
-            ejercicio=ejercicio,
-            caja=caja,
-            turno=turno,
-            concepto=concepto,
-            cantidad=cantidad,
-            fecha=fecha,
-            descripcion=request.POST.get('descripcion') or None
-        )
-        
-        # Handle justificante fields (only for gastos)
-        if concepto.es_gasto:
-            movimiento.justificante = request.POST.get('justificante') or None
-            if 'archivo_justificante' in request.FILES:
-                movimiento.archivo_justificante = request.FILES['archivo_justificante']
-        else:
-            movimiento.justificante = None
-            movimiento.archivo_justificante = None
-        
-        return movimiento
-    
-    @staticmethod
-    def process_money_breakdown(request, movimiento):
-        """
-        Processes money breakdown for cash movements.
-        """
-        desglose_form = DesgloseCajaForm(request.POST)
-        if desglose_form.is_valid():
-            movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
-            content_type = ContentType.objects.get_for_model(movimiento)
-            for mov_data in movimientos_dinero_data:
-                MovimientoEfectivo.objects.create(
-                    content_type=content_type,
-                    object_id=movimiento.id,
-                    denominacion=mov_data['denominacion'],
-                    cantidad_entrada=mov_data['cantidad_entrada'],
-                    cantidad_salida=mov_data['cantidad_salida'],
-                    creado_por=request.user
-                )
-
-
-class MovementUpdater:
-    """Helper class for updating movements."""
-    
-    @staticmethod
-    def update_bank_movement_fields(request, movimiento):
-        """
-        Updates bank-specific movement fields.
-        
-        Args:
-            request: Django request object
-            movimiento: MovimientoBanco instance
-        """
-        movimiento.referencia_bancaria = request.POST.get('referencia_bancaria') or None
-        
-        if 'archivo_justificante_banco' in request.FILES:
-            if movimiento.archivo_justificante:
-                movimiento.archivo_justificante.delete()
-            movimiento.archivo_justificante = request.FILES['archivo_justificante_banco']
-    
-    @staticmethod
-    def update_cash_movement_fields(request, movimiento):
-        """
-        Updates cash-specific movement fields.
-        
-        Args:
-            request: Django request object
-            movimiento: MovimientoCaja instance
-        """
         movimiento.turno_id = request.POST.get('turno')
         
         if movimiento.concepto.es_gasto:
@@ -297,22 +306,6 @@ class MovementUpdater:
             if movimiento.archivo_justificante:
                 movimiento.archivo_justificante.delete()
                 movimiento.archivo_justificante = None
-    
-    @staticmethod
-    def update_saldos_after_edit(movimiento, cantidad_original, tipo_movimiento, request):
-        """
-        Updates saldos after movement edit.
-        
-        Args:
-            movimiento: Movement instance
-            cantidad_original: Original movement amount
-            tipo_movimiento: Type of movement ('caja' or 'banco')
-            request: Django request object
-        """
-        if tipo_movimiento == 'banco':
-            MovementUpdater._update_bank_saldo(movimiento, cantidad_original)
-        else:
-            MovementUpdater._update_cash_movement_breakdown(movimiento, request)
     
     @staticmethod
     def _update_bank_saldo(movimiento, cantidad_original):
@@ -365,4 +358,4 @@ class MovementUpdater:
         movimiento.caja.recalcular_saldo_caja()
         movimiento.caja.recalcular_saldo_caja()
         raise ValidationError('El desglose de dinero es inválido o está incompleto')
-        
+

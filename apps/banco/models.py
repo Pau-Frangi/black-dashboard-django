@@ -158,15 +158,6 @@ class MovimientoBancoIngreso(MovimientoBanco):
         related_name="movimientos_banco_ingreso"
     )
     
-    cuenta_bancaria = models.ForeignKey(
-        CuentaBancaria,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        verbose_name="Cuenta Bancaria",
-        related_name="movimientos_banco_ingreso"
-    )
-    
     turno = models.ForeignKey(
         Turno,
         on_delete=models.CASCADE,

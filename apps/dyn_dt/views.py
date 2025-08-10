@@ -20,6 +20,10 @@ from apps.dyn_dt.models import Concepto, Turno, Ejercicio, Campamento
 from apps.caja.models import Caja, DenominacionEuro, MovimientoEfectivo, MovimientoCajaIngreso, MovimientoCajaGasto, MovimientoCajaDeposito, MovimientoCajaRetirada, MovimientoCajaTransferencia
 from apps.banco.models import CuentaBancaria, ViaMovimientoBanco, MovimientoBancoGasto, MovimientoBancoIngreso
 
+# Import forms for template context
+from apps.caja.forms import MovimientoCajaIngresoForm, MovimientoCajaGastoForm
+from apps.banco.forms import MovimientoBancoIngresoForm, MovimientoBancoGastoForm
+
 # ================================
 # MAIN APPLICATION VIEWS
 # ================================
@@ -455,6 +459,12 @@ def _get_registro_context():
     if not default_ejercicio and ejercicios.exists():
         default_ejercicio = ejercicios.first()  # Already ordered by -año
     
+    # Initialize forms for template use
+    caja_ingreso_form = MovimientoCajaIngresoForm()
+    caja_gasto_form = MovimientoCajaGastoForm()
+    banco_ingreso_form = MovimientoBancoIngresoForm()
+    banco_gasto_form = MovimientoBancoGastoForm()
+    
     return {
         'campamentos': campamentos,
         'default_campamento_id': default_campamento.id if default_campamento else None,
@@ -463,6 +473,13 @@ def _get_registro_context():
         'conceptos': Concepto.objects.all(),
         'denominaciones': DenominacionEuro.objects.filter(activa=True).order_by('-valor'),
         'default_ejercicio_id': default_ejercicio.id if default_ejercicio else None,
+        'cuentas_bancarias': CuentaBancaria.objects.filter(activo=True).order_by('nombre'),
+        'vias_movimiento': ViaMovimientoBanco.objects.all().order_by('nombre'),
+        # Add forms to context
+        'caja_ingreso_form': caja_ingreso_form,
+        'caja_gasto_form': caja_gasto_form,
+        'banco_ingreso_form': banco_ingreso_form,
+        'banco_gasto_form': banco_gasto_form,
         'segment': 'registro'
     }
 

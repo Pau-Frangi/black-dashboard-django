@@ -35,9 +35,19 @@ class ViaMovimientoBancoForm(forms.ModelForm):
 
 
 class MovimientoBancoIngresoForm(forms.ModelForm):
+    # Add custom field for combined date and time handling
+    fecha = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        required=True
+    )
+    hora = forms.TimeField(
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+        required=True
+    )
+
     class Meta:
         model = MovimientoBancoIngreso
-        fields = ['ejercicio', 'campamento', 'cuenta_bancaria', 'via', 'turno', 'concepto', 'importe', 'descripcion', 'referencia_bancaria', 'archivo', 'fecha']
+        fields = ['ejercicio', 'campamento', 'cuenta_bancaria', 'via', 'turno', 'concepto', 'importe', 'descripcion', 'referencia_bancaria', 'archivo']
         widgets = {
             'ejercicio': forms.Select(attrs={'class': 'form-control'}),
             'campamento': forms.Select(attrs={'class': 'form-control'}),
@@ -49,7 +59,6 @@ class MovimientoBancoIngresoForm(forms.ModelForm):
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'referencia_bancaria': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Referencia bancaria (opcional)'}),
             'archivo': forms.FileInput(attrs={'class': 'form-control'}),
-            'fecha': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -59,11 +68,33 @@ class MovimientoBancoIngresoForm(forms.ModelForm):
         # Filter cuenta_bancaria to show only active ones
         self.fields['cuenta_bancaria'].queryset = CuentaBancaria.objects.filter(activo=True)
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Combine fecha and hora into datetime
+        from datetime import datetime, time
+        fecha = self.cleaned_data['fecha']
+        hora = self.cleaned_data['hora']
+        instance.fecha = datetime.combine(fecha, hora)
+        
+        if commit:
+            instance.save()
+        return instance
+
 
 class MovimientoBancoGastoForm(forms.ModelForm):
+    # Add custom field for combined date and time handling
+    fecha = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        required=True
+    )
+    hora = forms.TimeField(
+        widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+        required=True
+    )
+
     class Meta:
         model = MovimientoBancoGasto
-        fields = ['ejercicio', 'campamento', 'cuenta_bancaria', 'turno', 'concepto', 'importe', 'descripcion', 'referencia_bancaria', 'archivo', 'fecha']
+        fields = ['ejercicio', 'campamento', 'cuenta_bancaria', 'turno', 'concepto', 'importe', 'descripcion', 'referencia_bancaria', 'archivo']
         widgets = {
             'ejercicio': forms.Select(attrs={'class': 'form-control'}),
             'campamento': forms.Select(attrs={'class': 'form-control'}),
@@ -74,7 +105,6 @@ class MovimientoBancoGastoForm(forms.ModelForm):
             'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'referencia_bancaria': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Referencia bancaria (opcional)'}),
             'archivo': forms.FileInput(attrs={'class': 'form-control'}),
-            'fecha': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -83,6 +113,18 @@ class MovimientoBancoGastoForm(forms.ModelForm):
         self.fields['concepto'].queryset = Concepto.objects.filter(es_gasto=True)
         # Filter cuenta_bancaria to show only active ones
         self.fields['cuenta_bancaria'].queryset = CuentaBancaria.objects.filter(activo=True)
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Combine fecha and hora into datetime
+        from datetime import datetime, time
+        fecha = self.cleaned_data['fecha']
+        hora = self.cleaned_data['hora']
+        instance.fecha = datetime.combine(fecha, hora)
+        
+        if commit:
+            instance.save()
+        return instance
 
 
 # Filter forms for admin or list views
