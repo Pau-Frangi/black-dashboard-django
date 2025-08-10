@@ -641,7 +641,7 @@ class MovimientoEfectivo(UserTrackedModel, models.Model):
 
     def importe_neto(self):
         """Calcula el importe neto del movimiento"""
-        return self.importe_neto() * self.denominacion.valor
+        return self.cantidad_neta() * self.denominacion.valor
 
     def __str__(self):
         return f"{self.movimiento_caja} - {self.denominacion}: +{self.cantidad_entrada}/-{self.cantidad_salida}"

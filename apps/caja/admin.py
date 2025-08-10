@@ -207,13 +207,13 @@ class DenominacionEuroAdmin(admin.ModelAdmin):
 @admin.register(MovimientoEfectivo)
 class MovimientoEfectivoAdmin(admin.ModelAdmin):
     list_display = (
-        'get_movimiento_caja_display',  # Use a method instead of the GenericForeignKey
+        'get_movimiento_caja_display',
         'denominacion', 'cantidad_entrada', 'cantidad_salida',
-        'cantidad_neta', 'importe_neto', 'creado_por', 'creado_en',
+        'cantidad_neta_display', 'importe_neto_display', 'creado_por', 'creado_en',
     )
     list_filter = ('denominacion__es_billete', 'denominacion')
     ordering = ('-creado_en',)
-    readonly_fields = ('cantidad_neta', 'importe_neto', 'creado_por', 'creado_en', 'modificado_por', 'modificado_en')
+    readonly_fields = ('cantidad_neta_display', 'importe_neto_display', 'creado_por', 'creado_en', 'modificado_por', 'modificado_en')
 
     def get_movimiento_caja_display(self, obj):
         # Return a string representation of the related object
@@ -221,6 +221,16 @@ class MovimientoEfectivoAdmin(admin.ModelAdmin):
             return str(obj.movimiento_caja)
         return "-"
     get_movimiento_caja_display.short_description = "Movimiento Caja"
+
+    def cantidad_neta_display(self, obj):
+        """Display method for cantidad_neta to avoid recursion issues"""
+        return obj.cantidad_neta()
+    cantidad_neta_display.short_description = "Cantidad Neta"
+
+    def importe_neto_display(self, obj):
+        """Display method for importe_neto to avoid recursion issues"""
+        return f"{obj.importe_neto():.2f}€"
+    importe_neto_display.short_description = "Importe Neto"
 
     def save_model(self, request, obj, form, change):
         obj.save(user=request.user)
