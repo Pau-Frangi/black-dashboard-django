@@ -11,6 +11,9 @@ from apps.caja.models import *
 from apps.banco.models import *
 from apps.dyn_dt.utils import combine_date_time
 from django.contrib.contenttypes.models import ContentType
+from apps.caja.forms import DesgloseCajaForm, MovimientoCajaGastoForm, MovimientoCajaIngresoForm
+from apps.banco.forms import MovimientoBancoIngresoForm, MovimientoBancoGastoForm
+
 
 
 
@@ -237,12 +240,12 @@ class MovementCreator:
         """
         Processes money breakdown for cash movements.
         """
-        desglose_form = DesgloseDineroForm(request.POST)
+        desglose_form = DesgloseCajaForm(request.POST)
         if desglose_form.is_valid():
             movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
             content_type = ContentType.objects.get_for_model(movimiento)
             for mov_data in movimientos_dinero_data:
-                MovimientoDinero.objects.create(
+                MovimientoEfectivo.objects.create(
                     content_type=content_type,
                     object_id=movimiento.id,
                     denominacion=mov_data['denominacion'],
@@ -342,12 +345,12 @@ class MovementUpdater:
         movimiento.movimientos_dinero.all().delete()
         
         # Create new MovimientoDinero records
-        desglose_form = DesgloseDineroForm(request.POST)
+        desglose_form = DesgloseCajaForm(request.POST)
         if desglose_form.is_valid():
             movimientos_dinero_data = desglose_form.get_movimientos_dinero_data()
             content_type = ContentType.objects.get_for_model(movimiento)
             for mov_data in movimientos_dinero_data:
-                MovimientoDinero.objects.create(
+                MovimientoEfectivo.objects.create(
                     content_type=content_type,
                     object_id=movimiento.id,
                     denominacion=mov_data['denominacion'],
