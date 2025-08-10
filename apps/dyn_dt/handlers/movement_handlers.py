@@ -22,6 +22,9 @@ class MovementHandler:
             canal_movimiento = request.POST.get('canal_movimiento')
             concepto_id = request.POST.get('concepto_id') or request.POST.get('concepto')
             
+            print(f"DEBUG: canal_movimiento={canal_movimiento}, concepto_id={concepto_id}")
+            print(f"DEBUG: All POST data: {dict(request.POST)}")
+            
             if not canal_movimiento or not concepto_id:
                 return JsonResponse({
                     'success': False, 
@@ -47,6 +50,14 @@ class MovementHandler:
             if 'concepto_id' in post_data:
                 del post_data['concepto_id']
             
+            # Ensure ejercicio and campamento are properly set
+            if 'ejercicio_id' in post_data:
+                post_data['ejercicio'] = post_data['ejercicio_id']
+            if 'campamento_id' in post_data:
+                post_data['campamento'] = post_data['campamento_id']
+            
+            print(f"DEBUG: Fixed POST data: {dict(post_data)}")
+            
             # Select appropriate form based on canal_movimiento and es_gasto
             if canal_movimiento == 'caja':
                 if es_gasto:
@@ -67,6 +78,8 @@ class MovementHandler:
                     'success': False, 
                     'error': 'Canal de movimiento no válido'
                 })
+            
+            print(f"DEBUG: Form errors: {form.errors}")
             
             if form.is_valid():
                 # Create the movement instance but don't save yet

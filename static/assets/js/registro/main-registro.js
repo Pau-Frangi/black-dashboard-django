@@ -321,9 +321,6 @@ function setupEventListeners() {
         }
         console.log('Concepto ID seleccionado:', conceptoId);
 
-        // Add the concepto_id to the form data
-        formData.append('concepto_id', conceptoId);
-
         // Verificar que se ha introducido un importe
         const importe = $('#importe').val();
         if (!importe || isNaN(importe) || parseFloat(importe) <= 0) {
@@ -331,6 +328,12 @@ function setupEventListeners() {
             return;
         }
         console.log('Importe introducido:', importe);
+        
+        // Create FormData object to handle file upload - INITIALIZE EARLY
+        const formData = new FormData(this);
+        
+        // Add the concepto_id to the form data
+        formData.append('concepto_id', conceptoId);
         
         // Validación específica según el canal de movimiento
         if (canalMovimiento === 'caja') {
@@ -351,7 +354,7 @@ function setupEventListeners() {
             console.log('Desglose de caja validado correctamente');
             
             // Asegurar que el caja_id esté establecido en el formulario
-            $('#cajaIdInput').val(cajaId);
+            formData.set('caja', cajaId);
             console.log('Caja ID:', cajaId);
             
         } else if (canalMovimiento === 'banco') {
@@ -368,12 +371,13 @@ function setupEventListeners() {
                 showWarning('Por favor selecciona una vía de movimiento bancario', {floating: true});
                 return;
             }
+            console.log('Vía de movimiento bancario seleccionada:', viaMovimientoBancarioId);
 
+            // Ensure the via field is properly set in formData
+            formData.set('via', viaMovimientoBancarioId);
+            
             console.log('Datos bancarios validados correctamente');
         }
-        
-        // Create FormData object to handle file upload
-        const formData = new FormData(this);
         
         // Determine action based on editing state
         if (editingMovimiento) {
@@ -386,8 +390,15 @@ function setupEventListeners() {
         
         formData.append('canal_movimiento', canalMovimiento);
         formData.append('campamento_id', campamento_id);
+        formData.append('ejercicio_id', ejercicioId);
 
         console.log('Datos del formulario preparados para enviar');
+        
+        // Debug: Log formData contents
+        console.log('FormData contents:');
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
         
         $.ajax({
             url: window.registroUrl || '/registro/',
