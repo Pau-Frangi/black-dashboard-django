@@ -1,255 +1,340 @@
 """
-AJAX request handlers for the dynamic datatables application.
+AJAX request handlers for the registro application
 """
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from apps.dyn_dt.models import *
-from apps.caja.models import *
-from apps.banco.models import *
-from apps.dyn_dt.utils import format_movement_data, calculate_movements_summary
-from apps.caja.ajax_views import (
-    get_movimientos_caja_ingresos_data, 
-    get_movimientos_caja_gastos_data,
-    get_movimientos_caja_depositos_data,
-    get_movimientos_caja_retiradas_data,
-    get_movimientos_caja_transferencias_data
-)
-from apps.banco.ajax_views import (
-    get_movimientos_banco_ingreso_data,
-    get_movimientos_banco_gasto_data
-)
+from apps.caja.models import Caja, DesgloseCaja, MovimientoEfectivo
+from apps.banco.models import CuentaBancaria, ViaMovimientoBanco
+from apps.dyn_dt.models import Turno, Ejercicio, Campamento
+from django.contrib.contenttypes.models import ContentType
+
 
 class RegistroAjaxHandler:
-    """Handles AJAX requests for the registro view."""
+    """Handler for new ejercicio-based AJAX requests"""
     
     @staticmethod
     def handle_get_ejercicio_movimientos(request):
-        """
-        Returns all movements for a specific ejercicio (both cash and bank).
-        
-        Args:
-            request: Django request object with ejercicio_id parameter
-            
-        Returns:
-            JsonResponse with movements data and summary
-        """
-        
+        """Handle ejercicio movements request"""
         ejercicio_id = request.GET.get('ejercicio_id')
         campamento_id = request.GET.get('campamento_id')
-
+        
         if not ejercicio_id or not campamento_id:
-            return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio o un campamento'})
-
+            return JsonResponse({
+                'success': False,
+                'error': 'Ejercicio ID y Campamento ID son requeridos'
+            })
+        
         try:
+            from apps.caja.models import MovimientoCajaIngreso, MovimientoCajaGasto
+            from apps.banco.models import MovimientoBancoIngreso, MovimientoBancoGasto
             
             ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+            campamento = Campamento.objects.get(id=campamento_id)
             
-            movimientos_caja_ingresos = get_movimientos_caja_ingresos_data(request)
-            movimientos_caja_gastos = get_movimientos_caja_gastos_data(request)
-            movimientos_caja_depositos = get_movimientos_caja_depositos_data(request)
-            movimientos_caja_retiradas = get_movimientos_caja_retiradas_data(request)
-            movimientos_caja_transferencias = get_movimientos_caja_transferencias_data(request)
+            # Get all movements for this ejercicio and campamento
+            movimientos_caja_ingreso = MovimientoCajaIngreso.objects.filter(
+                ejercicio=ejercicio, 
+                caja__campamento=campamento
+            ).select_related('caja', 'turno', 'concepto')
             
-            movimientos_banco_ingresos = get_movimientos_banco_ingreso_data(request)
-            movimientos_banco_gastos = get_movimientos_banco_gasto_data(request)
+            movimientos_caja_gasto = MovimientoCajaGasto.objects.filter(
+                ejercicio=ejercicio, 
+                caja__campamento=campamento
+            ).select_related('caja', 'turno', 'concepto')
             
-            movimientos_data = []
-            movimientos_data.extend(movimientos_caja_ingresos)
-            movimientos_data.extend(movimientos_caja_gastos)
-            movimientos_data.extend(movimientos_caja_depositos)
-            movimientos_data.extend(movimientos_caja_retiradas)
-            movimientos_data.extend(movimientos_caja_transferencias)
-            movimientos_data.extend(movimientos_banco_ingresos)
-            movimientos_data.extend(movimientos_banco_gastos)
-
-            order_by = request.GET.get("order_by") or "fecha"
-            reverse_order = order_by.startswith('-')
-            if reverse_order:
-                order_by = order_by[1:]
+            movimientos_banco_ingreso = MovimientoBancoIngreso.objects.filter(
+                ejercicio=ejercicio,
+                campamento=campamento
+            ).select_related('cuenta_bancaria', 'via', 'turno', 'concepto')
             
-            movimientos_data.sort(key=lambda x: x.get(order_by, ''), reverse=reverse_order)
-
-            resumen = calculate_movements_summary(movimientos_data)
-            resumen['saldo_actual'] = float(ejercicio.saldo_total)
-
+            movimientos_banco_gasto = MovimientoBancoGasto.objects.filter(
+                ejercicio=ejercicio,
+                campamento=campamento
+            ).select_related('cuenta_bancaria', 'turno', 'concepto')
+            
+            # Serialize all movements
+            all_movimientos = []
+            
+            # Add cash movements
+            for mov in movimientos_caja_ingreso:
+                data = mov.serializar()
+                data['tipo'] = 'caja'
+                data['es_gasto'] = False
+                all_movimientos.append(data)
+                
+            for mov in movimientos_caja_gasto:
+                data = mov.serializar()
+                data['tipo'] = 'caja'
+                data['es_gasto'] = True
+                all_movimientos.append(data)
+            
+            # Add bank movements
+            for mov in movimientos_banco_ingreso:
+                data = mov.serializar()
+                data['tipo'] = 'banco'
+                data['es_gasto'] = False
+                all_movimientos.append(data)
+                
+            for mov in movimientos_banco_gasto:
+                data = mov.serializar()
+                data['tipo'] = 'banco'
+                data['es_gasto'] = True
+                all_movimientos.append(data)
+            
+            # Calculate totals
+            total_ingresos = sum(mov['importe'] for mov in all_movimientos if not mov['es_gasto'])
+            total_gastos = sum(mov['importe'] for mov in all_movimientos if mov['es_gasto'])
+            saldo_actual = total_ingresos - total_gastos
+            
+            resumen = {
+                'total_ingresos': float(total_ingresos),
+                'total_gastos': float(total_gastos),
+                'saldo_actual': float(saldo_actual)
+            }
+            
             return JsonResponse({
                 'success': True,
-                'movimientos': movimientos_data,
-                'resumen': resumen,
                 'ejercicio': {
                     'id': ejercicio.id,
                     'nombre': ejercicio.nombre,
-                    'año': ejercicio.año,
-                    'saldo_total': float(ejercicio.saldo_total)
-                }
+                    'año': ejercicio.año
+                },
+                'movimientos': all_movimientos,
+                'resumen': resumen
             })
-
+            
+        except (Ejercicio.DoesNotExist, Campamento.DoesNotExist):
+            return JsonResponse({
+                'success': False,
+                'error': 'Ejercicio o Campamento no encontrado'
+            })
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            print(f"Error in handle_get_ejercicio_movimientos: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno: {str(e)}'
+            })
     
     @staticmethod
     def handle_get_turnos(request):
-        """
-        Returns turnos for a specific ejercicio.
-        
-        Args:
-            request: Django request object with ejercicio_id parameter
-            
-        Returns:
-            JsonResponse with turnos list
-        """
+        """Handle turnos request for a specific ejercicio"""
         ejercicio_id = request.GET.get('ejercicio_id')
-        if not ejercicio_id:
-            return JsonResponse({'success': False, 'error': 'No se especificó un ejercicio'})
+        campamento_id = request.GET.get('campamento_id')
         
-        turnos = Turno.objects.filter(ejercicio_id=ejercicio_id).values('id', 'nombre')
-        return JsonResponse({
-            'success': True,
-            'turnos': list(turnos)
-        })
+        if not ejercicio_id or not campamento_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Ejercicio ID y Campamento ID son requeridos'
+            })
+        
+        try:
+            ejercicio = Ejercicio.objects.get(id=ejercicio_id)
+            campamento = Campamento.objects.get(id=campamento_id)
+            
+            # Get turnos for this ejercicio and campamento
+            turnos = ejercicio.turnos.filter(campamento=campamento).order_by('nombre')
+            
+            turnos_data = [{
+                'id': turno.id,
+                'nombre': turno.nombre
+            } for turno in turnos]
+            
+            return JsonResponse({
+                'success': True,
+                'turnos': turnos_data
+            })
+            
+        except (Ejercicio.DoesNotExist, Campamento.DoesNotExist):
+            return JsonResponse({
+                'success': False,
+                'error': 'Ejercicio o Campamento no encontrado'
+            })
+        except Exception as e:
+            print(f"Error in handle_get_turnos: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno: {str(e)}'
+            })
     
     @staticmethod
     def handle_get_cajas(request):
-        """
-        Returns list of cajas
-        
-        Args:
-            request: Django request object with ejercicio_id parameter
-            
-        Returns:
-            JsonResponse with cajas list
-        """
-        
+        """Handle cajas request for a specific campamento"""
         campamento_id = request.GET.get('campamento_id')
-        campamento = get_object_or_404(Campamento, id=campamento_id) 
-
-        cajas = Caja.objects.filter(campamento=campamento).values('id', 'nombre', 'saldo_caja', 'activa')
-
-        return JsonResponse({
-            'success': True,
-            'cajas': list(cajas)
-        })
+        
+        if not campamento_id:
+            return JsonResponse({
+                'success': False,
+                'error': 'Campamento ID es requerido'
+            })
+        
+        try:
+            campamento = Campamento.objects.get(id=campamento_id)
+            
+            # Get cajas for this campamento
+            cajas = Caja.objects.filter(campamento=campamento).order_by('nombre')
+            
+            cajas_data = [{
+                'id': caja.id,
+                'nombre': caja.nombre,
+                'activa': caja.activa,
+                'saldo_caja': float(caja.saldo_caja)
+            } for caja in cajas]
+            
+            return JsonResponse({
+                'success': True,
+                'cajas': cajas_data
+            })
+            
+        except Campamento.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Campamento no encontrado'
+            })
+        except Exception as e:
+            print(f"Error in handle_get_cajas: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno: {str(e)}'
+            })
     
     @staticmethod
     def handle_get_movimiento_desglose(request):
-        """
-        Returns money breakdown for a specific movement.
-        
-        Args:
-            request: Django request object with movimiento_id parameter
-            
-        Returns:
-            JsonResponse with desglose data
-        """
+        """Handle movement breakdown request"""
         movimiento_id = request.GET.get('movimiento_id')
+        
         if not movimiento_id:
-            return JsonResponse({'success': False, 'error': 'No se especificó un movimiento'})
+            return JsonResponse({
+                'success': False,
+                'error': 'Movimiento ID es requerido'
+            })
         
         try:
-            movimiento = get_object_or_404(MovimientoCaja, id=movimiento_id)
+            # Try to find the movement in both ingreso and gasto models
+            from apps.caja.models import MovimientoCajaIngreso, MovimientoCajaGasto
             
-            # Get the money breakdown for this movement
-            desglose_data = {}
-            for mov_dinero in movimiento.movimientos_dinero.all():
-                desglose_data[mov_dinero.denominacion.id] = {
-                    'cantidad_entrada': mov_dinero.cantidad_entrada,
-                    'cantidad_salida': mov_dinero.cantidad_salida,
-                    'cantidad_neta': mov_dinero.cantidad_neta(),
-                    'valor': float(mov_dinero.denominacion.valor),
-                    'valor_neto': float(mov_dinero.valor_neto())
+            movimiento = None
+            try:
+                movimiento = MovimientoCajaIngreso.objects.get(id=movimiento_id)
+                content_type = ContentType.objects.get_for_model(MovimientoCajaIngreso)
+            except MovimientoCajaIngreso.DoesNotExist:
+                try:
+                    movimiento = MovimientoCajaGasto.objects.get(id=movimiento_id)
+                    content_type = ContentType.objects.get_for_model(MovimientoCajaGasto)
+                except MovimientoCajaGasto.DoesNotExist:
+                    pass
+            
+            if not movimiento:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Movimiento no encontrado'
+                })
+            
+            # Get movement breakdown
+            movimientos_efectivo = MovimientoEfectivo.objects.filter(
+                content_type=content_type,
+                object_id=movimiento.id
+            ).select_related('denominacion')
+            
+            desglose = {}
+            for mov_efectivo in movimientos_efectivo:
+                desglose[str(mov_efectivo.denominacion.id)] = {
+                    'cantidad_entrada': mov_efectivo.cantidad_entrada,
+                    'cantidad_salida': mov_efectivo.cantidad_salida
                 }
             
             return JsonResponse({
                 'success': True,
-                'desglose': desglose_data
+                'desglose': desglose
             })
             
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-        
-        
+            print(f"Error in handle_get_movimiento_desglose: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno: {str(e)}'
+            })
+    
     @staticmethod
     def handle_get_cuentas_vias(request):
-        """
-        Devuelve una lista de cuentas bancarias y una lista de vías de movimiento bancario.
-        Args:
-            request: Django request object
-        Returns:
-            JsonResponse with cuentas and vias data
-        """
-        cuentas = CuentaBancaria.objects.filter(activo=True).values('id', 'nombre', 'titular', 'IBAN', 'activo')
-        vias = ViaMovimientoBanco.objects.all().values('id', 'nombre')
-
-        return JsonResponse({
-            'success': True,
-            'cuentas': list(cuentas),
-            'vias': list(vias)
-        })
+        """Handle cuentas and vias request"""
+        try:
+            cuentas = CuentaBancaria.objects.filter(activo=True).order_by('nombre')
+            vias = ViaMovimientoBanco.objects.all().order_by('nombre')
+            
+            cuentas_data = [{
+                'id': cuenta.id,
+                'nombre': cuenta.nombre,
+                'IBAN': cuenta.IBAN
+            } for cuenta in cuentas]
+            
+            vias_data = [{
+                'id': via.id,
+                'nombre': via.nombre
+            } for via in vias]
+            
+            return JsonResponse({
+                'success': True,
+                'cuentas': cuentas_data,
+                'vias': vias_data
+            })
+            
+        except Exception as e:
+            print(f"Error in handle_get_cuentas_vias: {e}")
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno: {str(e)}'
+            })
 
 
 class LegacyAjaxHandler:
-    """Handles legacy AJAX requests for backward compatibility."""
+    """Handler for legacy caja-specific requests"""
     
     @staticmethod
     def handle_legacy_caja_request(request):
-        """
-        Handles legacy AJAX requests that are caja-specific.
-        
-        Args:
-            request: Django request object with caja_id parameter
-            
-        Returns:
-            JsonResponse with caja movements and breakdown
-        """
+        """Handle legacy caja requests for backward compatibility"""
         caja_id = request.GET.get('caja_id')
         ejercicio_id = request.GET.get('ejercicio_id')
+        
         if not caja_id:
-            return JsonResponse({'success': False, 'error': 'No se especificó una caja'})
+            return JsonResponse({
+                'success': False,
+                'error': 'Caja ID es requerido para solicitudes legacy'
+            })
         
         try:
-            caja = get_object_or_404(Caja, id=caja_id)
-            ejercicio = get_object_or_404(Ejercicio, id=ejercicio_id)
+            caja = Caja.objects.get(id=caja_id)
             
-            # Get movements for this caja and its ejercicio
-            movimientos_caja = MovimientoCaja.objects.filter(caja=caja, ejercicio=ejercicio).order_by('-id')
-            movimientos_banco = MovimientoBanco.objects.filter(
-                ejercicio=ejercicio
-            ).order_by('-id')
-            
-            # Format movements data
-            movimientos_data = []
-            
-            for mov in movimientos_caja:
-                movimientos_data.append(format_movement_data(mov, 'caja'))
-            
-            for mov in movimientos_banco:
-                movimientos_data.append(format_movement_data(mov, 'banco'))
-            
-            # Sort by date (most recent first)
-            movimientos_data.sort(key=lambda x: x['datetime_iso'], reverse=True)
-            
-            # Calculate summary
-            all_movimientos = list(movimientos_caja) + list(movimientos_banco)
-            resumen = calculate_movements_summary(all_movimientos)
-            resumen['saldo_actual'] = float(caja.saldo_caja)
-            
-            # Get current money breakdown
+            # Get current breakdown for the caja
             desglose_actual = {}
-            for desglose in caja.obtener_desglose_actual():
-                desglose_actual[desglose.denominacion.id] = {
+            desgloses = DesgloseCaja.objects.filter(caja=caja).select_related('denominacion')
+            
+            for desglose in desgloses:
+                desglose_actual[str(desglose.denominacion.id)] = {
                     'cantidad': desglose.cantidad,
                     'valor': float(desglose.denominacion.valor),
-                    'valor_total': float(desglose.valor_total())
+                    'es_billete': desglose.denominacion.es_billete
                 }
             
             return JsonResponse({
                 'success': True,
-                'movimientos': movimientos_data,
-                'resumen': resumen,
                 'desglose_actual': desglose_actual
             })
             
+        except Caja.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Caja no encontrada'
+            })
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            print(f"Error in handle_legacy_caja_request: {e}")
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno: {str(e)}'
+            })

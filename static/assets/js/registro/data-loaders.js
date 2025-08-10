@@ -129,6 +129,7 @@ function loadCajasForCampamento() {
             'campamento_id': campamento_id,
         },
         success: function(data) {
+            console.log('Respuesta cajas:', data);
             if (data.success) {
                 // Initialize cajaSelect first
                 const cajaSelect = $('#cajaSelect');
@@ -144,13 +145,16 @@ function loadCajasForCampamento() {
                 });
 
                 console.log('Cajas cargadas:', data.cajas.length);
+                showSuccess(`${data.cajas.length} cajas cargadas correctamente`);
             } else {
+                console.error('Error al cargar cajas:', data.error);
                 showError('Error al cargar las cajas: ' + data.error);
             }
         },
         error: function(xhr, status, error) {
-            console.error('Error loading cajas:', error);
-            showError('Error al cargar las cajas');
+            console.error('Error AJAX loading cajas:', error);
+            console.error('Response text:', xhr.responseText);
+            showError('Error al cargar las cajas: ' + error);
         }
     });
 }
@@ -194,7 +198,7 @@ function loadTurnosForEjercicio(ejercicioId, callback) {
 }
 
 function loadCajaMoneyBreakdown(cajaId, ejercicioId) {
-    console.log('Cargando desglose de caja para ID:', cajaId);
+    console.log('Cargando desglose de caja para ID:', cajaId, 'Ejercicio:', ejercicioId);
     
     $.ajax({
         url: window.registroUrl || '/registro/',
@@ -205,6 +209,7 @@ function loadCajaMoneyBreakdown(cajaId, ejercicioId) {
             'ejercicio_id': ejercicioId,
         },
         success: function(data) {
+            console.log('Respuesta desglose caja:', data);
             if (data.success && data.desglose_actual) {
                 console.log('Desglose de caja cargado:', data.desglose_actual);
                 
@@ -226,8 +231,9 @@ function loadCajaMoneyBreakdown(cajaId, ejercicioId) {
             }
         },
         error: function(xhr, status, error) {
-            console.error('Error loading caja money breakdown:', error);
-            showError('Error al cargar el desglose de la caja');
+            console.error('Error AJAX loading caja money breakdown:', error);
+            console.error('Response text:', xhr.responseText);
+            showError('Error al cargar el desglose de la caja: ' + error);
             // Hide breakdown section if error
             $('#desgloseDineroSection').hide();
         }

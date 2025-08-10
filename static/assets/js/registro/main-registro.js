@@ -260,9 +260,9 @@ function setupEventListeners() {
         const ejercicio_id = $('#ejercicioSelect').val();
         const canalMovimiento = $('#canal_movimiento').val();
         
-        console.log('Caja seleccionada:', cajaId, 'Canal movimiento:', canalMovimiento);
+        console.log('Caja seleccionada:', cajaId, 'Canal movimiento:', canalMovimiento, 'Ejercicio:', ejercicio_id);
         
-        if (cajaId && canalMovimiento === 'caja') {
+        if (cajaId && canalMovimiento === 'caja' && ejercicio_id) {
             // Load money breakdown data for the selected caja and show the desglose section
             loadCajaMoneyBreakdown(cajaId, ejercicio_id);
         } else if (canalMovimiento === 'caja') {
@@ -271,6 +271,13 @@ function setupEventListeners() {
             // Reset available quantities display
             $('.available-quantity .quantity-text').text('Disponible: --');
             $('.available-quantity').removeClass('has-available no-available');
+            
+            if (!cajaId) {
+                console.log('No hay caja seleccionada');
+            }
+            if (!ejercicio_id) {
+                console.log('No hay ejercicio seleccionado');
+            }
         }
     });
 
