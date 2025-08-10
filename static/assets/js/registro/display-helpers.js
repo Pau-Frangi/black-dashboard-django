@@ -91,7 +91,6 @@ function displayMovimientos(movimientos) {
                 <td class="${importeClass}">
                     <strong>${importeSign}${mov.importe}€</strong>
                 </td>
-                <td>${mov.justificante || '-'}</td>
                 <td>
                     <div class="btn-group" role="group">
                         <button class="btn btn-sm btn-outline-primary" onclick="editMovimiento(${mov.id}, '${canalMovimiento}')" title="Editar movimiento">
