@@ -75,6 +75,11 @@ class MovimientoCajaIngresoForm(UserTrackedModelForm):
         super().__init__(*args, **kwargs)
         # Filter conceptos to show only those that are not gastos
         self.fields['concepto'].queryset = Concepto.objects.filter(es_gasto=False)
+        
+        # Populate fecha and hora fields from instance when editing
+        if self.instance and self.instance.pk and hasattr(self.instance, 'fecha') and self.instance.fecha:
+            self.fields['fecha'].initial = self.instance.fecha.date()
+            self.fields['hora'].initial = self.instance.fecha.time()
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -128,6 +133,18 @@ class MovimientoCajaGastoForm(UserTrackedModelForm):
         super().__init__(*args, **kwargs)
         # Filter conceptos to show only those that are gastos
         self.fields['concepto'].queryset = Concepto.objects.filter(es_gasto=True)
+        
+        # Populate fecha and hora fields from instance when editing
+        if self.instance and self.instance.pk and hasattr(self.instance, 'fecha') and self.instance.fecha:
+            self.fields['fecha'].initial = self.instance.fecha.date()
+            self.fields['hora'].initial = self.instance.fecha.time()
+        
+        # Extract justificante from description if present when editing
+        if self.instance and self.instance.pk and self.instance.descripcion:
+            import re
+            justificante_match = re.search(r'\[Justificante: (\d+)\]', self.instance.descripcion)
+            if justificante_match:
+                self.fields['justificante'].initial = justificante_match.group(1)
 
     def save(self, commit=True):
         instance = super().save(commit=False)

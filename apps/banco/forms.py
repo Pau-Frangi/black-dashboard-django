@@ -88,6 +88,11 @@ class MovimientoBancoIngresoForm(UserTrackedModelForm):
         self.fields['concepto'].queryset = Concepto.objects.filter(es_gasto=False)
         # Filter cuenta_bancaria to show only active ones
         self.fields['cuenta_bancaria'].queryset = CuentaBancaria.objects.filter(activo=True)
+        
+        # Populate fecha and hora fields from instance when editing
+        if self.instance and self.instance.pk and hasattr(self.instance, 'fecha') and self.instance.fecha:
+            self.fields['fecha'].initial = self.instance.fecha.date()
+            self.fields['hora'].initial = self.instance.fecha.time()
 
     def save(self, commit=True):
         instance = super().save(commit=False)
@@ -140,6 +145,11 @@ class MovimientoBancoGastoForm(UserTrackedModelForm):
         self.fields['concepto'].queryset = Concepto.objects.filter(es_gasto=True)
         # Filter cuenta_bancaria to show only active ones
         self.fields['cuenta_bancaria'].queryset = CuentaBancaria.objects.filter(activo=True)
+        
+        # Populate fecha and hora fields from instance when editing
+        if self.instance and self.instance.pk and hasattr(self.instance, 'fecha') and self.instance.fecha:
+            self.fields['fecha'].initial = self.instance.fecha.date()
+            self.fields['hora'].initial = self.instance.fecha.time()
 
     def save(self, commit=True):
         instance = super().save(commit=False)
