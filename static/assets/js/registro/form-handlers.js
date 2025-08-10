@@ -57,7 +57,10 @@ function resetModalForm() {
     
     // Re-enable fields that might have been disabled during editing
     $('#canal_movimiento').prop('disabled', false).removeClass('disabled-field');
-    $('#concepto').prop('disabled', false).removeClass('disabled-field');
+    $('#concepto').prop('disabled', false).prop('readonly', false).removeClass('disabled-field readonly-field');
+    
+    // Remove hidden concepto field if it exists
+    $('#conceptoHidden').remove();
     
     // Reset concept field styles
     $('#concepto').removeClass('border-success border-warning');
@@ -188,9 +191,21 @@ function prepareModalForEdit(movimiento) {
         $('#concepto').val(movimiento.concepto_id);
         console.log('Concepto preseleccionado por ID:', movimiento.concepto_id, '(' + movimiento.concepto + ')');
         
-        // Disable concept field (not allowed to change)
-        $('#concepto').prop('disabled', true);
-        $('#concepto').addClass('disabled-field');
+        // Instead of disabling, make it readonly and add a hidden field
+        $('#concepto').prop('readonly', true);
+        $('#concepto').addClass('readonly-field');
+        
+        // Add hidden field to ensure the value is submitted
+        if ($('#conceptoHidden').length === 0) {
+            $('<input>').attr({
+                type: 'hidden',
+                id: 'conceptoHidden',
+                name: 'concepto',
+                value: movimiento.concepto_id
+            }).appendTo('#addMovementForm');
+        } else {
+            $('#conceptoHidden').val(movimiento.concepto_id);
+        }
         
         // Trigger change event to show/hide justificante fields
         $('#concepto').trigger('change');
@@ -222,6 +237,9 @@ function prepareModalForEdit(movimiento) {
         const justificanteMatch = movimiento.descripcion.match(/\[Justificante: (\d+)\]/);
         if (justificanteMatch) {
             $('input[name="justificante"]').val(justificanteMatch[1]);
+            // Clean the description to remove the justificante part
+            const cleanDescription = movimiento.descripcion.replace(/\s*\[Justificante: \d+\]\s*/, '');
+            $('textarea[name="descripcion"]').val(cleanDescription);
         }
         
         // Set caja selection

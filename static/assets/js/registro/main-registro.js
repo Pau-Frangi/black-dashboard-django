@@ -321,7 +321,13 @@ function setupEventListeners() {
         console.log('Turno ID seleccionado:', turnoId);
 
         // Verificar que se ha seleccionado un concepto
-        const conceptoId = $('#concepto').val();
+        let conceptoId = $('#concepto').val();
+        
+        // If concepto is disabled/readonly (editing mode), get value from hidden field
+        if (!conceptoId && $('#conceptoHidden').length > 0) {
+            conceptoId = $('#conceptoHidden').val();
+        }
+        
         if (!conceptoId) {
             showWarning('Por favor selecciona un concepto', {floating: true});
             return;
@@ -339,8 +345,9 @@ function setupEventListeners() {
         // Create FormData object to handle file upload - INITIALIZE EARLY
         const formData = new FormData(this);
         
-        // Add the concepto_id to the form data
-        formData.append('concepto_id', conceptoId);
+        // Ensure concepto_id is properly set
+        formData.set('concepto_id', conceptoId);
+        formData.set('concepto', conceptoId);
         
         // Validación específica según el canal de movimiento
         if (canalMovimiento === 'caja') {

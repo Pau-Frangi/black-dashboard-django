@@ -178,26 +178,42 @@ class MovementHandler:
             movement = None
             form = None
             
+            # Create a mutable copy of POST data to fix field names
+            post_data = request.POST.copy()
+            
+            # Ensure concepto is properly set from concepto_id if needed
+            concepto_id = post_data.get('concepto_id') or post_data.get('concepto')
+            if concepto_id:
+                post_data['concepto'] = concepto_id
+            
+            # Ensure ejercicio and campamento are properly set
+            if 'ejercicio_id' in post_data:
+                post_data['ejercicio'] = post_data['ejercicio_id']
+            if 'campamento_id' in post_data:
+                post_data['campamento'] = post_data['campamento_id']
+            
+            print(f"DEBUG: Edit POST data: {dict(post_data)}")
+            
             if tipo_movimiento == 'caja':
                 # Try to find in both ingreso and gasto models
                 try:
                     movement = MovimientoCajaIngreso.objects.get(id=movimiento_id)
-                    form = MovimientoCajaIngresoForm(request.POST, request.FILES, instance=movement, user=request.user)
+                    form = MovimientoCajaIngresoForm(post_data, request.FILES, instance=movement, user=request.user)
                 except MovimientoCajaIngreso.DoesNotExist:
                     try:
                         movement = MovimientoCajaGasto.objects.get(id=movimiento_id)
-                        form = MovimientoCajaGastoForm(request.POST, request.FILES, instance=movement, user=request.user)
+                        form = MovimientoCajaGastoForm(post_data, request.FILES, instance=movement, user=request.user)
                     except MovimientoCajaGasto.DoesNotExist:
                         pass
             elif tipo_movimiento == 'banco':
                 # Try to find in both ingreso and gasto models
                 try:
                     movement = MovimientoBancoIngreso.objects.get(id=movimiento_id)
-                    form = MovimientoBancoIngresoForm(request.POST, request.FILES, instance=movement, user=request.user)
+                    form = MovimientoBancoIngresoForm(post_data, request.FILES, instance=movement, user=request.user)
                 except MovimientoBancoIngreso.DoesNotExist:
                     try:
                         movement = MovimientoBancoGasto.objects.get(id=movimiento_id)
-                        form = MovimientoBancoGastoForm(request.POST, request.FILES, instance=movement, user=request.user)
+                        form = MovimientoBancoGastoForm(post_data, request.FILES, instance=movement, user=request.user)
                     except MovimientoBancoGasto.DoesNotExist:
                         pass
             
@@ -206,6 +222,8 @@ class MovementHandler:
                     'success': False, 
                     'error': 'Movimiento no encontrado'
                 })
+            
+            print(f"DEBUG: Form errors: {form.errors}")
             
             if form.is_valid():
                 # Update the movement - user tracking is handled by form
