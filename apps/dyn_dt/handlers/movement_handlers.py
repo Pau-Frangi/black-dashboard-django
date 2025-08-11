@@ -129,6 +129,19 @@ class MovementHandler:
     def _handle_money_breakdown(request, movement):
         """Handle money breakdown for cash movements"""
         try:
+            print(f"DEBUG: ===== Iniciando procesamiento de desglose para movimiento {movement.id} =====")
+            print(f"DEBUG: Tipo de movimiento: {type(movement)}")
+            print(f"DEBUG: Caja: {movement.caja}")
+            
+            # Primero, vamos a mostrar TODOS los datos del POST relacionados con el desglose
+            print(f"DEBUG: Todos los datos POST relacionados con desglose:")
+            for key, value in request.POST.items():
+                if 'entrada_' in key or 'salida_' in key:
+                    print(f"DEBUG:   {key} = '{value}' (tipo: {type(value)})")
+            
+            # Count how many denomination entries we process
+            processed_count = 0
+            
             # Get all denomination entries from POST data
             for key, value in request.POST.items():
                 if key.startswith('entrada_') or key.startswith('salida_'):
@@ -136,31 +149,147 @@ class MovementHandler:
                     if len(parts) == 2:
                         tipo = parts[0]  # 'entrada' or 'salida'
                         denominacion_id = parts[1]
-                        cantidad = int(value) if value else 0
                         
+                        print(f"DEBUG: Procesando {key}: valor='{value}'")
+                        
+                        # Verificar si el valor es válido
+                        if value is None:
+                            print(f"DEBUG: Valor es None para {key}")
+                            continue
+                        
+                        if value == '':
+                            print(f"DEBUG: Valor es string vacío para {key}")
+                            continue
+                            
+                        try:
+                            cantidad = int(value)
+                        except (ValueError, TypeError):
+                            print(f"DEBUG: No se puede convertir '{value}' a int para {key}")
+                            cantidad = 0
+                        
+                        print(f"DEBUG: {tipo}_{denominacion_id} convertido a cantidad = {cantidad}")
+                        
+                        # Solo procesar si hay cantidad > 0
                         if cantidad > 0:
-                            # Get or create MovimientoEfectivo
+                            processed_count += 1
+                            print(f"DEBUG: Procesando cantidad {cantidad} para {tipo}_{denominacion_id}")
+                            
+                            # Verificar que la denominación existe
+                            try:
+                                from apps.caja.models import DenominacionEuro
+                                denominacion = DenominacionEuro.objects.get(id=denominacion_id)
+                                print(f"DEBUG: Denominación encontrada: {denominacion}")
+                            except DenominacionEuro.DoesNotExist:
+                                print(f"ERROR: Denominación {denominacion_id} no existe")
+                                continue
+                            
+                            # CAMBIO CLAVE: Crear o buscar el MovimientoEfectivo SIN activar la señal
                             content_type = ContentType.objects.get_for_model(movement)
+                            print(f"DEBUG: Content type: {content_type}")
                             
-                            movimiento_efectivo, created = MovimientoEfectivo.objects.get_or_create(
-                                content_type=content_type,
-                                object_id=movement.id,
-                                caja=movement.caja,
-                                denominacion_id=denominacion_id,
-                                defaults={'creado_por': request.user}
-                            )
+                            # Buscar si ya existe un MovimientoEfectivo para esta denominación
+                            try:
+                                movimiento_efectivo = MovimientoEfectivo.objects.get(
+                                    content_type=content_type,
+                                    object_id=movement.id,
+                                    caja=movement.caja,
+                                    denominacion_id=denominacion_id
+                                )
+                                print(f"DEBUG: MovimientoEfectivo existente encontrado - ID: {movimiento_efectivo.id}")
+                            except MovimientoEfectivo.DoesNotExist:
+                                # Crear con los valores correctos desde el inicio
+                                entrada_cantidad = 0
+                                salida_cantidad = 0
+                                
+                                # Buscar ambos valores antes de crear
+                                entrada_key = f"entrada_{denominacion_id}"
+                                salida_key = f"salida_{denominacion_id}"
+                                
+                                entrada_value = request.POST.get(entrada_key, '0')
+                                salida_value = request.POST.get(salida_key, '0')
+                                
+                                try:
+                                    entrada_cantidad = int(entrada_value) if entrada_value and entrada_value.strip() else 0
+                                except (ValueError, TypeError):
+                                    entrada_cantidad = 0
+                                    
+                                try:
+                                    salida_cantidad = int(salida_value) if salida_value and salida_value.strip() else 0
+                                except (ValueError, TypeError):
+                                    salida_cantidad = 0
+                                
+                                print(f"DEBUG: Creando MovimientoEfectivo con entrada={entrada_cantidad}, salida={salida_cantidad}")
+                                
+                                # Crear con los valores correctos desde el inicio
+                                movimiento_efectivo = MovimientoEfectivo.objects.create(
+                                    content_type=content_type,
+                                    object_id=movement.id,
+                                    caja=movement.caja,
+                                    denominacion_id=denominacion_id,
+                                    cantidad_entrada=entrada_cantidad,
+                                    cantidad_salida=salida_cantidad,
+                                    creado_por=request.user
+                                )
+                                print(f"DEBUG: MovimientoEfectivo creado - ID: {movimiento_efectivo.id}")
+                                continue  # Ya está creado con los valores correctos
                             
+                            # Si llegamos aquí, el MovimientoEfectivo ya existía, actualizarlo
+                            print(f"DEBUG: Actualizando MovimientoEfectivo existente")
+                            
+                            # Actualizar la cantidad correspondiente
                             if tipo == 'entrada':
                                 movimiento_efectivo.cantidad_entrada = cantidad
+                                print(f"DEBUG: Estableciendo cantidad_entrada = {cantidad}")
                             elif tipo == 'salida':
                                 movimiento_efectivo.cantidad_salida = cantidad
+                                print(f"DEBUG: Estableciendo cantidad_salida = {cantidad}")
+                            
+                            print(f"DEBUG: Antes de guardar - Entrada: {movimiento_efectivo.cantidad_entrada}, Salida: {movimiento_efectivo.cantidad_salida}")
+                            
+                            # Verificar desglose antes de guardar
+                            try:
+                                from apps.caja.models import DesgloseCaja
+                                desglose_antes = DesgloseCaja.objects.get(caja=movement.caja, denominacion=denominacion)
+                                print(f"DEBUG: Desglose antes de guardar MovimientoEfectivo: {desglose_antes.cantidad}")
+                            except DesgloseCaja.DoesNotExist:
+                                print(f"DEBUG: No existe desglose para {denominacion} en {movement.caja}")
                             
                             movimiento_efectivo.save()
                             
+                            # Verificar desglose después de guardar
+                            try:
+                                desglose_despues = DesgloseCaja.objects.get(caja=movement.caja, denominacion=denominacion)
+                                print(f"DEBUG: Desglose después de guardar MovimientoEfectivo: {desglose_despues.cantidad}")
+                            except DesgloseCaja.DoesNotExist:
+                                print(f"DEBUG: No existe desglose para {denominacion} en {movement.caja} después de guardar")
+                            
+                            print(f"DEBUG: MovimientoEfectivo guardado - Entrada: {movimiento_efectivo.cantidad_entrada}, Salida: {movimiento_efectivo.cantidad_salida}")
+            
+            print(f"DEBUG: Total de denominaciones procesadas: {processed_count}")
+            
+            if processed_count == 0:
+                print("WARNING: No se procesó ninguna denominación!")
+                print("DEBUG: Volviendo a revisar todos los campos POST:")
+                for key in request.POST.keys():
+                    print(f"DEBUG:   Clave POST: '{key}'")
+            
+            # Verificar el estado final
+            final_movimientos = MovimientoEfectivo.objects.filter(
+                content_type=ContentType.objects.get_for_model(movement),
+                object_id=movement.id
+            )
+            
+            print(f"DEBUG: MovimientoEfectivo finales para este movimiento: {final_movimientos.count()}")
+            for mov_ef in final_movimientos:
+                print(f"DEBUG: - {mov_ef.denominacion}: +{mov_ef.cantidad_entrada}/-{mov_ef.cantidad_salida} = {mov_ef.cantidad_neta()}")
+            
+            print(f"DEBUG: ===== Fin procesamiento desglose movimiento {movement.id} =====")
+                            
         except Exception as e:
-            print(f"Error handling money breakdown: {e}")
+            print(f"ERROR en _handle_money_breakdown: {e}")
             print(traceback.format_exc())
-    
+            raise  # Re-raise para que el error se propague
+
     @staticmethod
     def edit_movement(request):
         """Edit an existing movement"""

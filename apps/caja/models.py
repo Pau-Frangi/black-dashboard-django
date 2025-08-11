@@ -716,28 +716,53 @@ def eliminar_movimientos_efectivo_relacionados(sender, instance, **kwargs):
 @receiver(post_save, sender=MovimientoEfectivo)
 def actualizar_desglose_on_movimiento_efectivo_save(sender, instance, created, **kwargs):
     """Actualiza el desglose de la caja al crear o actualizar un MovimientoEfectivo"""
-    if created:
-        print(f"DEBUG: Nueva instancia de MovimientoEfectivo creada - ID: {instance.id}")
-        print(f"DEBUG: Caja: {instance.caja}, Denominación: {instance.denominacion}")
-        print(f"DEBUG: Entrada: {instance.cantidad_entrada}, Salida: {instance.cantidad_salida}")
+    print(f"DEBUG: Señal post_save activada - created={created}")
+    print(f"DEBUG: MovimientoEfectivo ID: {instance.id}")
+    print(f"DEBUG: Caja: {instance.caja}, Denominación: {instance.denominacion}")
+    print(f"DEBUG: Entrada: {instance.cantidad_entrada}, Salida: {instance.cantidad_salida}")
+    
+    # Calcular cambio neto (entrada - salida)
+    cambio_neto = instance.cantidad_entrada - instance.cantidad_salida
+    
+    # Solo procesar si hay un cambio neto real
+    if cambio_neto == 0 and created:
+        print(f"DEBUG: Cambio neto es 0 en creación, probablemente se actualizará después")
+        return
+    
+    # Obtener o crear el desglose para esta denominación
+    desglose_caja, created_desglose = DesgloseCaja.objects.get_or_create(
+        caja=instance.caja,
+        denominacion=instance.denominacion,
+        defaults={
+            'cantidad': 0, 
+            'creado_por': instance.creado_por if instance.creado_por else None
+        }
+    )
+    
+    if created_desglose:
+        print(f"DEBUG: Nuevo DesgloseCaja creado para {instance.denominacion} en {instance.caja}")
+    
+    # Si estamos actualizando (no creando), necesitamos revertir el cambio anterior
+    if not created:
+        print(f"DEBUG: Actualizando MovimientoEfectivo existente, necesitamos calcular diferencia")
+        # Para una actualización, necesitaríamos el valor anterior, pero Django no lo proporciona fácilmente
+        # Por simplicidad, recalcularemos todo el desglose desde cero
+        print(f"DEBUG: Recalculando desglose completo para {instance.denominacion} en {instance.caja}")
         
-        # Obtener o crear el desglose para esta denominación
-        desglose_caja, created_desglose = DesgloseCaja.objects.get_or_create(
+        # Obtener todos los MovimientoEfectivo para esta caja y denominación
+        todos_movimientos = MovimientoEfectivo.objects.filter(
             caja=instance.caja,
-            denominacion=instance.denominacion,
-            defaults={
-                'cantidad': 0, 
-                'creado_por': instance.creado_por if instance.creado_por else None
-            }
+            denominacion=instance.denominacion
         )
         
-        if created_desglose:
-            print(f"DEBUG: Nuevo DesgloseCaja creado para {instance.denominacion} en {instance.caja}")
+        total_calculado = 0
+        for mov in todos_movimientos:
+            total_calculado += mov.cantidad_entrada - mov.cantidad_salida
         
-        # Calcular cambio neto (entrada - salida)
-        cambio_neto = instance.cantidad_entrada - instance.cantidad_salida
-        
-        # Actualizar la cantidad en el desglose
+        desglose_caja.cantidad = max(0, total_calculado)
+        print(f"DEBUG: Desglose recalculado desde todos los movimientos: {desglose_caja.cantidad}")
+    else:
+        # Para creación, simplemente agregar el cambio neto
         cantidad_anterior = desglose_caja.cantidad
         desglose_caja.cantidad += cambio_neto
         
@@ -746,9 +771,9 @@ def actualizar_desglose_on_movimiento_efectivo_save(sender, instance, created, *
             print(f"WARNING: Desglose negativo para {instance.denominacion} en {instance.caja}: {desglose_caja.cantidad}")
             desglose_caja.cantidad = 0
         
-        desglose_caja.save()
-        
         print(f"DEBUG: Desglose actualizado - {instance.denominacion}: {cantidad_anterior} + {cambio_neto} = {desglose_caja.cantidad}")
+    
+    desglose_caja.save()
         
         
 @receiver(post_delete, sender=MovimientoEfectivo)
